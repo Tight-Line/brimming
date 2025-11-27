@@ -69,7 +69,7 @@ group :test do
   gem "simplecov", require: false
 
   # One-liner tests for common Rails functionality
-  gem "shoulda-matchers", "~> 6.0"
+  gem "shoulda-matchers", "~> 7.0"
 
   # Clean database between tests
   gem "database_cleaner-active_record", "~> 2.0"
