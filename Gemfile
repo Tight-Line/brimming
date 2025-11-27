@@ -27,7 +27,7 @@ gem "tzinfo-data", platforms: %i[ windows jruby ]
 gem "redis", "~> 5.0"
 
 # Background job processing with Sidekiq
-gem "sidekiq", "~> 7.0"
+gem "sidekiq", "~> 8.0"
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
