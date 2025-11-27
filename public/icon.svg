@@ -1,3 +1,38 @@
-<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="256" cy="256" r="256" fill="red"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512">
+  <!-- Lightbulb with knowledge grid - Brimming logo -->
+  <defs>
+    <linearGradient id="bulbGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90D9"/>
+      <stop offset="100%" style="stop-color:#2E5A8B"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Light rays -->
+  <g stroke="#4A90D9" stroke-width="2.5" stroke-linecap="round" fill="none">
+    <line x1="50" y1="5" x2="50" y2="15"/>
+    <line x1="20" y1="20" x2="27" y2="27"/>
+    <line x1="80" y1="20" x2="73" y2="27"/>
+    <line x1="10" y1="45" x2="20" y2="45"/>
+    <line x1="90" y1="45" x2="80" y2="45"/>
+  </g>
+
+  <!-- Bulb outline -->
+  <path d="M35 70 Q25 60 25 45 Q25 25 50 25 Q75 25 75 45 Q75 60 65 70 L65 75 L35 75 Z"
+        fill="none" stroke="url(#bulbGradient)" stroke-width="3"/>
+
+  <!-- Base lines -->
+  <g stroke="url(#bulbGradient)" stroke-width="2.5" stroke-linecap="round" fill="none">
+    <line x1="35" y1="80" x2="65" y2="80"/>
+    <line x1="38" y1="85" x2="62" y2="85"/>
+    <path d="M42 90 Q50 95 58 90" />
+  </g>
+
+  <!-- Knowledge grid inside bulb -->
+  <g fill="none" stroke="#4A90D9" stroke-width="1.5">
+    <rect x="40" y="35" width="8" height="8" rx="1.5"/>
+    <rect x="52" y="35" width="8" height="8" rx="1.5"/>
+    <rect x="40" y="47" width="8" height="8" rx="1.5"/>
+    <rect x="52" y="47" width="8" height="8" rx="1.5"/>
+    <rect x="46" y="59" width="8" height="8" rx="1.5"/>
+  </g>
 </svg>

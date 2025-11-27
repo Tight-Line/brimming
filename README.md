@@ -1,6 +1,6 @@
 # Brimming
 
-[![CI](https://github.com/tightlinesoftware/brimming/actions/workflows/ci.yml/badge.svg)](https://github.com/tightlinesoftware/brimming/actions/workflows/ci.yml)
+[![CI](https://github.com/Tight-Line/brimming/actions/workflows/ci.yml/badge.svg)](https://github.com/Tight-Line/brimming/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](coverage/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -38,7 +38,7 @@ A Stack Overflow-style Q&A platform built with Ruby on Rails.
 
 ```bash
 # Clone the repository
-git clone https://github.com/tightlinesoftware/brimming.git
+git clone https://github.com/Tight-Line/brimming.git
 cd brimming
 
 # Set up the development environment

@@ -1,0 +1,33 @@
+<%# Vote button for comments (upvote only) %>
+<%
+  user_voted = signed_in? && comment.voted_by?(current_user)
+%>
+
+<span class="comment-vote" id="comment-<%= comment.id %>-votes">
+  <% if signed_in? %>
+    <% if user_voted %>
+      <%= button_to remove_vote_comment_path(comment),
+                   method: :delete,
+                   class: "comment-vote-btn active",
+                   title: "Remove vote",
+                   data: { turbo_stream: true } do %>
+        <span class="vote-arrow-small">&#9650;</span>
+      <% end %>
+    <% else %>
+      <%= button_to upvote_comment_path(comment),
+                   method: :post,
+                   class: "comment-vote-btn",
+                   title: "Upvote comment",
+                   data: { turbo_stream: true } do %>
+        <span class="vote-arrow-small">&#9650;</span>
+      <% end %>
+    <% end %>
+  <% else %>
+    <span class="comment-vote-btn disabled" title="Sign in to vote">
+      <span class="vote-arrow-small">&#9650;</span>
+    </span>
+  <% end %>
+  <% if comment.vote_score > 0 %>
+    <span class="comment-vote-count"><%= comment.vote_score %></span>
+  <% end %>
+</span>

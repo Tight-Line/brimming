@@ -1,0 +1,68 @@
+<% content_for(:title) { "#{@question.title} - Brimming" } %>
+
+<article class="question-detail">
+  <div class="question-content-wrapper">
+    <%= render 'votes/vote_buttons', votable: @question, votable_type: 'question' %>
+
+    <div class="question-content">
+      <div class="question-header">
+        <h1 class="question-title"><%= @question.title %></h1>
+        <div class="question-meta">
+          <span>Asked by <%= render 'shared/user_badge', user: @question.author %></span>
+          <span><%= time_ago_in_words(@question.created_at) %> ago</span>
+          <% if @question.edited? %>
+            <span>(edited <%= time_ago_in_words(@question.edited_at) %> ago)</span>
+          <% end %>
+          <span>in <span class="category"><%= link_to @question.category.name, category_path(@question.category) %></span></span>
+          <% if @question.views_count > 0 %>
+            <span><%= @question.views_count %> <%= "view".pluralize(@question.views_count) %></span>
+          <% end %>
+        </div>
+      </div>
+      <div class="question-body">
+        <%= simple_format(@question.body) %>
+      </div>
+
+      <%= render 'comments/comments_section', comments: @question_comments %>
+    </div>
+  </div>
+</article>
+
+<section class="answers-section">
+  <div class="answers-header">
+    <h2><%= @answers.count %> <%= "Answer".pluralize(@answers.count) %></h2>
+  </div>
+
+  <% if @answers.any? %>
+    <% @answers.each do |answer| %>
+      <div class="answer-item <%= 'solved' if answer.is_correct? %>" id="answer-<%= answer.id %>">
+        <div class="answer-content-wrapper">
+          <%= render 'votes/vote_buttons', votable: answer, votable_type: 'answer' %>
+
+          <div class="answer-content">
+            <div class="answer-body">
+              <%= simple_format(answer.body) %>
+            </div>
+            <div class="answer-meta">
+              <span>by <%= render 'shared/user_badge', user: answer.author %></span>
+              <span><%= time_ago_in_words(answer.created_at) %> ago</span>
+              <% if answer.edited? %>
+                <span>(edited <%= time_ago_in_words(answer.edited_at) %> ago)</span>
+              <% end %>
+              <% if answer.is_correct? %>
+                <span class="badge badge-success">Solved</span>
+              <% end %>
+            </div>
+
+            <% answer_comments = answer.comments.top_level.sort_by(&:created_at) %>
+            <%= render 'comments/comments_section', comments: answer_comments %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="empty-state">
+      <p>No answers yet. Be the first to answer!</p>
+    </div>
+  <% end %>
+</section>

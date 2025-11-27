@@ -1,0 +1,40 @@
+<% content_for(:title) { "#{@category.name} - Brimming" } %>
+
+<div class="category-header">
+  <h1><%= @category.name %></h1>
+  <% if @category.description.present? %>
+    <p class="category-description"><%= @category.description %></p>
+  <% end %>
+  <% if current_user&.subscribed_categories&.include?(@category) %>
+    <span class="badge badge-subscribed">You are subscribed</span>
+  <% end %>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h2>Questions (<%= @questions.count %>)</h2>
+  </div>
+
+  <% if @questions.any? %>
+    <ul class="question-list">
+      <% @questions.each do |question| %>
+        <li class="question-item">
+          <div class="question-title">
+            <%= link_to question.title, question_path(question) %>
+          </div>
+          <div class="question-meta">
+            <span>by <%= render 'shared/user_badge', user: question.author %></span>
+            <span><%= question.answers_count %> answers</span>
+            <% if question.has_correct_answer? %>
+              <span class="badge badge-success">Solved</span>
+            <% end %>
+          </div>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <div class="empty-state">
+      <p>No questions in this category yet.</p>
+    </div>
+  <% end %>
+</div>

@@ -13,9 +13,11 @@ Open-source project hosted on GitHub under the MIT License.
 ### Core Concepts
 - **Questions** belong to **Categories** and are posted by **Users**
 - **Answers** belong to Questions and are posted by Users
-- Users **vote** on Answers (up/down)
+- Users **vote** on Questions, Answers, and Comments (up/down for Q&A, upvote-only for comments)
 - Answers are displayed sorted by vote score (highest first)
-- Category **moderators** can mark one Answer as "correct" for a Question
+- Category **moderators** can mark one Answer as **"Solved"** for a Question
+- **Best Answer** = highest-voted answer for a question (may differ from Solved)
+- **Karma** system rewards participation: +5 questions, +10 answers, +15 solved, +1 per upvote
 - User identity is their RFC 5322 email address; they choose a display username and optional avatar
 
 ### Tech Stack
@@ -151,12 +153,17 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - CI step to lint and test Helm chart
 - **NOTE**: Update Helm chart tests whenever adding new workloads
 
-### Phase 3: Core Data Models `[ ]`
-- User (email, username, avatar_url, role)
+### Phase 3: Core Data Models `[x]`
+- User (email, username, full_name, avatar_url, role)
 - Category (name, slug, description)
-- Question (title, body, user_id, category_id)
-- Answer (body, user_id, question_id, is_correct)
+- Question (title, body, user_id, category_id, vote_score, views_count, edited_at)
+- Answer (body, user_id, question_id, is_correct, vote_score, edited_at)
 - Vote (user_id, answer_id, value: +1/-1)
+- QuestionVote (user_id, question_id, value: +1/-1)
+- Comment (body, user_id, commentable polymorphic, parent_id for nesting, vote_score, edited_at)
+- CommentVote (user_id, comment_id)
+- CategorySubscription (user_id, category_id)
+- CategoryModerator (user_id, category_id)
 - Database migrations with proper indexes and constraints
 
 ### Phase 4: Authentication Foundation `[ ]`
@@ -167,27 +174,31 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - Session management
 - Basic authorization helper methods
 
-### Phase 5: Core Q&A Features `[ ]`
-- Questions CRUD (create, read, update, delete own)
-- Answers CRUD
-- Voting on answers (one vote per user per answer)
-- Answer ordering by vote score
-- Question show page with answers
+### Phase 5: Core Q&A Features `[~]`
+- Questions CRUD (create, read, update, delete own) - **read only implemented**
+- Answers CRUD - **read only implemented**
+- Voting on questions (one vote per user per question) `[x]`
+- Voting on answers (one vote per user per answer) `[x]`
+- Voting on comments (upvote only) `[x]`
+- Answer ordering by vote score `[x]`
+- Question show page with answers `[x]`
+- Nested comments on questions and answers `[x]`
 
-### Phase 6: Categories & Moderation `[ ]`
-- Category CRUD (admin only)
-- CategoryModerator join model
-- Pundit policies for authorization
-- Moderator: mark answer as correct
-- Admin: assign/remove moderators
+### Phase 6: Categories & Moderation `[~]`
+- Category CRUD (admin only) - **read only implemented**
+- CategoryModerator join model `[x]`
+- Pundit policies for authorization `[ ]`
+- Moderator: mark answer as solved (is_correct) `[x]`
+- Admin: assign/remove moderators - **seed data only**
 
-### Phase 7: Web UI & Navigation `[ ]`
-- Tailwind CSS or Bootstrap setup
-- Responsive layout with collapsible sidebar
-- Home page: top questions for user's followed categories
-- Category browsing and filtering
-- User profile page
-- Gamification stats display (questions/answers/best-answers count)
+### Phase 7: Web UI & Navigation `[x]`
+- Custom CSS styling (no framework) `[x]`
+- Responsive layout with header navigation `[x]`
+- Home page: recent questions with category filtering `[x]`
+- Category browsing and filtering `[x]`
+- User profile page with stats `[x]`
+- Gamification: karma system, solved answers count, best answers count `[x]`
+- User badge component showing karma, solved count, best answer count `[x]`
 
 ### Phase 8: SSO - LDAP/ActiveDirectory `[ ]`
 - OmniAuth LDAP strategy
@@ -244,8 +255,26 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 
 ## Current Status
 
-**Current Phase**: Phase 1 Complete
-**Next Action**: Begin Phase 2 - Helm Chart Foundation (or Phase 3 - Core Data Models)
+**Completed Phases**: 1, 3, 7
+**In Progress**: 5 (Q&A Features - need CRUD), 6 (Moderation - need Pundit policies)
+**Not Started**: 2 (Helm), 4 (Authentication), 8-13
+
+### What's Working
+- Full data model with Users, Categories, Questions, Answers, Comments, Votes
+- Read-only web UI for browsing questions, categories, and user profiles
+- Voting system for questions, answers, and comments
+- Nested comments with replies
+- Karma system with gamification (questions, answers, solved, best answers, votes)
+- User badges showing karma, solved answer count, best answer count
+- Category subscriptions and moderator assignments (via seeds)
+- "Solved" designation for moderator-approved answers
+- "Best" designation for highest-voted answers per question
+- 100% test coverage (281 specs)
+
+### Next Actions
+1. **Phase 4 (Authentication)**: Add Devise for user registration/login
+2. **Phase 5 (CRUD)**: Add create/update/delete for questions, answers, comments
+3. **Phase 6 (Authorization)**: Add Pundit policies for role-based access
 
 ---
 

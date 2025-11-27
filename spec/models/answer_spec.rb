@@ -11,7 +11,9 @@ RSpec.describe Answer do
   describe "associations" do
     it { is_expected.to belong_to(:user) }
     it { is_expected.to belong_to(:question) }
+    it { is_expected.to belong_to(:last_editor).class_name("User").optional }
     it { is_expected.to have_many(:votes).dependent(:destroy) }
+    it { is_expected.to have_many(:comments).dependent(:destroy) }
   end
 
   describe "scopes" do
@@ -188,6 +190,42 @@ RSpec.describe Answer do
 
       answer.recalculate_vote_score!
       expect(answer.vote_score).to eq(1)
+    end
+  end
+
+  describe "#edited?" do
+    it "returns false when edited_at is nil" do
+      answer = create(:answer)
+      expect(answer.edited?).to be false
+    end
+
+    it "returns true when edited_at is present" do
+      answer = create(:answer, edited_at: Time.current)
+      expect(answer.edited?).to be true
+    end
+  end
+
+  describe "#record_edit!" do
+    let(:answer) { create(:answer) }
+    let(:editor) { create(:user) }
+
+    it "sets edited_at" do
+      answer.record_edit!(editor)
+      expect(answer.edited_at).to be_present
+    end
+
+    it "sets last_editor" do
+      answer.record_edit!(editor)
+      expect(answer.last_editor).to eq(editor)
+    end
+  end
+
+  describe "comments" do
+    let(:answer) { create(:answer) }
+
+    it "can have comments" do
+      comment = create(:comment, commentable: answer)
+      expect(answer.comments).to include(comment)
     end
   end
 end
