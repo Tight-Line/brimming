@@ -1,0 +1,196 @@
+# Brimming
+
+[![CI](https://github.com/tightlinesoftware/brimming/actions/workflows/ci.yml/badge.svg)](https://github.com/tightlinesoftware/brimming/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](coverage/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+A Stack Overflow-style Q&A platform built with Ruby on Rails.
+
+**Developed by [Tight Line LLC](https://www.tightlinesoftware.com)**
+
+## Features
+
+- **Questions & Answers** - Users post questions in categories, others provide answers
+- **Voting System** - Community votes on answer quality, sorted by score
+- **Moderation** - Category moderators can mark correct answers
+- **User Profiles** - Gamification with stats for questions, answers, and best answers
+- **Search** - Full-text search powered by OpenSearch
+- **Email Digests** - Configurable per-post, daily, or weekly digests
+- **SSO Support** - LDAP/ActiveDirectory and social login (Google, GitHub, etc.)
+- **API** - Full REST API for programmatic access
+- **MCP Server** - AI assistant integration via Model Context Protocol
+
+## Tech Stack
+
+- **Backend**: Ruby on Rails 8.1, PostgreSQL 18.1
+- **Background Jobs**: Sidekiq with Valkey 9.0
+- **Search**: OpenSearch 3.2
+- **Deployment**: Docker, Helm 3.x for Kubernetes
+
+## Quick Start
+
+### Prerequisites
+
+- Docker and Docker Compose
+- Make
+
+### Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/tightlinesoftware/brimming.git
+cd brimming
+
+# Set up the development environment
+make setup
+
+# Start all services
+make up
+
+# Access the application at http://localhost:3000
+```
+
+## Development
+
+All development commands use the Makefile for consistency:
+
+| Command | Description |
+|---------|-------------|
+| `make setup` | Initial project setup |
+| `make up` | Start all services |
+| `make down` | Stop all services |
+| `make restart` | Restart all services |
+| `make logs` | Tail service logs |
+| `make shell` | Open bash shell in dev container |
+| `make console` | Open Rails console |
+| `make server` | Start Rails server |
+
+### Database
+
+| Command | Description |
+|---------|-------------|
+| `make db-create` | Create databases |
+| `make db-migrate` | Run pending migrations |
+| `make db-rollback` | Rollback last migration |
+| `make db-reset` | Drop, create, migrate, and seed |
+| `make db-seed` | Load seed data |
+
+### Testing
+
+We require 100% test coverage for all code.
+
+| Command | Description |
+|---------|-------------|
+| `make test` | Run all tests with coverage |
+| `make test-models` | Run model specs |
+| `make test-requests` | Run request specs |
+| `make test-jobs` | Run job specs |
+| `make coverage` | Generate coverage report |
+
+### Code Quality
+
+| Command | Description |
+|---------|-------------|
+| `make lint` | Run RuboCop linter |
+| `make lint-fix` | Auto-fix lint issues |
+| `make security` | Run security scans |
+
+### Helm
+
+| Command | Description |
+|---------|-------------|
+| `make helm-lint` | Lint Helm chart |
+| `make helm-test` | Run Helm chart tests |
+
+### CI Pipeline
+
+```bash
+make ci  # Run full CI pipeline (lint, security, test, helm)
+```
+
+## Deployment
+
+### Docker Compose (Production-like)
+
+```bash
+docker-compose up -d
+```
+
+### Kubernetes (Helm)
+
+```bash
+helm install brimming helm/brimming \
+  -f values.yaml \
+  -n brimming \
+  --create-namespace
+```
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DB_HOST` | PostgreSQL host | `postgres` |
+| `DB_PORT` | PostgreSQL port | `5432` |
+| `DB_USER` | Database user | `brimming` |
+| `DB_PASS` | Database password | - |
+| `DB_NAME` | Database name | `brimming` |
+| `REDIS_URL` | Valkey/Redis URL | `redis://valkey:6379/0` |
+| `SECRET_KEY_BASE` | Rails secret key | - |
+
+### Database Schema
+
+All application tables are created in the `brimming` schema (not `public`). This is a best practice for separating app tables from PostgreSQL system objects.
+
+- **Database name**: `brimming` in all environments except test (`brimming_test`)
+- **Schema**: `brimming` (search_path: `brimming,public`)
+- **Console access**: `make db-console` opens psql with correct search_path
+
+### SSO Configuration
+
+LDAP and social SSO providers are configured through the admin panel. See the [SSO documentation](docs/sso.md) for details.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         Ingress                              │
+└─────────────────────────────────────────────────────────────┘
+                              │
+              ┌───────────────┼───────────────┐
+              ▼               ▼               ▼
+        ┌──────────┐   ┌──────────┐   ┌──────────┐
+        │   App    │   │   App    │   │   App    │
+        │ (Rails)  │   │ (Rails)  │   │ (Rails)  │
+        └────┬─────┘   └────┬─────┘   └────┬─────┘
+             │              │              │
+             └──────────────┼──────────────┘
+                            │
+     ┌──────────────────────┼──────────────────────┐
+     ▼                      ▼                      ▼
+┌──────────┐          ┌──────────┐          ┌──────────┐
+│PostgreSQL│          │  Valkey  │          │OpenSearch│
+└──────────┘          └──────────┘          └──────────┘
+                            │
+                      ┌─────┴─────┐
+                      ▼           ▼
+                ┌──────────┐ ┌──────────┐
+                │ Worker   │ │ Worker   │
+                │(Sidekiq) │ │(Sidekiq) │
+                └──────────┘ └──────────┘
+```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## Code of Conduct
+
+See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+## License
+
+This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
+
+Copyright (c) 2025 [Tight Line LLC](https://www.tightlinesoftware.com)

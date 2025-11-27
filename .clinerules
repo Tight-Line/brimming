@@ -1,0 +1,12 @@
+# Cline Rules for Brimming
+
+This project uses CLAUDE.md as the single source of truth for AI assistant context.
+
+Please read and follow all guidelines in CLAUDE.md at the repository root.
+
+Key points:
+- Ruby on Rails 7.1+ / PostgreSQL / OpenSearch / Sidekiq
+- 100% test coverage required (RSpec)
+- Helm 3.x chart in helm/brimming/
+- Update Helm tests when adding workloads
+- MIT License

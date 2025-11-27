@@ -1,0 +1,30 @@
+# PostgreSQL configuration for Brimming
+#
+# Connection can be overridden with DATABASE_URL environment variable.
+#
+# All environments use the "brimming" schema (not public) for app tables.
+# Database name is "brimming" in all environments except test.
+
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  host: <%= ENV.fetch("DB_HOST") { "postgres" } %>
+  port: <%= ENV.fetch("DB_PORT") { 5432 } %>
+  username: <%= ENV.fetch("DB_USER") { "brimming" } %>
+  password: <%= ENV.fetch("DB_PASS") { "brimming_dev" } %>
+  schema_search_path: brimming,public
+
+development:
+  <<: *default
+  database: <%= ENV.fetch("DB_NAME") { "brimming" } %>
+
+test:
+  <<: *default
+  database: brimming_test
+
+production:
+  <<: *default
+  database: <%= ENV.fetch("DB_NAME") { "brimming" } %>
+  username: <%= ENV.fetch("DB_USER") { "brimming" } %>
+  password: <%= ENV["DB_PASS"] %>

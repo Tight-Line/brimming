@@ -1,0 +1,79 @@
+# Production-like local environment
+# For actual Kubernetes deployment, use the Helm chart in helm/brimming/
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      RAILS_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: brimming
+      DB_PASS: ${DB_PASS:-brimming_prod}
+      DB_NAME: brimming
+      REDIS_URL: redis://valkey:6379/0
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-changeme_in_production}
+      RAILS_LOG_TO_STDOUT: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/up || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: bundle exec sidekiq
+    environment:
+      RAILS_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: brimming
+      DB_PASS: ${DB_PASS:-brimming_prod}
+      DB_NAME: brimming
+      REDIS_URL: redis://valkey:6379/0
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-changeme_in_production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_started
+
+  postgres:
+    image: postgres:18.1-bookworm
+    environment:
+      POSTGRES_USER: brimming
+      POSTGRES_PASSWORD: ${DB_PASS:-brimming_prod}
+      POSTGRES_DB: brimming
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brimming"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  valkey:
+    image: valkey/valkey:9.0.0
+    volumes:
+      - valkey_data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  valkey_data:

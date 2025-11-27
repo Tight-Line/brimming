@@ -1,0 +1,29 @@
+# Development container for Rails scaffolding and development
+FROM ruby:3.4.7-bookworm
+
+# Install system dependencies
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    nodejs \
+    npm \
+    git \
+    curl \
+    vim \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js LTS (for asset pipeline)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g yarn
+
+# Set working directory
+WORKDIR /src
+
+# Install latest stable Rails
+RUN gem install rails --no-document
+
+# Keep container running for development
+CMD ["tail", "-f", "/dev/null"]
