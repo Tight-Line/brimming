@@ -1,0 +1,10 @@
+<% if comments.any? %>
+  <div class="comments-section">
+    <div class="comments-header">
+      <span class="comments-count"><%= comments.count %> <%= "comment".pluralize(comments.count) %></span>
+    </div>
+    <div class="comments-list">
+      <%= render partial: 'comments/comment', collection: comments, as: :comment %>
+    </div>
+  </div>
+<% end %>

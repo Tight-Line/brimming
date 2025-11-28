@@ -1,0 +1,142 @@
+<div class="main-content">
+  <div class="container">
+    <div class="user-profile">
+      <div class="profile-header">
+        <div class="profile-avatar">
+          <% if @user.avatar_url.present? %>
+            <%= image_tag @user.avatar_url, alt: @user.username, class: "avatar-large" %>
+          <% else %>
+            <div class="avatar-placeholder">
+              <%= @user.username[0].upcase %>
+            </div>
+          <% end %>
+        </div>
+        <div class="profile-info">
+          <h1 class="profile-username"><%= @user.username %></h1>
+          <% if @user.full_name.present? %>
+            <p class="profile-full-name"><%= @user.full_name %></p>
+          <% end %>
+          <p class="profile-joined">
+            Member since <%= @user.created_at.strftime("%B %Y") %>
+          </p>
+          <% if @user.admin? %>
+            <span class="badge badge-admin">Admin</span>
+          <% elsif @user.moderator? %>
+            <span class="badge badge-moderator">Moderator</span>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="profile-stats">
+        <div class="stat-card">
+          <span class="stat-value"><%= number_with_delimiter(@user.karma) %></span>
+          <span class="stat-label">Karma</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value"><%= @user.questions_count %></span>
+          <span class="stat-label">Questions</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value"><%= @user.answers_count %></span>
+          <span class="stat-label">Answers</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value"><%= @user.solved_answers_count %></span>
+          <span class="stat-label">Solved</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value"><%= @user.best_answers_count %></span>
+          <span class="stat-label">Best</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value"><%= @user.comments_count %></span>
+          <span class="stat-label">Comments</span>
+        </div>
+      </div>
+
+      <div class="two-column">
+        <div class="profile-main">
+          <% if @recent_questions.any? %>
+            <div class="card mb-2">
+              <div class="card-header">
+                <h2>Recent Questions</h2>
+              </div>
+              <ul class="question-list">
+                <% @recent_questions.each do |question| %>
+                  <li class="question-item">
+                    <div class="question-title">
+                      <%= link_to question.title, question_path(question) %>
+                    </div>
+                    <div class="question-meta">
+                      <span class="category"><%= question.category.name %></span>
+                      <span><%= question.answers_count %> answers</span>
+                      <span><%= time_ago_in_words(question.created_at) %> ago</span>
+                    </div>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <% if @recent_answers.any? %>
+            <div class="card">
+              <div class="card-header">
+                <h2>Recent Answers</h2>
+              </div>
+              <ul class="answer-list">
+                <% @recent_answers.each do |answer| %>
+                  <li class="answer-item">
+                    <div class="answer-question">
+                      <%= link_to answer.question.title, question_path(answer.question) %>
+                    </div>
+                    <div class="answer-preview">
+                      <%= truncate(answer.body, length: 150) %>
+                    </div>
+                    <div class="answer-meta">
+                      <span class="<%= answer.vote_score >= 0 ? 'positive' : 'negative' %>">
+                        <%= answer.vote_score %> votes
+                      </span>
+                      <% if answer.is_correct? %>
+                        <span class="badge badge-success">Solved</span>
+                      <% end %>
+                      <span><%= time_ago_in_words(answer.created_at) %> ago</span>
+                    </div>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <% if @recent_questions.empty? && @recent_answers.empty? %>
+            <div class="card">
+              <div class="card-body empty-state">
+                <p>No activity yet.</p>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <aside class="profile-sidebar">
+          <div class="card">
+            <div class="card-header">
+              <h2>Subscribed Categories</h2>
+            </div>
+            <% if @user.subscribed_categories.any? %>
+              <ul class="category-list">
+                <% @user.subscribed_categories.each do |category| %>
+                  <li class="category-item">
+                    <%= link_to category.name, category_path(category), class: "category-name" %>
+                  </li>
+                <% end %>
+              </ul>
+            <% else %>
+              <div class="card-body empty-state">
+                <p>No subscriptions yet.</p>
+              </div>
+            <% end %>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,18 @@
+<div class="comment <%= 'comment-reply' if comment.reply? %>" id="comment-<%= comment.id %>" style="margin-left: <%= [comment.depth * 24, 72].min %>px;">
+  <div class="comment-body">
+    <%= comment.body %>
+  </div>
+  <div class="comment-meta">
+    <%= render 'votes/comment_vote_button', comment: comment %>
+    <%= render 'shared/user_badge', user: comment.author, show_karma: false %>
+    <span class="comment-date"><%= time_ago_in_words(comment.created_at) %> ago</span>
+    <% if comment.edited? %>
+      <span class="comment-edited">(edited)</span>
+    <% end %>
+  </div>
+  <% if comment.replies.any? %>
+    <div class="comment-replies">
+      <%= render partial: 'comments/comment', collection: comment.replies.sort_by(&:created_at), as: :comment %>
+    </div>
+  <% end %>
+</div>

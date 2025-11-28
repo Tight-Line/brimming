@@ -1,0 +1,28 @@
+<%# Displays a user's name with karma and achievement badges %>
+<%# Usage: render 'shared/user_badge', user: @user %>
+<%# Options: link: true/false (default true), show_karma: true/false (default true) %>
+<% link = local_assigns.fetch(:link, true) %>
+<% show_karma = local_assigns.fetch(:show_karma, true) %>
+
+<span class="user-badge">
+  <% if link %>
+    <%= link_to user.display_name, user_path(user), class: "user-badge-name" %>
+  <% else %>
+    <span class="user-badge-name"><%= user.display_name %></span>
+  <% end %>
+  <% if show_karma %>
+    <span class="user-badge-karma" title="<%= user.karma %> karma">
+      <span class="trophy-icon">&#127942;</span><%= number_with_delimiter(user.karma) %>
+    </span>
+  <% end %>
+  <% if user.solved_answers_count > 0 %>
+    <span class="user-badge-solved" title="<%= user.solved_answers_count %> solved <%= 'answer'.pluralize(user.solved_answers_count) %>">
+      <span class="check-icon">&#10003;</span><%= user.solved_answers_count %>
+    </span>
+  <% end %>
+  <% if user.best_answers_count > 0 %>
+    <span class="user-badge-gold" title="<%= user.best_answers_count %> best <%= 'answer'.pluralize(user.best_answers_count) %> (highest voted)">
+      <span class="medal-icon">&#127941;</span><%= user.best_answers_count %>
+    </span>
+  <% end %>
+</span>

@@ -1,0 +1,28 @@
+<% content_for(:title) { "Categories - Brimming" } %>
+
+<h1>Categories</h1>
+
+<div class="card">
+  <% if @categories.any? %>
+    <ul class="category-list">
+      <% @categories.each do |category| %>
+        <li class="category-item">
+          <div>
+            <span class="category-name"><%= link_to category.name, category_path(category) %></span>
+            <% if current_user&.subscribed_categories&.include?(category) %>
+              <span class="badge badge-subscribed">Subscribed</span>
+            <% end %>
+            <% if category.description.present? %>
+              <p class="text-muted text-small mb-0"><%= truncate(category.description, length: 100) %></p>
+            <% end %>
+          </div>
+          <span class="category-count"><%= category.questions_count %> questions</span>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <div class="empty-state">
+      <p>No categories yet.</p>
+    </div>
+  <% end %>
+</div>

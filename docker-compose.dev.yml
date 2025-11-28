@@ -1,16 +1,45 @@
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: bash -c "bundle install && bundle exec rails server -b 0.0.0.0"
+    volumes:
+      - .:/src
+      - bundle_cache:/usr/local/bundle
+    working_dir: /src
+    ports:
+      - "3000:3000"
+    environment:
+      RAILS_ENV: development
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: brimming
+      DB_PASS: brimming_dev
+      DB_NAME: brimming
+      REDIS_URL: redis://valkey:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/up || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   dev:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    command: tail -f /dev/null
     volumes:
       - .:/src
       - bundle_cache:/usr/local/bundle
     working_dir: /src
     stdin_open: true
     tty: true
-    ports:
-      - "3000:3000"
     environment:
       RAILS_ENV: development
       DB_HOST: postgres

@@ -14,7 +14,10 @@ RSpec.describe Question do
   describe "associations" do
     it { is_expected.to belong_to(:user) }
     it { is_expected.to belong_to(:category) }
+    it { is_expected.to belong_to(:last_editor).class_name("User").optional }
     it { is_expected.to have_many(:answers).dependent(:destroy) }
+    it { is_expected.to have_many(:comments).dependent(:destroy) }
+    it { is_expected.to have_many(:question_votes).dependent(:destroy) }
   end
 
   describe "scopes" do
@@ -116,6 +119,146 @@ RSpec.describe Question do
 
     it "returns false for nil" do
       expect(question.owned_by?(nil)).to be false
+    end
+  end
+
+  describe "#edited?" do
+    it "returns false when edited_at is nil" do
+      question = create(:question)
+      expect(question.edited?).to be false
+    end
+
+    it "returns true when edited_at is present" do
+      question = create(:question, edited_at: Time.current)
+      expect(question.edited?).to be true
+    end
+  end
+
+  describe "#record_edit!" do
+    let(:question) { create(:question) }
+    let(:editor) { create(:user) }
+
+    it "sets edited_at" do
+      question.record_edit!(editor)
+      expect(question.edited_at).to be_present
+    end
+
+    it "sets last_editor" do
+      question.record_edit!(editor)
+      expect(question.last_editor).to eq(editor)
+    end
+  end
+
+  describe "#increment_views!" do
+    it "increments views_count" do
+      question = create(:question, views_count: 5)
+      question.increment_views!
+      expect(question.reload.views_count).to eq(6)
+    end
+  end
+
+  describe "comments" do
+    let(:question) { create(:question) }
+
+    it "can have comments" do
+      comment = create(:comment, commentable: question)
+      expect(question.comments).to include(comment)
+    end
+  end
+
+  describe "#upvote_by" do
+    let(:question) { create(:question, vote_score: 0) }
+    let(:voter) { create(:user) }
+
+    it "creates an upvote" do
+      question.upvote_by(voter)
+      vote = question.question_votes.find_by(user: voter)
+      expect(vote.value).to eq(1)
+    end
+
+    it "increases vote_score" do
+      question.upvote_by(voter)
+      expect(question.reload.vote_score).to eq(1)
+    end
+
+    it "changes a downvote to upvote" do
+      create(:question_vote, question: question, user: voter, value: -1)
+      question.update!(vote_score: -1)
+      question.upvote_by(voter)
+      expect(question.reload.vote_score).to eq(1)
+    end
+  end
+
+  describe "#downvote_by" do
+    let(:question) { create(:question, vote_score: 0) }
+    let(:voter) { create(:user) }
+
+    it "creates a downvote" do
+      question.downvote_by(voter)
+      vote = question.question_votes.find_by(user: voter)
+      expect(vote.value).to eq(-1)
+    end
+
+    it "decreases vote_score" do
+      question.downvote_by(voter)
+      expect(question.reload.vote_score).to eq(-1)
+    end
+
+    it "changes an upvote to downvote" do
+      create(:question_vote, question: question, user: voter, value: 1)
+      question.update!(vote_score: 1)
+      question.downvote_by(voter)
+      expect(question.reload.vote_score).to eq(-1)
+    end
+  end
+
+  describe "#remove_vote_by" do
+    let(:question) { create(:question, vote_score: 1) }
+    let(:voter) { create(:user) }
+
+    before do
+      create(:question_vote, question: question, user: voter, value: 1)
+    end
+
+    it "removes the vote" do
+      question.remove_vote_by(voter)
+      expect(question.question_votes.find_by(user: voter)).to be_nil
+    end
+
+    it "adjusts vote_score" do
+      question.remove_vote_by(voter)
+      expect(question.reload.vote_score).to eq(0)
+    end
+
+    it "does nothing if user hasn't voted" do
+      other_user = create(:user)
+      expect { question.remove_vote_by(other_user) }.not_to(change { question.reload.vote_score })
+    end
+  end
+
+  describe "#vote_by" do
+    let(:question) { create(:question) }
+    let(:voter) { create(:user) }
+
+    it "returns the vote by the user" do
+      vote = create(:question_vote, question: question, user: voter)
+      expect(question.vote_by(voter)).to eq(vote)
+    end
+
+    it "returns nil if user hasn't voted" do
+      expect(question.vote_by(voter)).to be_nil
+    end
+  end
+
+  describe "#recalculate_vote_score!" do
+    it "recalculates vote_score from votes" do
+      question = create(:question, vote_score: 0)
+      create(:question_vote, question: question, value: 1)
+      create(:question_vote, question: question, value: 1)
+      create(:question_vote, question: question, value: -1)
+
+      question.recalculate_vote_score!
+      expect(question.vote_score).to eq(1)
     end
   end
 end

@@ -28,6 +28,8 @@ RSpec.describe Category do
     it { is_expected.to have_many(:questions).dependent(:destroy) }
     it { is_expected.to have_many(:category_moderators).dependent(:destroy) }
     it { is_expected.to have_many(:moderators).through(:category_moderators).source(:user) }
+    it { is_expected.to have_many(:category_subscriptions).dependent(:destroy) }
+    it { is_expected.to have_many(:subscribers).through(:category_subscriptions).source(:user) }
   end
 
   describe "callbacks" do

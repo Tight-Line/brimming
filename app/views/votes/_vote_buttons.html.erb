@@ -1,0 +1,60 @@
+<%# Vote buttons for questions and answers %>
+<%
+  current_vote = signed_in? ? votable.vote_by(current_user) : nil
+  user_upvoted = current_vote&.upvote?
+  user_downvoted = current_vote&.downvote?
+%>
+
+<div class="vote-controls" id="<%= votable_type %>-<%= votable.id %>-votes">
+  <% if signed_in? %>
+    <% if user_upvoted %>
+      <%= button_to send("remove_vote_#{votable_type}_path", votable),
+                   method: :delete,
+                   class: "vote-btn vote-btn-up active",
+                   title: "Remove upvote",
+                   data: { turbo_stream: true } do %>
+        <span class="vote-arrow">&#9650;</span>
+      <% end %>
+    <% else %>
+      <%= button_to send("upvote_#{votable_type}_path", votable),
+                   method: :post,
+                   class: "vote-btn vote-btn-up",
+                   title: "Upvote",
+                   data: { turbo_stream: true } do %>
+        <span class="vote-arrow">&#9650;</span>
+      <% end %>
+    <% end %>
+  <% else %>
+    <span class="vote-btn vote-btn-up disabled" title="Sign in to vote">
+      <span class="vote-arrow">&#9650;</span>
+    </span>
+  <% end %>
+
+  <span class="vote-count<%= ' positive' if votable.vote_score > 0 %><%= ' negative' if votable.vote_score < 0 %>">
+    <%= votable.vote_score %>
+  </span>
+
+  <% if signed_in? %>
+    <% if user_downvoted %>
+      <%= button_to send("remove_vote_#{votable_type}_path", votable),
+                   method: :delete,
+                   class: "vote-btn vote-btn-down active",
+                   title: "Remove downvote",
+                   data: { turbo_stream: true } do %>
+        <span class="vote-arrow">&#9660;</span>
+      <% end %>
+    <% else %>
+      <%= button_to send("downvote_#{votable_type}_path", votable),
+                   method: :post,
+                   class: "vote-btn vote-btn-down",
+                   title: "Downvote",
+                   data: { turbo_stream: true } do %>
+        <span class="vote-arrow">&#9660;</span>
+      <% end %>
+    <% end %>
+  <% else %>
+    <span class="vote-btn vote-btn-down disabled" title="Sign in to vote">
+      <span class="vote-arrow">&#9660;</span>
+    </span>
+  <% end %>
+</div>

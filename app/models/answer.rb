@@ -4,7 +4,9 @@ class Answer < ApplicationRecord
   # Associations
   belongs_to :user
   belongs_to :question
+  belongs_to :last_editor, class_name: "User", optional: true
   has_many :votes, dependent: :destroy
+  has_many :comments, as: :commentable, dependent: :destroy
 
   # Validations
   validates :body, presence: true, length: { minimum: 10, maximum: 10_000 }
@@ -62,6 +64,14 @@ class Answer < ApplicationRecord
 
   def owned_by?(other_user)
     user_id == other_user&.id
+  end
+
+  def edited?
+    edited_at.present?
+  end
+
+  def record_edit!(editor)
+    update!(edited_at: Time.current, last_editor: editor)
   end
 
   def recalculate_vote_score!

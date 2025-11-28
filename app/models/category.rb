@@ -5,6 +5,8 @@ class Category < ApplicationRecord
   has_many :questions, dependent: :destroy
   has_many :category_moderators, dependent: :destroy
   has_many :moderators, through: :category_moderators, source: :user
+  has_many :category_subscriptions, dependent: :destroy
+  has_many :subscribers, through: :category_subscriptions, source: :user
 
   # Validations
   validates :name, presence: true,

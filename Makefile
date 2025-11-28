@@ -128,16 +128,16 @@ db-console:
 # ============================================================================
 
 test:
-	$(DEV_EXEC) bundle exec rspec
+	$(DEV_EXEC) env RAILS_ENV=test bundle exec rspec
 
 test-models:
-	$(DEV_EXEC) bundle exec rspec spec/models
+	$(DEV_EXEC) env RAILS_ENV=test bundle exec rspec spec/models
 
 test-requests:
-	$(DEV_EXEC) bundle exec rspec spec/requests
+	$(DEV_EXEC) env RAILS_ENV=test bundle exec rspec spec/requests
 
 test-jobs:
-	$(DEV_EXEC) bundle exec rspec spec/jobs
+	$(DEV_EXEC) env RAILS_ENV=test bundle exec rspec spec/jobs
 
 test-all: test
 

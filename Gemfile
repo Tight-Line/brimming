@@ -8,8 +8,6 @@ gem "propshaft"
 gem "pg", "~> 1.1"
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
-# Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
-gem "importmap-rails"
 # Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
 gem "turbo-rails"
 # Hotwire's modest JavaScript framework [https://stimulus.hotwired.dev]
@@ -27,7 +25,7 @@ gem "tzinfo-data", platforms: %i[ windows jruby ]
 gem "redis", "~> 5.0"
 
 # Background job processing with Sidekiq
-gem "sidekiq", "~> 7.0"
+gem "sidekiq", "~> 8.0"
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
@@ -55,7 +53,7 @@ group :development, :test do
   gem "rubocop-rails-omakase", require: false
 
   # Testing framework
-  gem "rspec-rails", "~> 7.0"
+  gem "rspec-rails", "~> 8.0"
 
   # Test factories
   gem "factory_bot_rails", "~> 6.0"
@@ -69,7 +67,7 @@ group :test do
   gem "simplecov", require: false
 
   # One-liner tests for common Rails functionality
-  gem "shoulda-matchers", "~> 6.0"
+  gem "shoulda-matchers", "~> 7.0"
 
   # Clean database between tests
   gem "database_cleaner-active_record", "~> 2.0"
