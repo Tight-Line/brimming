@@ -2557,6 +2557,14 @@ puts "  Created #{unanswered_questions.count} unanswered questions"
 # =============================================================================
 puts "Creating comments..."
 
+# Shared helper to mark a comment as edited
+def mark_as_edited(comment:, created_ago:, author:, edited_by: nil, hours_range: 1..6)
+  return unless comment.edited_at.nil?
+
+  edit_time = (created_ago - rand(hours_range).hours).ago
+  comment.update!(edited_at: edit_time, last_editor: edited_by || author)
+end
+
 # Helper to create a comment
 def create_comment(commentable:, author:, body:, created_ago: rand(1..48).hours, vote_score: 0, edited: false, edited_by: nil)
   comment = Comment.find_or_create_by!(commentable: commentable, user: author, body: body) do |c|
@@ -2565,11 +2573,7 @@ def create_comment(commentable:, author:, body:, created_ago: rand(1..48).hours,
     c.updated_at = created_ago.ago
   end
 
-  # Mark comment as edited if specified
-  if edited && comment.edited_at.nil?
-    edit_time = (created_ago - rand(1..6).hours).ago
-    comment.update!(edited_at: edit_time, last_editor: edited_by || author)
-  end
+  mark_as_edited(comment: comment, created_ago: created_ago, author: author, edited_by: edited_by) if edited
 
   comment
 end
@@ -2588,11 +2592,7 @@ def create_reply(parent:, author:, body:, created_ago: nil, vote_score: 0, edite
     c.updated_at = created_ago.ago
   end
 
-  # Mark comment as edited if specified
-  if edited && comment.edited_at.nil?
-    edit_time = (created_ago - rand(1..3).hours).ago
-    comment.update!(edited_at: edit_time, last_editor: edited_by || author)
-  end
+  mark_as_edited(comment: comment, created_ago: created_ago, author: author, edited_by: edited_by, hours_range: 1..3) if edited
 
   comment
 end

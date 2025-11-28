@@ -30,7 +30,7 @@
     </span>
   <% end %>
 
-  <span class="vote-count <%= 'positive' if votable.vote_score > 0 %><%= 'negative' if votable.vote_score < 0 %>">
+  <span class="vote-count<%= ' positive' if votable.vote_score > 0 %><%= ' negative' if votable.vote_score < 0 %>">
     <%= votable.vote_score %>
   </span>
 

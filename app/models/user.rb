@@ -68,8 +68,8 @@ class User < ApplicationRecord
   end
 
   # Answers that are the highest-voted for their question
+  # NOTE: Uses PostgreSQL-specific DISTINCT ON syntax (not compatible with MySQL/SQLite)
   def best_answers_count
-    # Use DISTINCT ON to get the top answer per question (by vote_score desc, then oldest)
     best_answer_ids = Answer.select("DISTINCT ON (question_id) id")
                             .order("question_id, vote_score DESC, created_at ASC")
 

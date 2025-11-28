@@ -49,8 +49,8 @@ RSpec.describe "Home" do
 
       get root_path
 
-      # The page should show only 10 questions
-      expect(response.body.scan(/<li>/).count).to be <= 12 # 10 questions + categories
+      # Count question items specifically using the question-item class
+      expect(response.body.scan(/class="question-item"/).count).to eq(10)
     end
 
     it "shows message when no questions exist" do
