@@ -6,8 +6,8 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable
 
-  # Enums
-  enum :role, { user: 0, moderator: 1, admin: 2 }, default: :user
+  # Enums (moderator is per-space via SpaceModerator, not a global role)
+  enum :role, { user: 0, admin: 2 }, default: :user
 
   # Associations
   has_many :questions, dependent: :destroy
@@ -16,8 +16,10 @@ class User < ApplicationRecord
   has_many :question_votes, dependent: :destroy
   has_many :comments, dependent: :destroy
   has_many :comment_votes, dependent: :destroy
-  has_many :category_subscriptions, dependent: :destroy
-  has_many :subscribed_categories, through: :category_subscriptions, source: :category
+  has_many :space_subscriptions, dependent: :destroy
+  has_many :subscribed_spaces, through: :space_subscriptions, source: :space
+  has_many :space_moderators, dependent: :destroy
+  has_many :moderated_spaces, through: :space_moderators, source: :space
 
   # Validations (email handled by Devise's :validatable module)
   validates :username, presence: true,
@@ -44,12 +46,13 @@ class User < ApplicationRecord
     role == "admin"
   end
 
+  # Returns true if the user is a moderator of any space
   def moderator?
-    role == "moderator"
+    space_moderators.exists?
   end
 
-  def can_moderate?(category)
-    admin? || category.moderators.include?(self)
+  def can_moderate?(space)
+    admin? || space.moderators.include?(self)
   end
 
   # Stats for gamification

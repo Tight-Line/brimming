@@ -12,10 +12,6 @@ FactoryBot.define do
       avatar_url { "https://example.com/avatars/#{username}.png" }
     end
 
-    trait :moderator do
-      role { :moderator }
-    end
-
     trait :admin do
       role { :admin }
     end

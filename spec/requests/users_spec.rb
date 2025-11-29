@@ -36,8 +36,10 @@ RSpec.describe "Users" do
       expect(response.body).to include("Admin")
     end
 
-    it "displays moderator badge for moderator users" do
-      moderator = create(:user, :moderator)
+    it "displays moderator badge for space moderators" do
+      moderator = create(:user)
+      space = create(:space)
+      space.add_moderator(moderator)
       get user_path(moderator)
       expect(response.body).to include("Moderator")
     end
@@ -77,12 +79,12 @@ RSpec.describe "Users" do
       expect(response.body).to include("Comments")
     end
 
-    it "displays subscribed categories" do
-      category = create(:category, name: "Ruby on Rails")
-      create(:category_subscription, user: user, category: category)
+    it "displays subscribed spaces" do
+      space = create(:space, name: "Ruby on Rails")
+      create(:space_subscription, user: user, space: space)
       get user_path(user)
       expect(response.body).to include("Ruby on Rails")
-      expect(response.body).to include("Subscribed Categories")
+      expect(response.body).to include("Subscribed Spaces")
     end
 
     it "displays recent questions" do

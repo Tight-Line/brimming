@@ -11,11 +11,11 @@ A Stack Overflow-style Q&A platform built with Ruby on Rails.
 Open-source project hosted on GitHub under the MIT License.
 
 ### Core Concepts
-- **Questions** belong to **Categories** and are posted by **Users**
+- **Questions** belong to **Spaces** and are posted by **Users**
 - **Answers** belong to Questions and are posted by Users
 - Users **vote** on Questions, Answers, and Comments (up/down for Q&A, upvote-only for comments)
 - Answers are displayed sorted by vote score (highest first)
-- Category **moderators** can mark one Answer as **"Solved"** for a Question
+- Space **moderators** can mark one Answer as **"Solved"** for a Question
 - **Best Answer** = highest-voted answer for a question (may differ from Solved)
 - **Karma** system rewards participation: +5 questions, +10 answers, +15 solved, +1 per upvote
 - User identity is their RFC 5322 email address; they choose a display username and optional avatar
@@ -61,19 +61,19 @@ helm/brimming/ (Kubernetes)
   - **LDAP/ActiveDirectory**: Multiple servers supported, admin-configurable
   - **Social**: Google, Facebook, LinkedIn, GitHub, GitLab (admin-toggleable)
 
-### LDAP Group-to-Category Mapping
+### LDAP Group-to-Space Mapping
 - Admins can configure multiple LDAP servers
-- Each LDAP server can have group-to-category mappings:
-  - Map LDAP group names (fully-qualified DN or partial match) to one or more Categories
-  - Auto-registration into mapped Categories happens at login time
-- Users can opt-out of auto-registered Categories
-- System persists opt-out choices via `CategoryOptOut` model
-- On subsequent logins, opted-out Categories are skipped even if LDAP group still matches
+- Each LDAP server can have group-to-space mappings:
+  - Map LDAP group names (fully-qualified DN or partial match) to one or more Spaces
+  - Auto-registration into mapped Spaces happens at login time
+- Users can opt-out of auto-registered Spaces
+- System persists opt-out choices via `SpaceOptOut` model
+- On subsequent logins, opted-out Spaces are skipped even if LDAP group still matches
 
 ### Authorization Roles
 - **User**: Post questions, post answers, vote
-- **Moderator** (per-category): Mark correct answers, moderate content
-- **Admin**: Manage categories, assign moderators, configure SSO, manage LDAP mappings
+- **Moderator** (per-space): Mark correct answers, moderate content
+- **Admin**: Manage spaces, assign moderators, configure SSO, manage LDAP mappings
 
 ---
 
@@ -155,15 +155,15 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 
 ### Phase 3: Core Data Models `[x]`
 - User (email, username, full_name, avatar_url, role)
-- Category (name, slug, description)
-- Question (title, body, user_id, category_id, vote_score, views_count, edited_at)
+- Space (name, slug, description)
+- Question (title, body, user_id, space_id, vote_score, views_count, edited_at)
 - Answer (body, user_id, question_id, is_correct, vote_score, edited_at)
 - Vote (user_id, answer_id, value: +1/-1)
 - QuestionVote (user_id, question_id, value: +1/-1)
 - Comment (body, user_id, commentable polymorphic, parent_id for nesting, vote_score, edited_at)
 - CommentVote (user_id, comment_id)
-- CategorySubscription (user_id, category_id)
-- CategoryModerator (user_id, category_id)
+- SpaceSubscription (user_id, space_id)
+- SpaceModerator (user_id, space_id)
 - Database migrations with proper indexes and constraints
 
 ### Phase 4: Authentication Foundation `[x]`
@@ -184,9 +184,9 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - Question show page with answers `[x]`
 - Nested comments on questions and answers `[x]`
 
-### Phase 6: Categories & Moderation `[~]`
-- Category CRUD (admin only) - **read only implemented**
-- CategoryModerator join model `[x]`
+### Phase 6: Spaces & Moderation `[~]`
+- Space CRUD (admin only) - **read only implemented**
+- SpaceModerator join model `[x]`
 - Pundit policies for authorization `[ ]`
 - Moderator: mark answer as solved (is_correct) `[x]`
 - Admin: assign/remove moderators - **seed data only**
@@ -194,8 +194,8 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 ### Phase 7: Web UI & Navigation `[x]`
 - Custom CSS styling (no framework) `[x]`
 - Responsive layout with header navigation `[x]`
-- Home page: recent questions with category filtering `[x]`
-- Category browsing and filtering `[x]`
+- Home page: recent questions with space filtering `[x]`
+- Space browsing and filtering `[x]`
 - User profile page with stats `[x]`
 - Gamification: karma system, solved answers count, best answers count `[x]`
 - User badge component showing karma, solved count, best answer count `[x]`
@@ -206,13 +206,13 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - Support for multiple LDAP servers
 - Admin UI to add/edit/remove LDAP servers
 - LdapGroupMapping model (ldap_server_id, group_pattern, pattern_type: exact|prefix|suffix|contains)
-- LdapGroupMappingCategory join (ldap_group_mapping_id, category_id)
-- CategoryOptOut model (user_id, category_id, ldap_group_mapping_id)
+- LdapGroupMappingSpace join (ldap_group_mapping_id, space_id)
+- SpaceOptOut model (user_id, space_id, ldap_group_mapping_id)
 - Auto-registration service that runs at login:
   1. Fetch user's LDAP groups
   2. Match against configured patterns
-  3. Subscribe user to mapped Categories (skip if opted-out)
-- User UI to view and opt-out of LDAP-assigned Categories
+  3. Subscribe user to mapped Spaces (skip if opted-out)
+- User UI to view and opt-out of LDAP-assigned Spaces
 
 ### Phase 9: SSO - Social Providers `[ ]`
 - OmniAuth strategies: Google, Facebook, LinkedIn, GitHub, GitLab
@@ -227,12 +227,12 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - Searchkick or Elasticsearch-Rails gem
 - Index Questions and Answers
 - Search API endpoint
-- Search UI with filters (category, date, votes)
+- Search UI with filters (space, date, votes)
 
 ### Phase 11: Background Workers & Email `[ ]`
 - Sidekiq configuration
 - User email preferences (per-post, daily digest, weekly digest, none)
-- CategorySubscription model
+- SpaceSubscription model
 - DigestMailer
 - Scheduled jobs for daily/weekly digests
 
@@ -244,8 +244,8 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 
 ### Phase 13: MCP Server `[ ]`
 - MCP protocol integration
-- Tool: list_categories
-- Tool: search_questions(query, categories[])
+- Tool: list_spaces
+- Tool: search_questions(query, spaces[])
 - Tool: get_answers(question_id, limit, best_only)
 - Admin-configurable answer limit
 - **Update Helm chart** if MCP requires separate service/port
@@ -260,14 +260,14 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 **Not Started**: 2 (Helm), 8-13
 
 ### What's Working
-- Full data model with Users, Categories, Questions, Answers, Comments, Votes
+- Full data model with Users, Spaces, Questions, Answers, Comments, Votes
 - Devise authentication with registration (username + email + password), login/logout
-- Read-only web UI for browsing questions, categories, and user profiles
+- Read-only web UI for browsing questions, spaces, and user profiles
 - Voting system for questions, answers, and comments
 - Nested comments with replies
 - Karma system with gamification (questions, answers, solved, best answers, votes)
 - User badges showing karma, solved answer count, best answer count
-- Category subscriptions and moderator assignments (via seeds)
+- Space subscriptions and moderator assignments (via seeds)
 - "Solved" designation for moderator-approved answers
 - "Best" designation for highest-voted answers per question
 - 100% test coverage (298 specs)

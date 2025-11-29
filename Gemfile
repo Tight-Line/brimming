@@ -18,6 +18,10 @@ gem "jbuilder"
 # Authentication [https://github.com/heartcombo/devise]
 gem "devise", "~> 4.9"
 
+# Markdown rendering with syntax highlighting
+gem "redcarpet", "~> 3.6"
+gem "rouge", "~> 4.0"
+
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 

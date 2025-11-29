@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_28_010924) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_29_141759) do
   create_schema "brimming", if_not_exists: true
 
   # These are extensions that must be enabled in order to support this database
@@ -32,36 +32,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_28_010924) do
     t.index ["question_id"], name: "index_answers_on_question_id"
     t.index ["user_id"], name: "index_answers_on_user_id"
     t.index ["vote_score"], name: "index_answers_on_vote_score"
-  end
-
-  create_table "brimming.categories", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.text "description"
-    t.string "name", null: false
-    t.string "slug", null: false
-    t.datetime "updated_at", null: false
-    t.index ["name"], name: "index_categories_on_name", unique: true
-    t.index ["slug"], name: "index_categories_on_slug", unique: true
-  end
-
-  create_table "brimming.category_moderators", force: :cascade do |t|
-    t.bigint "category_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.bigint "user_id", null: false
-    t.index ["category_id", "user_id"], name: "index_category_moderators_on_category_id_and_user_id", unique: true
-    t.index ["category_id"], name: "index_category_moderators_on_category_id"
-    t.index ["user_id"], name: "index_category_moderators_on_user_id"
-  end
-
-  create_table "brimming.category_subscriptions", force: :cascade do |t|
-    t.bigint "category_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.bigint "user_id", null: false
-    t.index ["category_id"], name: "index_category_subscriptions_on_category_id"
-    t.index ["user_id", "category_id"], name: "index_category_subscriptions_on_user_id_and_category_id", unique: true
-    t.index ["user_id"], name: "index_category_subscriptions_on_user_id"
   end
 
   create_table "brimming.comment_votes", force: :cascade do |t|
@@ -105,22 +75,52 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_28_010924) do
 
   create_table "brimming.questions", force: :cascade do |t|
     t.text "body", null: false
-    t.bigint "category_id", null: false
     t.datetime "created_at", null: false
     t.datetime "edited_at"
     t.bigint "last_editor_id"
+    t.bigint "space_id", null: false
     t.string "title", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.integer "views_count", default: 0, null: false
     t.integer "vote_score", default: 0, null: false
-    t.index ["category_id", "created_at"], name: "index_questions_on_category_id_and_created_at"
-    t.index ["category_id"], name: "index_questions_on_category_id"
     t.index ["created_at"], name: "index_questions_on_created_at"
     t.index ["last_editor_id"], name: "index_questions_on_last_editor_id"
+    t.index ["space_id", "created_at"], name: "index_questions_on_space_id_and_created_at"
+    t.index ["space_id"], name: "index_questions_on_space_id"
     t.index ["user_id"], name: "index_questions_on_user_id"
     t.index ["views_count"], name: "index_questions_on_views_count"
     t.index ["vote_score"], name: "index_questions_on_vote_score"
+  end
+
+  create_table "brimming.space_moderators", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "space_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["space_id", "user_id"], name: "index_space_moderators_on_space_id_and_user_id", unique: true
+    t.index ["space_id"], name: "index_space_moderators_on_space_id"
+    t.index ["user_id"], name: "index_space_moderators_on_user_id"
+  end
+
+  create_table "brimming.space_subscriptions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "space_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["space_id"], name: "index_space_subscriptions_on_space_id"
+    t.index ["user_id", "space_id"], name: "index_space_subscriptions_on_user_id_and_space_id", unique: true
+    t.index ["user_id"], name: "index_space_subscriptions_on_user_id"
+  end
+
+  create_table "brimming.spaces", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.string "name", null: false
+    t.string "slug", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_spaces_on_name", unique: true
+    t.index ["slug"], name: "index_spaces_on_slug", unique: true
   end
 
   create_table "brimming.users", force: :cascade do |t|
@@ -155,10 +155,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_28_010924) do
   add_foreign_key "brimming.answers", "brimming.questions"
   add_foreign_key "brimming.answers", "brimming.users"
   add_foreign_key "brimming.answers", "brimming.users", column: "last_editor_id"
-  add_foreign_key "brimming.category_moderators", "brimming.categories"
-  add_foreign_key "brimming.category_moderators", "brimming.users"
-  add_foreign_key "brimming.category_subscriptions", "brimming.categories"
-  add_foreign_key "brimming.category_subscriptions", "brimming.users"
   add_foreign_key "brimming.comment_votes", "brimming.comments"
   add_foreign_key "brimming.comment_votes", "brimming.users"
   add_foreign_key "brimming.comments", "brimming.comments", column: "parent_comment_id"
@@ -166,9 +162,13 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_28_010924) do
   add_foreign_key "brimming.comments", "brimming.users", column: "last_editor_id"
   add_foreign_key "brimming.question_votes", "brimming.questions"
   add_foreign_key "brimming.question_votes", "brimming.users"
-  add_foreign_key "brimming.questions", "brimming.categories"
+  add_foreign_key "brimming.questions", "brimming.spaces"
   add_foreign_key "brimming.questions", "brimming.users"
   add_foreign_key "brimming.questions", "brimming.users", column: "last_editor_id"
+  add_foreign_key "brimming.space_moderators", "brimming.spaces"
+  add_foreign_key "brimming.space_moderators", "brimming.users"
+  add_foreign_key "brimming.space_subscriptions", "brimming.spaces"
+  add_foreign_key "brimming.space_subscriptions", "brimming.users"
   add_foreign_key "brimming.votes", "brimming.answers"
   add_foreign_key "brimming.votes", "brimming.users"
 

@@ -10,43 +10,43 @@ RSpec.describe "Home" do
     end
 
     it "displays recent questions" do
-      category = create(:category)
+      space = create(:space)
       user = create(:user)
-      question = create(:question, user: user, category: category)
+      question = create(:question, user: user, space: space)
 
       get root_path
 
       expect(response.body).to include(question.title)
-      expect(response.body).to include(category.name)
+      expect(response.body).to include(space.name)
       expect(response.body).to include(user.username)
     end
 
-    it "displays categories" do
-      category = create(:category, name: "Ruby")
+    it "displays spaces" do
+      space = create(:space, name: "Ruby")
 
       get root_path
 
       expect(response.body).to include("Ruby")
     end
 
-    it "shows subscribed status for user's subscribed categories" do
+    it "shows subscribed status for user's subscribed spaces" do
       user = create(:user)
-      subscribed_category = create(:category, name: "Subscribed Category")
-      unsubscribed_category = create(:category, name: "Unsubscribed Category")
-      create(:category_subscription, user: user, category: subscribed_category)
+      subscribed_space = create(:space, name: "Subscribed Space")
+      unsubscribed_space = create(:space, name: "Unsubscribed Space")
+      create(:space_subscription, user: user, space: subscribed_space)
 
       sign_in user
       get root_path
 
-      expect(response.body).to include("Subscribed Category")
+      expect(response.body).to include("Subscribed Space")
       expect(response.body).to include("badge-subscribed")
-      expect(response.body).to include("Unsubscribed Category")
+      expect(response.body).to include("Unsubscribed Space")
     end
 
     it "limits recent questions to 10" do
-      category = create(:category)
+      space = create(:space)
       user = create(:user)
-      create_list(:question, 15, user: user, category: category)
+      create_list(:question, 15, user: user, space: space)
 
       get root_path
 

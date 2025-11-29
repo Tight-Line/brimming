@@ -36,7 +36,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :categories, only: [ :index, :show ]
+  resources :spaces, only: [ :index, :show ]
 
   resources :users, only: [ :show ], param: :username
 end

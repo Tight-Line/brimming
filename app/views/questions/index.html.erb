@@ -11,7 +11,7 @@
             <%= link_to question.title, question_path(question) %>
           </div>
           <div class="question-meta">
-            <span class="category"><%= link_to question.category.name, category_path(question.category) %></span>
+            <span class="space"><%= link_to question.space.name, space_path(question.space) %></span>
             <span>by <%= render 'shared/user_badge', user: question.author %></span>
             <span><%= question.answers_count %> answers</span>
             <% if question.has_correct_answer? %>

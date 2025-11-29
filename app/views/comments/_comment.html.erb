@@ -1,6 +1,6 @@
 <div class="comment <%= 'comment-reply' if comment.reply? %>" id="comment-<%= comment.id %>" style="margin-left: <%= [comment.depth * 24, 72].min %>px;">
-  <div class="comment-body">
-    <%= comment.body %>
+  <div class="comment-body markdown-body">
+    <%= markdown(comment.body) %>
   </div>
   <div class="comment-meta">
     <%= render 'votes/comment_vote_button', comment: comment %>

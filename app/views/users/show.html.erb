@@ -68,7 +68,7 @@
                       <%= link_to question.title, question_path(question) %>
                     </div>
                     <div class="question-meta">
-                      <span class="category"><%= question.category.name %></span>
+                      <span class="space"><%= question.space.name %></span>
                       <span><%= question.answers_count %> answers</span>
                       <span><%= time_ago_in_words(question.created_at) %> ago</span>
                     </div>
@@ -119,13 +119,13 @@
         <aside class="profile-sidebar">
           <div class="card">
             <div class="card-header">
-              <h2>Subscribed Categories</h2>
+              <h2>Subscribed Spaces</h2>
             </div>
-            <% if @user.subscribed_categories.any? %>
-              <ul class="category-list">
-                <% @user.subscribed_categories.each do |category| %>
-                  <li class="category-item">
-                    <%= link_to category.name, category_path(category), class: "category-name" %>
+            <% if @user.subscribed_spaces.any? %>
+              <ul class="space-list">
+                <% @user.subscribed_spaces.each do |space| %>
+                  <li class="space-item">
+                    <%= link_to space.name, space_path(space), class: "space-name" %>
                   </li>
                 <% end %>
               </ul>
