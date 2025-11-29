@@ -25,12 +25,14 @@ RSpec.configure do |config|
   # Infer spec type from file location
   config.infer_spec_type_from_file_location!
 
-
   # Filter Rails gems from backtraces
   config.filter_rails_from_backtrace!
 
   # Include FactoryBot methods
   config.include FactoryBot::Syntax::Methods
+
+  # Include Devise test helpers for request specs
+  config.include Devise::Test::IntegrationHelpers, type: :request
 
   # DatabaseCleaner configuration
   config.before(:suite) do

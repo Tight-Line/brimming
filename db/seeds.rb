@@ -8,6 +8,9 @@
 
 puts "Seeding database..."
 
+# Default password for all seed users (development only!)
+DEFAULT_PASSWORD = "password123"
+
 # =============================================================================
 # Users
 # =============================================================================
@@ -17,6 +20,7 @@ puts "Creating users..."
 admin = User.find_or_create_by!(email: "admin@example.com") do |u|
   u.username = "admin"
   u.full_name = "System Administrator"
+  u.password = DEFAULT_PASSWORD
   u.role = :admin
   u.avatar_url = "https://api.dicebear.com/7.x/identicon/svg?seed=admin"
 end
@@ -30,7 +34,7 @@ moderators = [
   User.find_or_create_by!(email: attrs[:email]) do |u|
     u.username = attrs[:username]
     u.full_name = attrs[:full_name]
-    u.role = :moderator
+    u.password = DEFAULT_PASSWORD
     u.avatar_url = "https://api.dicebear.com/7.x/identicon/svg?seed=#{attrs[:username]}"
   end
 end
@@ -51,6 +55,7 @@ experts = [
   User.find_or_create_by!(email: attrs[:email]) do |u|
     u.username = attrs[:username]
     u.full_name = attrs[:full_name]
+    u.password = DEFAULT_PASSWORD
     u.role = :user
     u.avatar_url = "https://api.dicebear.com/7.x/identicon/svg?seed=#{attrs[:username]}"
   end
@@ -76,6 +81,7 @@ intermediates = [
   User.find_or_create_by!(email: attrs[:email]) do |u|
     u.username = attrs[:username]
     u.full_name = attrs[:full_name]
+    u.password = DEFAULT_PASSWORD
     u.role = :user
     u.avatar_url = "https://api.dicebear.com/7.x/identicon/svg?seed=#{attrs[:username]}"
   end
@@ -96,6 +102,7 @@ newbies = [
 ].map do |attrs|
   User.find_or_create_by!(email: attrs[:email]) do |u|
     u.username = attrs[:username]
+    u.password = DEFAULT_PASSWORD
     u.role = :user
     u.avatar_url = "https://api.dicebear.com/7.x/identicon/svg?seed=#{attrs[:username]}"
   end
@@ -106,11 +113,11 @@ all_users = [ admin ] + moderators + experts + intermediates + newbies
 puts "  Created #{all_users.count} users"
 
 # =============================================================================
-# Categories
+# Spaces
 # =============================================================================
-puts "Creating categories..."
+puts "Creating spaces..."
 
-categories_data = [
+spaces_data = [
   {
     name: "Ruby on Rails",
     slug: "ruby-on-rails",
@@ -151,7 +158,7 @@ categories_data = [
     slug: "testing",
     description: "Questions about unit testing, integration testing, TDD, and testing frameworks."
   },
-  # Empty categories (no questions yet)
+  # Empty spaces (no questions yet)
   {
     name: "Rust",
     slug: "rust",
@@ -174,29 +181,29 @@ categories_data = [
   }
 ]
 
-categories = categories_data.map do |attrs|
-  Category.find_or_create_by!(slug: attrs[:slug]) do |c|
-    c.name = attrs[:name]
-    c.description = attrs[:description]
+spaces = spaces_data.map do |attrs|
+  Space.find_or_create_by!(slug: attrs[:slug]) do |s|
+    s.name = attrs[:name]
+    s.description = attrs[:description]
   end
 end
 
-puts "  Created #{categories.count} categories"
+puts "  Created #{spaces.count} spaces"
 
-# Assign category moderators
-puts "Assigning category moderators..."
-rails_cat = categories.find { |c| c.slug == "ruby-on-rails" }
-js_cat = categories.find { |c| c.slug == "javascript" }
-python_cat = categories.find { |c| c.slug == "python" }
-devops_cat = categories.find { |c| c.slug == "devops" }
+# Assign space moderators
+puts "Assigning space moderators..."
+rails_space = spaces.find { |s| s.slug == "ruby-on-rails" }
+js_space = spaces.find { |s| s.slug == "javascript" }
+python_space = spaces.find { |s| s.slug == "python" }
+devops_space = spaces.find { |s| s.slug == "devops" }
 
-rails_cat.add_moderator(moderators[0])
-rails_cat.add_moderator(experts[2])
-js_cat.add_moderator(moderators[1])
-python_cat.add_moderator(moderators[2])
-devops_cat.add_moderator(moderators[0])
+rails_space.add_moderator(moderators[0])
+rails_space.add_moderator(experts[2])
+js_space.add_moderator(moderators[1])
+python_space.add_moderator(moderators[2])
+devops_space.add_moderator(moderators[0])
 
-puts "  Assigned moderators to categories"
+puts "  Assigned moderators to spaces"
 
 # =============================================================================
 # Questions and Answers
@@ -204,9 +211,9 @@ puts "  Assigned moderators to categories"
 puts "Creating questions and answers..."
 
 # Helper to create a question with answers
-def create_qa(category:, author:, title:, body:, answers:, created_ago: rand(1..90).days, edited: false, edited_by: nil)
+def create_qa(space:, author:, title:, body:, answers:, created_ago: rand(1..90).days, edited: false, edited_by: nil)
   question = Question.find_or_create_by!(title: title) do |q|
-    q.category = category
+    q.space = space
     q.user = author
     q.body = body
     q.created_at = created_ago.ago
@@ -254,7 +261,7 @@ end
 
 # Expert-level Rails question
 create_qa(
-  category: rails_cat,
+  space: rails_space,
   author: experts[0],
   title: "Optimizing N+1 queries in complex ActiveRecord associations with polymorphic relationships",
   body: <<~BODY,
@@ -366,7 +373,7 @@ create_qa(
 
 # Intermediate Rails question
 create_qa(
-  category: rails_cat,
+  space: rails_space,
   author: intermediates[1],
   title: "Best practice for handling file uploads with Active Storage in Rails 7",
   body: <<~BODY,
@@ -440,7 +447,7 @@ create_qa(
 
 # Newbie Rails question (poorly phrased)
 create_qa(
-  category: rails_cat,
+  space: rails_space,
   author: newbies[0],
   title: "rails not working help plz",
   body: <<~BODY,
@@ -497,7 +504,7 @@ create_qa(
 
 # Expert JS question
 create_qa(
-  category: js_cat,
+  space: js_space,
   author: experts[1],
   title: "Understanding JavaScript event loop: Microtasks vs Macrotasks execution order",
   body: <<~BODY,
@@ -570,7 +577,7 @@ create_qa(
 
 # Intermediate JS question
 create_qa(
-  category: js_cat,
+  space: js_space,
   author: intermediates[3],
   title: "How to properly debounce API calls in React with hooks?",
   body: <<~BODY,
@@ -688,7 +695,7 @@ create_qa(
 
 # Newbie JS question
 create_qa(
-  category: js_cat,
+  space: js_space,
   author: newbies[2],
   title: "why does my variable say undefined?????",
   body: <<~BODY,
@@ -764,7 +771,7 @@ create_qa(
 # -----------------------------------------------------------------------------
 
 create_qa(
-  category: python_cat,
+  space: python_space,
   author: experts[1],
   title: "Type hints for decorators that preserve function signatures in Python 3.11+",
   body: <<~BODY,
@@ -843,7 +850,7 @@ create_qa(
 # -----------------------------------------------------------------------------
 
 create_qa(
-  category: devops_cat,
+  space: devops_space,
   author: intermediates[2],
   title: "Kubernetes pod keeps getting OOMKilled - how to debug memory issues?",
   body: <<~BODY,
@@ -926,7 +933,7 @@ create_qa(
 # -----------------------------------------------------------------------------
 
 create_qa(
-  category: categories.find { |c| c.slug == "databases" },
+  space: spaces.find { |s| s.slug == "databases" },
   author: intermediates[5],
   title: "When should I use a composite index vs separate indexes in PostgreSQL?",
   body: <<~BODY,
@@ -993,7 +1000,7 @@ create_qa(
 # -----------------------------------------------------------------------------
 
 create_qa(
-  category: categories.find { |c| c.slug == "security" },
+  space: spaces.find { |s| s.slug == "security" },
   author: intermediates[4],
   title: "How to properly implement password reset tokens in Rails?",
   body: <<~BODY,
@@ -1059,7 +1066,7 @@ create_qa(
 # -----------------------------------------------------------------------------
 
 create_qa(
-  category: categories.find { |c| c.slug == "architecture" },
+  space: spaces.find { |s| s.slug == "architecture" },
   author: experts[3],
   title: "Saga pattern vs 2PC for distributed transactions in microservices?",
   body: <<~BODY,
@@ -1153,7 +1160,7 @@ create_qa(
 # -----------------------------------------------------------------------------
 
 create_qa(
-  category: categories.find { |c| c.slug == "testing" },
+  space: spaces.find { |s| s.slug == "testing" },
   author: intermediates[1],
   title: "Should I mock external API calls in unit tests or use VCR cassettes?",
   body: <<~BODY,
@@ -1234,7 +1241,7 @@ create_qa(
 
 # Create a few more newbie questions for variety
 create_qa(
-  category: rails_cat,
+  space: rails_space,
   author: newbies[4],
   title: "what is the difference betwen render and redirect???",
   body: <<~BODY,
@@ -1300,7 +1307,7 @@ create_qa(
 # SCENARIO 1: Top-voted answer is NOT accepted (popular but technically flawed)
 # Moderator chose a less popular but more accurate answer
 create_qa(
-  category: rails_cat,
+  space: rails_space,
   author: intermediates[7],
   title: "How to handle time zones correctly in Rails applications?",
   body: <<~BODY,
@@ -1413,7 +1420,7 @@ create_qa(
 # SCENARIO 2: Question with highly-voted answers but NO accepted answer yet
 # (Moderator hasn't reviewed it)
 create_qa(
-  category: js_cat,
+  space: js_space,
   author: intermediates[9],
   title: "Best state management solution for React in 2024?",
   body: <<~BODY,
@@ -1510,7 +1517,7 @@ create_qa(
 
 # SCENARIO 3: Accepted answer with LOW votes (moderator knows the technically correct but unpopular answer)
 create_qa(
-  category: categories.find { |c| c.slug == "databases" },
+  space: spaces.find { |s| s.slug == "databases" },
   author: intermediates[11],
   title: "Should I use UUID or auto-increment for primary keys?",
   body: <<~BODY,
@@ -1601,7 +1608,7 @@ create_qa(
 
 # SCENARIO 4: Multiple high-voted answers, moderator chose middle-ground one
 create_qa(
-  category: categories.find { |c| c.slug == "security" },
+  space: spaces.find { |s| s.slug == "security" },
   author: intermediates[12],
   title: "How to store API keys securely in a Rails application?",
   body: <<~BODY,
@@ -1704,7 +1711,7 @@ create_qa(
 
 # SCENARIO 5: Question with no accepted answer - all answers are partial solutions
 create_qa(
-  category: categories.find { |c| c.slug == "architecture" },
+  space: spaces.find { |s| s.slug == "architecture" },
   author: experts[7],
   title: "Event sourcing vs traditional CRUD: when is the complexity worth it?",
   body: <<~BODY,
@@ -1824,7 +1831,7 @@ create_qa(
 
 # More questions with varied scenarios
 create_qa(
-  category: python_cat,
+  space: python_space,
   author: intermediates[8],
   title: "FastAPI vs Django REST Framework for new API project?",
   body: <<~BODY,
@@ -1914,7 +1921,7 @@ create_qa(
 )
 
 create_qa(
-  category: categories.find { |c| c.slug == "testing" },
+  space: spaces.find { |s| s.slug == "testing" },
   author: intermediates[10],
   title: "How much test coverage is enough? Our team debates 80% vs 100%",
   body: <<~BODY,
@@ -2019,7 +2026,7 @@ create_qa(
 
 # DevOps question with no accepted answer (legitimate disagreement)
 create_qa(
-  category: devops_cat,
+  space: devops_space,
   author: intermediates[12],
   title: "Kubernetes vs Docker Compose for small team - is K8s overkill?",
   body: <<~BODY,
@@ -2101,7 +2108,7 @@ create_qa(
 
 # Question with ONLY a newbie answer (no expert response yet)
 create_qa(
-  category: js_cat,
+  space: js_space,
   author: newbies[6],
   title: "How to loop through an array in JavaScript?",
   body: <<~BODY,
@@ -2168,7 +2175,7 @@ create_qa(
 
 # More variety - newbie question with expert help
 create_qa(
-  category: rails_cat,
+  space: rails_space,
   author: newbies[8],
   title: "Why does my Rails app say 'No route matches'?",
   body: <<~BODY,
@@ -2219,7 +2226,7 @@ create_qa(
 
 # High quality question with split community opinion
 create_qa(
-  category: categories.find { |c| c.slug == "architecture" },
+  space: spaces.find { |s| s.slug == "architecture" },
   author: experts[6],
   title: "Monorepo vs polyrepo for microservices: what's your experience?",
   body: <<~BODY,
@@ -2321,7 +2328,7 @@ unanswered_questions = []
 unanswered_questions << Question.find_or_create_by!(
   title: "How to implement rate limiting with Redis in a distributed Rails environment?"
 ) do |q|
-  q.category = rails_cat
+  q.space = rails_space
   q.user = intermediates[3]
   q.body = <<~BODY
     I'm trying to implement API rate limiting across multiple Rails servers using Redis. The challenge is ensuring accurate counting when requests hit different servers.
@@ -2351,7 +2358,7 @@ end
 unanswered_questions << Question.find_or_create_by!(
   title: "how do i center a div?? nothing works"
 ) do |q|
-  q.category = js_cat
+  q.space = js_space
   q.user = newbies[1]
   q.body = <<~BODY
     ive been trying for like 2 hours to center this stupid div and nothing works
@@ -2375,7 +2382,7 @@ end
 unanswered_questions << Question.find_or_create_by!(
   title: "Best approach for handling large CSV imports in Rails without blocking?"
 ) do |q|
-  q.category = rails_cat
+  q.space = rails_space
   q.user = intermediates[5]
   q.body = <<~BODY
     Our users need to import CSV files with 100k+ rows. Currently, the import runs synchronously and times out.
@@ -2395,7 +2402,7 @@ end
 unanswered_questions << Question.find_or_create_by!(
   title: "Debugging intermittent test failures in RSpec with database cleaner"
 ) do |q|
-  q.category = categories.find { |c| c.slug == "testing" }
+  q.space = spaces.find { |s| s.slug == "testing" }
   q.user = intermediates[0]
   q.body = <<~BODY
     We have flaky tests that pass locally but fail randomly in CI. Using DatabaseCleaner with transaction strategy.
@@ -2422,7 +2429,7 @@ end
 unanswered_questions << Question.find_or_create_by!(
   title: "PostgreSQL query plan changes after VACUUM - how to stabilize?"
 ) do |q|
-  q.category = categories.find { |c| c.slug == "databases" }
+  q.space = spaces.find { |s| s.slug == "databases" }
   q.user = experts[4]
   q.body = <<~BODY
     We noticed that a critical query's execution plan changes dramatically after running VACUUM ANALYZE, sometimes choosing a much slower plan.
@@ -2447,7 +2454,7 @@ end
 unanswered_questions << Question.find_or_create_by!(
   title: "How to structure a multi-tenant Rails application?"
 ) do |q|
-  q.category = rails_cat
+  q.space = rails_space
   q.user = intermediates[7]
   q.body = <<~BODY
     Building a SaaS platform where each customer (tenant) should have isolated data. Considering:
@@ -2467,7 +2474,7 @@ end
 unanswered_questions << Question.find_or_create_by!(
   title: "WebSocket authentication best practices?"
 ) do |q|
-  q.category = categories.find { |c| c.slug == "security" }
+  q.space = spaces.find { |s| s.slug == "security" }
   q.user = intermediates[9]
   q.body = <<~BODY
     Implementing real-time features with WebSockets. How should authentication work?
@@ -2488,7 +2495,7 @@ end
 unanswered_questions << Question.find_or_create_by!(
   title: "GraphQL vs REST for mobile app backend?"
 ) do |q|
-  q.category = categories.find { |c| c.slug == "architecture" }
+  q.space = spaces.find { |s| s.slug == "architecture" }
   q.user = intermediates[11]
   q.body = <<~BODY
     Building a backend that will serve both web and mobile (iOS/Android) clients.
@@ -2504,7 +2511,7 @@ end
 unanswered_questions << Question.find_or_create_by!(
   title: "Async/await vs callbacks in Node.js - performance difference?"
 ) do |q|
-  q.category = js_cat
+  q.space = js_space
   q.user = newbies[9]
   q.body = <<~BODY
     my friend says async/await is slower than callbacks because of overhead
@@ -2528,7 +2535,7 @@ end
 unanswered_questions << Question.find_or_create_by!(
   title: "Docker layer caching not working in GitHub Actions"
 ) do |q|
-  q.category = devops_cat
+  q.space = devops_space
   q.user = intermediates[10]
   q.body = <<~BODY
     Our Docker builds in GitHub Actions take 15+ minutes because layers aren't being cached.
@@ -2907,12 +2914,11 @@ puts "Seeding complete!"
 puts "================="
 puts "Users: #{User.count}"
 puts "  - Admins: #{User.admin.count}"
-puts "  - Moderators: #{User.moderator.count}"
-puts "  - Regular users: #{User.where(role: :user).count}"
-puts "Categories: #{Category.count}"
-puts "  - With questions: #{Category.joins(:questions).distinct.count}"
-puts "  - Empty (no questions): #{Category.left_joins(:questions).where(questions: { id: nil }).count}"
-puts "Category Moderators: #{CategoryModerator.count}"
+puts "  - Regular users: #{User.user.count}"
+puts "Spaces: #{Space.count}"
+puts "  - With questions: #{Space.joins(:questions).distinct.count}"
+puts "  - Empty (no questions): #{Space.left_joins(:questions).where(questions: { id: nil }).count}"
+puts "Space Moderators: #{SpaceModerator.count}"
 puts "Questions: #{Question.count}"
 puts "  - With answers: #{Question.joins(:answers).distinct.count}"
 puts "  - Unanswered: #{Question.left_joins(:answers).where(answers: { id: nil }).count}"
@@ -2928,3 +2934,8 @@ puts "  - Top-level: #{Comment.where(parent_comment_id: nil).count}"
 puts "  - Replies: #{Comment.where.not(parent_comment_id: nil).count}"
 puts "  - Edited: #{Comment.where.not(edited_at: nil).count}"
 puts "Comment Votes: #{CommentVote.count}"
+puts ""
+puts "Login credentials (development only):"
+puts "  Email: admin@example.com"
+puts "  Password: #{DEFAULT_PASSWORD}"
+puts "  (All seed users use the same password)"

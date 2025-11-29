@@ -7,25 +7,20 @@ class ApplicationController < ActionController::Base
     allow_browser versions: :modern
   end
 
-  helper_method :current_user, :signed_in?
-
-  # Stub authentication - returns the first user in the database
-  # TODO: Replace with proper authentication (Devise) in Phase 4
-  def current_user
-    @current_user ||= User.first
-  end
-
-  def signed_in?
-    current_user.present?
-  end
+  before_action :configure_permitted_parameters, if: :devise_controller?
 
   private
 
+  def configure_permitted_parameters
+    devise_parameter_sanitizer.permit(:sign_up, keys: [ :username ])
+    devise_parameter_sanitizer.permit(:account_update, keys: [ :username, :full_name, :avatar_url ])
+  end
+
   def require_login
-    return if signed_in?
+    return if user_signed_in?
 
     respond_to do |format|
-      format.html { redirect_to root_path, alert: "You must be signed in to do that." }
+      format.html { redirect_to new_user_session_path, alert: "You must be signed in to do that." }
       format.turbo_stream { head :unauthorized }
       format.json { render json: { error: "Unauthorized" }, status: :unauthorized }
     end

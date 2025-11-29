@@ -39,8 +39,31 @@ Rails.application.configure do
   # Set host to be used by links generated in mailer templates.
   config.action_mailer.default_url_options = { host: "example.com" }
 
-  # Print deprecation notices to the stderr.
-  config.active_support.deprecation = :stderr
+  # Custom deprecation behavior that filters out known Devise warnings
+  # (Devise 4.9.x hasn't yet updated for Rails 8.x / Rack 3.x)
+  config.active_support.deprecation = :notify
+  config.active_support.report_deprecations = true
+
+  ActiveSupport::Notifications.subscribe("deprecation.rails") do |_name, _start, _finish, _id, payload|
+    message = payload[:message]
+    # Skip Devise's routing deprecation warnings
+    unless message.include?("resource received a hash argument")
+      warn message
+    end
+  end
+
+  # Silence Rack status code warnings from Devise (unprocessable_entity -> unprocessable_content)
+  module Warning
+    class << self
+      alias_method :original_warn, :warn
+
+      def warn(message, category: nil)
+        return if message.include?("unprocessable_entity is deprecated")
+
+        original_warn(message, category: category)
+      end
+    end
+  end
 
   # Raises error for missing translations.
   # config.i18n.raise_on_missing_translations = true

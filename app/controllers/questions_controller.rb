@@ -5,8 +5,8 @@ class QuestionsController < ApplicationController
   before_action :set_question, only: [ :show, :upvote, :downvote, :remove_vote ]
 
   def index
-    @questions = Question.recent.includes(:user, :category)
-    @questions = @questions.by_category(Category.find_by(slug: params[:category])) if params[:category].present?
+    @questions = Question.recent.includes(:user, :space)
+    @questions = @questions.by_space(Space.find_by(slug: params[:space])) if params[:space].present?
   end
 
   def show

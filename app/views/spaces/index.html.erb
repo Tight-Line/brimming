@@ -1,0 +1,28 @@
+<% content_for(:title) { "Spaces - Brimming" } %>
+
+<h1>Spaces</h1>
+
+<div class="card">
+  <% if @spaces.any? %>
+    <ul class="space-list">
+      <% @spaces.each do |space| %>
+        <li class="space-item">
+          <div>
+            <span class="space-name"><%= link_to space.name, space_path(space) %></span>
+            <% if current_user&.subscribed_spaces&.include?(space) %>
+              <span class="badge badge-subscribed">Subscribed</span>
+            <% end %>
+            <% if space.description.present? %>
+              <p class="text-muted text-small mb-0"><%= truncate(space.description, length: 100) %></p>
+            <% end %>
+          </div>
+          <span class="space-count"><%= space.questions_count %> questions</span>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <div class="empty-state">
+      <p>No spaces yet.</p>
+    </div>
+  <% end %>
+</div>

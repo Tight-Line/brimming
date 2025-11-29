@@ -13,7 +13,7 @@ RSpec.describe Question do
 
   describe "associations" do
     it { is_expected.to belong_to(:user) }
-    it { is_expected.to belong_to(:category) }
+    it { is_expected.to belong_to(:space) }
     it { is_expected.to belong_to(:last_editor).class_name("User").optional }
     it { is_expected.to have_many(:answers).dependent(:destroy) }
     it { is_expected.to have_many(:comments).dependent(:destroy) }
@@ -30,14 +30,14 @@ RSpec.describe Question do
       end
     end
 
-    describe ".by_category" do
-      it "filters questions by category" do
-        category = create(:category)
-        other_category = create(:category)
-        question_in_category = create(:question, category: category)
-        create(:question, category: other_category)
+    describe ".by_space" do
+      it "filters questions by space" do
+        space = create(:space)
+        other_space = create(:space)
+        question_in_space = create(:question, space: space)
+        create(:question, space: other_space)
 
-        expect(described_class.by_category(category)).to eq([ question_in_category ])
+        expect(described_class.by_space(space)).to eq([ question_in_space ])
       end
     end
   end

@@ -5,7 +5,7 @@ FactoryBot.define do
     sequence(:title) { |n| "Question #{n}: How do I solve this problem?" }
     body { "This is the body of my question. It contains enough detail to meet the minimum length requirement for questions." }
     association :user
-    association :category
+    association :space
 
     trait :with_answers do
       transient do

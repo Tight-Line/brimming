@@ -1,8 +1,13 @@
 # frozen_string_literal: true
 
 class User < ApplicationRecord
-  # Enums
-  enum :role, { user: 0, moderator: 1, admin: 2 }, default: :user
+  # Include default devise modules. Others available are:
+  # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
+  devise :database_authenticatable, :registerable,
+         :recoverable, :rememberable, :validatable
+
+  # Enums (moderator is per-space via SpaceModerator, not a global role)
+  enum :role, { user: 0, admin: 2 }, default: :user
 
   # Associations
   has_many :questions, dependent: :destroy
@@ -11,22 +16,18 @@ class User < ApplicationRecord
   has_many :question_votes, dependent: :destroy
   has_many :comments, dependent: :destroy
   has_many :comment_votes, dependent: :destroy
-  has_many :category_subscriptions, dependent: :destroy
-  has_many :subscribed_categories, through: :category_subscriptions, source: :category
+  has_many :space_subscriptions, dependent: :destroy
+  has_many :subscribed_spaces, through: :space_subscriptions, source: :space
+  has_many :space_moderators, dependent: :destroy
+  has_many :moderated_spaces, through: :space_moderators, source: :space
 
-  # Validations
-  validates :email, presence: true,
-                    uniqueness: { case_sensitive: false },
-                    format: { with: URI::MailTo::EMAIL_REGEXP }
+  # Validations (email handled by Devise's :validatable module)
   validates :username, presence: true,
                        uniqueness: { case_sensitive: false },
                        length: { minimum: 3, maximum: 30 },
                        format: { with: /\A[a-zA-Z0-9_]+\z/,
                                  message: "can only contain letters, numbers, and underscores" }
   validates :role, presence: true
-
-  # Callbacks
-  before_validation :normalize_email
 
   # Instance methods
   def to_param
@@ -45,12 +46,13 @@ class User < ApplicationRecord
     role == "admin"
   end
 
+  # Returns true if the user is a moderator of any space
   def moderator?
-    role == "moderator"
+    space_moderators.exists?
   end
 
-  def can_moderate?(category)
-    admin? || category.moderators.include?(self)
+  def can_moderate?(space)
+    admin? || space.moderators.include?(self)
   end
 
   # Stats for gamification
@@ -97,11 +99,5 @@ class User < ApplicationRecord
 
     question_karma + answer_karma + solved_answer_karma +
       question_vote_karma + answer_vote_karma + comment_vote_karma
-  end
-
-  private
-
-  def normalize_email
-    self.email = email.to_s.downcase.strip
   end
 end

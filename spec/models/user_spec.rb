@@ -28,12 +28,15 @@ RSpec.describe User do
     it { is_expected.to have_many(:question_votes).dependent(:destroy) }
     it { is_expected.to have_many(:comments).dependent(:destroy) }
     it { is_expected.to have_many(:comment_votes).dependent(:destroy) }
-    it { is_expected.to have_many(:category_subscriptions).dependent(:destroy) }
-    it { is_expected.to have_many(:subscribed_categories).through(:category_subscriptions).source(:category) }
+    it { is_expected.to have_many(:space_subscriptions).dependent(:destroy) }
+    it { is_expected.to have_many(:subscribed_spaces).through(:space_subscriptions).source(:space) }
+    it { is_expected.to have_many(:space_moderators).dependent(:destroy) }
+    it { is_expected.to have_many(:moderated_spaces).through(:space_moderators).source(:space) }
   end
 
   describe "enums" do
-    it { is_expected.to define_enum_for(:role).with_values(user: 0, moderator: 1, admin: 2) }
+    # Note: moderator is per-space via SpaceModerator, not a global role
+    it { is_expected.to define_enum_for(:role).with_values(user: 0, admin: 2) }
   end
 
   describe "callbacks" do
@@ -102,33 +105,35 @@ RSpec.describe User do
   end
 
   describe "#moderator?" do
-    it "returns true for moderator users" do
-      user = build(:user, :moderator)
+    it "returns true for users who moderate at least one space" do
+      user = create(:user)
+      space = create(:space)
+      space.add_moderator(user)
       expect(user.moderator?).to be true
     end
 
-    it "returns false for non-moderator users" do
-      user = build(:user)
+    it "returns false for users who moderate no spaces" do
+      user = create(:user)
       expect(user.moderator?).to be false
     end
   end
 
   describe "#can_moderate?" do
-    let(:category) { create(:category) }
+    let(:space) { create(:space) }
     let(:user) { create(:user) }
 
     it "returns true for admin users" do
       admin = create(:user, :admin)
-      expect(admin.can_moderate?(category)).to be true
+      expect(admin.can_moderate?(space)).to be true
     end
 
-    it "returns true for category moderators" do
-      create(:category_moderator, category: category, user: user)
-      expect(user.can_moderate?(category)).to be true
+    it "returns true for space moderators" do
+      create(:space_moderator, space: space, user: user)
+      expect(user.can_moderate?(space)).to be true
     end
 
     it "returns false for regular users" do
-      expect(user.can_moderate?(category)).to be false
+      expect(user.can_moderate?(space)).to be false
     end
   end
 

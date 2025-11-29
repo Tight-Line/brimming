@@ -14,7 +14,7 @@
                 <%= link_to question.title, question_path(question) %>
               </div>
               <div class="question-meta">
-                <span class="category"><%= link_to question.category.name, category_path(question.category) %></span>
+                <span class="space"><%= link_to question.space.name, space_path(question.space) %></span>
                 <span>by <%= render 'shared/user_badge', user: question.author %></span>
                 <span><%= question.answers_count %> answers</span>
                 <% if question.has_correct_answer? %>
@@ -36,22 +36,22 @@
   <aside>
     <div class="card">
       <div class="card-header">
-        <h2>Categories</h2>
+        <h2>Spaces</h2>
       </div>
-      <ul class="category-list">
-        <% @categories.each do |category| %>
-          <li class="category-item">
+      <ul class="space-list">
+        <% @spaces.each do |space| %>
+          <li class="space-item">
             <div>
-              <span class="category-name"><%= link_to category.name, category_path(category) %></span>
-              <% if current_user&.subscribed_categories&.include?(category) %>
+              <span class="space-name"><%= link_to space.name, space_path(space) %></span>
+              <% if current_user&.subscribed_spaces&.include?(space) %>
                 <span class="badge badge-subscribed">Subscribed</span>
               <% end %>
             </div>
-            <span class="category-count"><%= category.questions_count %></span>
+            <span class="space-count"><%= space.questions_count %></span>
           </li>
         <% end %>
       </ul>
     </div>
-    <p class="mt-2"><%= link_to "View all categories &rarr;".html_safe, categories_path %></p>
+    <p class="mt-2"><%= link_to "View all spaces &rarr;".html_safe, spaces_path %></p>
   </aside>
 </div>

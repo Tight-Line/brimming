@@ -13,14 +13,14 @@
           <% if @question.edited? %>
             <span>(edited <%= time_ago_in_words(@question.edited_at) %> ago)</span>
           <% end %>
-          <span>in <span class="category"><%= link_to @question.category.name, category_path(@question.category) %></span></span>
+          <span>in <span class="space"><%= link_to @question.space.name, space_path(@question.space) %></span></span>
           <% if @question.views_count > 0 %>
             <span><%= @question.views_count %> <%= "view".pluralize(@question.views_count) %></span>
           <% end %>
         </div>
       </div>
-      <div class="question-body">
-        <%= simple_format(@question.body) %>
+      <div class="question-body markdown-body">
+        <%= markdown(@question.body) %>
       </div>
 
       <%= render 'comments/comments_section', comments: @question_comments %>
@@ -40,8 +40,8 @@
           <%= render 'votes/vote_buttons', votable: answer, votable_type: 'answer' %>
 
           <div class="answer-content">
-            <div class="answer-body">
-              <%= simple_format(answer.body) %>
+            <div class="answer-body markdown-body">
+              <%= markdown(answer.body) %>
             </div>
             <div class="answer-meta">
               <span>by <%= render 'shared/user_badge', user: answer.author %></span>

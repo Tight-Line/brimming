@@ -1,11 +1,11 @@
-<% content_for(:title) { "#{@category.name} - Brimming" } %>
+<% content_for(:title) { "#{@space.name} - Brimming" } %>
 
-<div class="category-header">
-  <h1><%= @category.name %></h1>
-  <% if @category.description.present? %>
-    <p class="category-description"><%= @category.description %></p>
+<div class="space-header">
+  <h1><%= @space.name %></h1>
+  <% if @space.description.present? %>
+    <p class="space-description"><%= @space.description %></p>
   <% end %>
-  <% if current_user&.subscribed_categories&.include?(@category) %>
+  <% if current_user&.subscribed_spaces&.include?(@space) %>
     <span class="badge badge-subscribed">You are subscribed</span>
   <% end %>
 </div>
@@ -34,7 +34,7 @@
     </ul>
   <% else %>
     <div class="empty-state">
-      <p>No questions in this category yet.</p>
+      <p>No questions in this space yet.</p>
     </div>
   <% end %>
 </div>

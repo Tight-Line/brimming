@@ -15,7 +15,7 @@ RSpec.describe "Questions" do
       get questions_path
 
       expect(response.body).to include(question.title)
-      expect(response.body).to include(question.category.name)
+      expect(response.body).to include(question.space.name)
       expect(response.body).to include(question.author.display_name)
     end
 
@@ -25,14 +25,14 @@ RSpec.describe "Questions" do
       expect(response.body).to include("No questions yet.")
     end
 
-    context "with category filter" do
-      it "filters questions by category" do
-        category1 = create(:category, name: "Ruby")
-        category2 = create(:category, name: "Python")
-        ruby_question = create(:question, category: category1)
-        python_question = create(:question, category: category2)
+    context "with space filter" do
+      it "filters questions by space" do
+        space1 = create(:space, name: "Ruby")
+        space2 = create(:space, name: "Python")
+        ruby_question = create(:question, space: space1)
+        python_question = create(:question, space: space2)
 
-        get questions_path(category: category1.slug)
+        get questions_path(space: space1.slug)
 
         expect(response.body).to include(ruby_question.title)
         expect(response.body).not_to include(python_question.title)
@@ -67,7 +67,7 @@ RSpec.describe "Questions" do
       expect(response.body).to include(question.title)
       expect(response.body).to include(question.body)
       expect(response.body).to include(question.author.display_name)
-      expect(response.body).to include(question.category.name)
+      expect(response.body).to include(question.space.name)
     end
 
     it "displays answers ordered by votes" do
@@ -145,10 +145,11 @@ RSpec.describe "Questions" do
   end
 
   describe "POST /questions/:id/upvote" do
+    let(:user) { create(:user) }
     let(:question) { create(:question, vote_score: 0) }
 
     context "when signed in" do
-      before { create(:user) } # Creates user for current_user stub
+      before { sign_in user }
 
       it "upvotes the question" do
         post upvote_question_path(question)
@@ -172,10 +173,11 @@ RSpec.describe "Questions" do
   end
 
   describe "POST /questions/:id/downvote" do
+    let(:user) { create(:user) }
     let(:question) { create(:question, vote_score: 0) }
 
     context "when signed in" do
-      before { create(:user) }
+      before { sign_in user }
 
       it "downvotes the question" do
         post downvote_question_path(question)
@@ -192,12 +194,13 @@ RSpec.describe "Questions" do
   end
 
   describe "DELETE /questions/:id/remove_vote" do
-    let!(:voter) { create(:user) } # Created first so it's User.first (current_user)
+    let(:user) { create(:user) }
     let(:question_author) { create(:user) }
     let(:question) { create(:question, user: question_author, vote_score: 1) }
 
     before do
-      create(:question_vote, question: question, user: voter, value: 1)
+      sign_in user
+      create(:question_vote, question: question, user: user, value: 1)
     end
 
     it "removes the vote" do

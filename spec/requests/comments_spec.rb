@@ -3,12 +3,14 @@
 require "rails_helper"
 
 RSpec.describe "Comments" do
+  let(:user) { create(:user) }
+
   describe "POST /comments/:id/upvote" do
     let(:question) { create(:question) }
     let(:comment) { create(:comment, commentable: question, vote_score: 0) }
 
     context "when signed in" do
-      before { create(:user) } # Creates user for current_user stub
+      before { sign_in user }
 
       it "upvotes the comment" do
         post upvote_comment_path(comment)
@@ -32,13 +34,13 @@ RSpec.describe "Comments" do
   end
 
   describe "DELETE /comments/:id/remove_vote" do
-    let!(:voter) { create(:user) } # Created first so it's User.first (current_user)
     let(:comment_author) { create(:user) }
     let(:question) { create(:question) }
     let(:comment) { create(:comment, commentable: question, user: comment_author, vote_score: 1) }
 
     before do
-      create(:comment_vote, comment: comment, user: voter)
+      sign_in user
+      create(:comment_vote, comment: comment, user: user)
     end
 
     it "removes the vote" do

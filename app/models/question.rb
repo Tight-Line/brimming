@@ -3,7 +3,7 @@
 class Question < ApplicationRecord
   # Associations
   belongs_to :user
-  belongs_to :category
+  belongs_to :space
   belongs_to :last_editor, class_name: "User", optional: true
   has_many :answers, dependent: :destroy
   has_many :comments, as: :commentable, dependent: :destroy
@@ -15,7 +15,7 @@ class Question < ApplicationRecord
 
   # Scopes
   scope :recent, -> { order(created_at: :desc) }
-  scope :by_category, ->(category) { where(category: category) }
+  scope :by_space, ->(space) { where(space: space) }
 
   # Instance methods
   def author

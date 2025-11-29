@@ -1,12 +1,12 @@
 <%# Vote buttons for questions and answers %>
 <%
-  current_vote = signed_in? ? votable.vote_by(current_user) : nil
+  current_vote = user_signed_in? ? votable.vote_by(current_user) : nil
   user_upvoted = current_vote&.upvote?
   user_downvoted = current_vote&.downvote?
 %>
 
 <div class="vote-controls" id="<%= votable_type %>-<%= votable.id %>-votes">
-  <% if signed_in? %>
+  <% if user_signed_in? %>
     <% if user_upvoted %>
       <%= button_to send("remove_vote_#{votable_type}_path", votable),
                    method: :delete,
@@ -34,7 +34,7 @@
     <%= votable.vote_score %>
   </span>
 
-  <% if signed_in? %>
+  <% if user_signed_in? %>
     <% if user_downvoted %>
       <%= button_to send("remove_vote_#{votable_type}_path", votable),
                    method: :delete,

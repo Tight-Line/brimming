@@ -18,10 +18,16 @@ services:
       DB_PASS: brimming_dev
       DB_NAME: brimming
       REDIS_URL: redis://valkey:6379/0
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_TLS: "false"
+      MAILER_FROM: noreply@brimming.local
     depends_on:
       postgres:
         condition: service_healthy
       valkey:
+        condition: service_started
+      mailhog:
         condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3000/up || exit 1"]
@@ -48,10 +54,16 @@ services:
       DB_PASS: brimming_dev
       DB_NAME: brimming
       REDIS_URL: redis://valkey:6379/0
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_TLS: "false"
+      MAILER_FROM: noreply@brimming.local
     depends_on:
       postgres:
         condition: service_healthy
       valkey:
+        condition: service_started
+      mailhog:
         condition: service_started
 
   postgres:
@@ -77,6 +89,12 @@ services:
       - "6379:6379"
     volumes:
       - valkey_data:/data
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
 
 volumes:
   bundle_cache:
