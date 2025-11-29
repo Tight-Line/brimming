@@ -13,12 +13,14 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   root "home#index"
 
-  resources :questions, only: [ :index, :show ] do
+  resources :questions, only: [ :index, :show, :new, :create ] do
     member do
       post :upvote
       post :downvote
       delete :remove_vote
     end
+    resources :answers, only: [ :create ], shallow: true
+    resources :comments, only: [ :create ], shallow: true
   end
 
   resources :answers, only: [] do
@@ -27,6 +29,7 @@ Rails.application.routes.draw do
       post :downvote
       delete :remove_vote
     end
+    resources :comments, only: [ :create ], shallow: true
   end
 
   resources :comments, only: [] do
@@ -34,7 +37,11 @@ Rails.application.routes.draw do
       post :upvote
       delete :remove_vote
     end
+    resources :comments, only: [ :create ], as: :replies
   end
+
+  # Markdown preview endpoint
+  post "markdown/preview", to: "markdown#preview"
 
   resources :spaces, only: [ :index, :show ]
 

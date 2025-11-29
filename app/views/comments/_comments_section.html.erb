@@ -1,10 +1,20 @@
-<% if comments.any? %>
-  <div class="comments-section">
+<% # Local variables: comments, commentable (Question or Answer) %>
+<div class="comments-section">
+  <% if comments.any? %>
     <div class="comments-header">
       <span class="comments-count"><%= comments.count %> <%= "comment".pluralize(comments.count) %></span>
     </div>
     <div class="comments-list">
       <%= render partial: 'comments/comment', collection: comments, as: :comment %>
     </div>
-  </div>
-<% end %>
+  <% end %>
+
+  <% if user_signed_in? %>
+    <% comment_url = commentable.is_a?(Question) ? question_comments_path(commentable) : answer_comments_path(commentable) %>
+    <%= render "comments/form", url: comment_url, placeholder: "Add a comment..." %>
+  <% else %>
+    <div class="comment-signin-prompt">
+      <button type="button" class="btn-link" data-action="modal#open">Log in</button> to comment
+    </div>
+  <% end %>
+</div>

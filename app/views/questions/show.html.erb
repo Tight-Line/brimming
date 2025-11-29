@@ -23,7 +23,7 @@
         <%= markdown(@question.body) %>
       </div>
 
-      <%= render 'comments/comments_section', comments: @question_comments %>
+      <%= render 'comments/comments_section', comments: @question_comments, commentable: @question %>
     </div>
   </div>
 </article>
@@ -55,7 +55,7 @@
             </div>
 
             <% answer_comments = answer.comments.top_level.sort_by(&:created_at) %>
-            <%= render 'comments/comments_section', comments: answer_comments %>
+            <%= render 'comments/comments_section', comments: answer_comments, commentable: answer %>
           </div>
         </div>
       </div>
@@ -63,6 +63,21 @@
   <% else %>
     <div class="empty-state">
       <p>No answers yet. Be the first to answer!</p>
+    </div>
+  <% end %>
+</section>
+
+<section class="answer-form-section">
+  <% if user_signed_in? %>
+    <%= render "answers/form", question: @question, answer: Answer.new %>
+  <% else %>
+    <div class="card">
+      <div class="empty-state">
+        <p>
+          <button type="button" class="btn btn-primary" data-action="modal#open">Log in</button>
+          to post an answer
+        </p>
+      </div>
     </div>
   <% end %>
 </section>

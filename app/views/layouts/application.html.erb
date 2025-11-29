@@ -16,9 +16,10 @@
     <link rel="apple-touch-icon" href="/icon.png">
 
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
   </head>
 
-  <body>
+  <body data-controller="modal">
     <header class="site-header">
       <div class="container">
         <%= link_to root_path, class: "site-logo" do %>
@@ -62,5 +63,9 @@
         <p>Brimming &mdash; A Q&amp;A platform by <a href="https://www.tightlinesoftware.com">Tight Line LLC</a></p>
       </div>
     </footer>
+
+    <% unless user_signed_in? %>
+      <%= render "shared/signin_modal" %>
+    <% end %>
   </body>
 </html>

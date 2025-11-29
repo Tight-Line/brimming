@@ -144,6 +144,91 @@ RSpec.describe "Questions" do
     end
   end
 
+  describe "GET /questions/new" do
+    context "when signed in" do
+      let(:user) { create(:user) }
+
+      before { sign_in user }
+
+      it "returns http success" do
+        create(:space) # need at least one space
+        get new_question_path
+        expect(response).to have_http_status(:success)
+      end
+
+      it "displays the question form" do
+        space = create(:space, name: "Ruby")
+        get new_question_path
+        expect(response.body).to include("Ask a Question")
+        expect(response.body).to include("Ruby")
+      end
+    end
+
+    context "when not signed in" do
+      it "redirects to sign in" do
+        get new_question_path
+        expect(response).to redirect_to(new_user_session_path)
+      end
+    end
+  end
+
+  describe "POST /questions" do
+    let(:user) { create(:user) }
+    let(:space) { create(:space) }
+
+    context "when signed in" do
+      before { sign_in user }
+
+      context "with valid parameters" do
+        let(:valid_params) do
+          {
+            question: {
+              title: "How do I use Ruby blocks?",
+              body: "I am trying to understand how blocks work in Ruby. Can someone explain with examples?",
+              space_id: space.id
+            }
+          }
+        end
+
+        it "creates a new question" do
+          expect {
+            post questions_path, params: valid_params
+          }.to change(Question, :count).by(1)
+        end
+
+        it "redirects to the question" do
+          post questions_path, params: valid_params
+          expect(response).to redirect_to(question_path(Question.last))
+        end
+
+        it "sets the current user as author" do
+          post questions_path, params: valid_params
+          expect(Question.last.user).to eq(user)
+        end
+      end
+
+      context "with invalid parameters" do
+        it "does not create a question with blank title" do
+          expect {
+            post questions_path, params: { question: { title: "", body: "A" * 20, space_id: space.id } }
+          }.not_to change(Question, :count)
+        end
+
+        it "re-renders the form" do
+          post questions_path, params: { question: { title: "", body: "A" * 20, space_id: space.id } }
+          expect(response).to have_http_status(:unprocessable_entity)
+        end
+      end
+    end
+
+    context "when not signed in" do
+      it "redirects to sign in" do
+        post questions_path, params: { question: { title: "Test", body: "A" * 20, space_id: space.id } }
+        expect(response).to redirect_to(new_user_session_path)
+      end
+    end
+  end
+
   describe "POST /questions/:id/upvote" do
     let(:user) { create(:user) }
     let(:question) { create(:question, vote_score: 0) }

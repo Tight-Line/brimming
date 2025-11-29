@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class Comment < ApplicationRecord
+  # Maximum nesting depth for comment replies
+  MAX_DEPTH = 3
+
   # Associations
   belongs_to :user
   belongs_to :commentable, polymorphic: true
@@ -61,5 +64,9 @@ class Comment < ApplicationRecord
     return 0 unless parent_comment
 
     1 + parent_comment.depth
+  end
+
+  def allows_replies?
+    depth < MAX_DEPTH
   end
 end

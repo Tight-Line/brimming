@@ -25,9 +25,9 @@
       <% end %>
     <% end %>
   <% else %>
-    <span class="vote-btn vote-btn-up disabled" title="Sign in to vote">
+    <button type="button" class="vote-btn vote-btn-up" title="Sign in to vote" data-action="modal#open">
       <span class="vote-arrow">&#9650;</span>
-    </span>
+    </button>
   <% end %>
 
   <span class="vote-count<%= ' positive' if votable.vote_score > 0 %><%= ' negative' if votable.vote_score < 0 %>">
@@ -53,8 +53,8 @@
       <% end %>
     <% end %>
   <% else %>
-    <span class="vote-btn vote-btn-down disabled" title="Sign in to vote">
+    <button type="button" class="vote-btn vote-btn-down" title="Sign in to vote" data-action="modal#open">
       <span class="vote-arrow">&#9660;</span>
-    </span>
+    </button>
   <% end %>
 </div>
