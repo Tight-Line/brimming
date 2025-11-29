@@ -289,6 +289,14 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - Use `frozen_string_literal: true` in all Ruby files
 - Prefer `let` and `let!` in RSpec over instance variables
 
+### Definition of Done
+
+Work is **not finished** until:
+1. **Test coverage is 100%** (line and branch) - run `make test`
+2. **Linting is clean** (no RuboCop offenses) - run `make lint`
+
+Always verify both before considering any task complete.
+
 ---
 
 ## Helm Chart Guidelines
