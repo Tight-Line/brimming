@@ -18,6 +18,11 @@ rescue ActiveRecord::PendingMigrationError => e
   abort e.to_s.strip
 end
 
+# Force routes to load before tests run.
+# This ensures Devise mappings are populated before any test calls sign_in.
+# Without this, tests may fail randomly depending on execution order.
+Rails.application.routes.recognize_path("/") rescue nil
+
 RSpec.configure do |config|
   config.fixture_paths = [ Rails.root.join("spec/fixtures") ]
   config.use_transactional_fixtures = false

@@ -76,5 +76,4 @@ Rails.application.configure do
 
   # RSpec tests use www.example.com
   config.hosts << "www.example.com"
-
 end

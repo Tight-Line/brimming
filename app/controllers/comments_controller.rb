@@ -55,14 +55,8 @@ class CommentsController < ApplicationController
   end
 
   def redirect_path_for_comment
-    case @commentable
-    when Question
-      question_path(@commentable, anchor: "comment-#{@comment.id}")
-    when Answer
-      question_path(@commentable.question, anchor: "comment-#{@comment.id}")
-    else
-      root_path
-    end
+    question = @commentable.is_a?(Question) ? @commentable : @commentable.question
+    question_path(question, anchor: "comment-#{@comment.id}")
   end
 
   def respond_to_vote
