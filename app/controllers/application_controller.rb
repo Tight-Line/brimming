@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class ApplicationController < ActionController::Base
+  include Pundit::Authorization
+
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   # Skip in test environment as RSpec uses a simple HTTP client without browser headers
   unless Rails.env.test?
@@ -9,6 +11,8 @@ class ApplicationController < ActionController::Base
 
   before_action :configure_permitted_parameters, if: :devise_controller?
   before_action :store_return_to, if: :devise_controller?
+
+  rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
 
   private
 
@@ -43,5 +47,10 @@ class ApplicationController < ActionController::Base
       format.turbo_stream { head :unauthorized }
       format.json { render json: { error: "Unauthorized" }, status: :unauthorized }
     end
+  end
+
+  def user_not_authorized
+    flash[:alert] = "You are not authorized to perform this action."
+    redirect_back(fallback_location: root_path)
   end
 end

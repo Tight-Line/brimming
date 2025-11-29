@@ -154,8 +154,8 @@ RSpec.describe "Answers" do
 
       it "redirects with alert" do
         get edit_answer_path(answer)
-        expect(response).to redirect_to(question_path(answer.question))
-        expect(flash[:alert]).to include("your own answers")
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
 
@@ -218,7 +218,8 @@ RSpec.describe "Answers" do
 
       it "redirects with alert" do
         patch answer_path(answer), params: { answer: { body: "Hacked answer" } }
-        expect(response).to redirect_to(question_path(answer.question))
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
 
@@ -262,7 +263,8 @@ RSpec.describe "Answers" do
 
       it "redirects with alert" do
         delete answer_path(answer)
-        expect(response).to redirect_to(question_path(answer.question))
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
 
@@ -330,8 +332,8 @@ RSpec.describe "Answers" do
 
       it "redirects with alert" do
         delete hard_delete_answer_path(answer)
-        expect(response).to redirect_to(question_path(answer.question))
-        expect(flash[:alert]).to include("moderators")
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
 

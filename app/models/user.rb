@@ -9,6 +9,16 @@ class User < ApplicationRecord
   # Enums (moderator is per-space via SpaceModerator, not a global role)
   enum :role, { user: 0, admin: 2 }, default: :user
 
+  # Scopes
+  scope :search, ->(query) {
+    return none if query.blank?
+
+    sanitized = "%#{sanitize_sql_like(query)}%"
+    where("username ILIKE :q OR full_name ILIKE :q", q: sanitized)
+      .order(:username)
+      .limit(10)
+  }
+
   # Associations
   has_many :questions, dependent: :destroy
   has_many :answers, dependent: :destroy

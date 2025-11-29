@@ -41,6 +41,10 @@ class Space < ApplicationRecord
     moderators.delete(user)
   end
 
+  def moderator?(user)
+    moderators.include?(user)
+  end
+
   private
 
   def generate_slug

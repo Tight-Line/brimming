@@ -159,8 +159,8 @@ RSpec.describe "Comments" do
 
       it "redirects with alert" do
         get edit_comment_path(comment)
-        expect(response).to redirect_to(question_path(question, anchor: "comment-#{comment.id}"))
-        expect(flash[:alert]).to include("your own comments")
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
 
@@ -224,7 +224,8 @@ RSpec.describe "Comments" do
 
       it "redirects with alert" do
         patch comment_path(comment), params: { comment: { body: "Hacked" } }
-        expect(response).to redirect_to(question_path(question, anchor: "comment-#{comment.id}"))
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
 
@@ -269,7 +270,8 @@ RSpec.describe "Comments" do
 
       it "redirects with alert" do
         delete comment_path(comment)
-        expect(response).to redirect_to(question_path(question, anchor: "comment-#{comment.id}"))
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
 
@@ -411,8 +413,8 @@ RSpec.describe "Comments" do
 
       it "redirects with alert" do
         delete hard_delete_comment_path(comment)
-        expect(response).to redirect_to(question_path(question, anchor: "comment-#{comment.id}"))
-        expect(flash[:alert]).to include("moderators")
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
 

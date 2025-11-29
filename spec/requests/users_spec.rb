@@ -112,4 +112,74 @@ RSpec.describe "Users" do
       expect(response.body).to include("No subscriptions yet")
     end
   end
+
+  describe "GET /users/search" do
+    let!(:alice) { create(:user, username: "alice", full_name: "Alice Smith", email: "alice@example.com") }
+    let!(:bob) { create(:user, username: "bob", full_name: "Bob Jones", email: "bob@test.com") }
+
+    it "requires login" do
+      get search_users_path, params: { q: "alice" }
+      expect(response).to redirect_to(new_user_session_path)
+    end
+
+    context "when logged in" do
+      let(:current_user) { create(:user) }
+
+      before { sign_in current_user }
+
+      it "returns JSON results" do
+        get search_users_path, params: { q: "alice" }
+        expect(response).to have_http_status(:success)
+        expect(response.content_type).to include("application/json")
+      end
+
+      it "searches users by query" do
+        get search_users_path, params: { q: "alice" }
+        json = response.parsed_body
+        expect(json.length).to eq(1)
+        expect(json.first["username"]).to eq("alice")
+      end
+
+      it "returns user details without email" do
+        get search_users_path, params: { q: "alice" }
+        json = response.parsed_body
+        user = json.first
+        expect(user["id"]).to eq(alice.id)
+        expect(user["username"]).to eq("alice")
+        expect(user["display_name"]).to eq("Alice Smith")
+        expect(user).not_to have_key("email")
+      end
+
+      it "does not search by email" do
+        get search_users_path, params: { q: "example.com" }
+        json = response.parsed_body
+        expect(json).to be_empty
+      end
+
+      it "excludes users by ID when exclude param provided" do
+        get search_users_path, params: { q: "alice", exclude: alice.id.to_s }
+        json = response.parsed_body
+        expect(json).to be_empty
+      end
+
+      it "excludes multiple users by comma-separated IDs" do
+        get search_users_path, params: { q: "bob", exclude: "#{alice.id},#{bob.id}" }
+        json = response.parsed_body
+        usernames = json.map { |u| u["username"] }
+        expect(usernames).not_to include("bob")
+      end
+
+      it "returns empty array for no matches" do
+        get search_users_path, params: { q: "nonexistent" }
+        json = response.parsed_body
+        expect(json).to be_empty
+      end
+
+      it "returns empty array for blank query" do
+        get search_users_path, params: { q: "" }
+        json = response.parsed_body
+        expect(json).to be_empty
+      end
+    end
+  end
 end

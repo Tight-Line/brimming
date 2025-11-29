@@ -334,10 +334,10 @@ RSpec.describe "Questions" do
 
       before { sign_in other_user }
 
-      it "redirects with alert" do
+      it "redirects with authorization error" do
         get edit_question_path(question)
-        expect(response).to redirect_to(question_path(question))
-        expect(flash[:alert]).to include("your own questions")
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
 
@@ -402,7 +402,8 @@ RSpec.describe "Questions" do
 
       it "redirects with alert" do
         patch question_path(question), params: { question: { title: "Hacked title" } }
-        expect(response).to redirect_to(question_path(question))
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
 
@@ -447,7 +448,8 @@ RSpec.describe "Questions" do
 
       it "redirects with alert" do
         delete question_path(question)
-        expect(response).to redirect_to(question_path(question))
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
 
@@ -518,8 +520,8 @@ RSpec.describe "Questions" do
 
       it "redirects with alert" do
         delete hard_delete_question_path(question)
-        expect(response).to redirect_to(question_path(question))
-        expect(flash[:alert]).to include("moderators")
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
 

@@ -18,6 +18,9 @@ gem "jbuilder"
 # Authentication [https://github.com/heartcombo/devise]
 gem "devise", "~> 4.9"
 
+# Authorization [https://github.com/varvet/pundit]
+gem "pundit", "~> 2.4"
+
 # Markdown rendering with syntax highlighting
 gem "redcarpet", "~> 3.6"
 gem "rouge", "~> 4.0"

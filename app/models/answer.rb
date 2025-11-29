@@ -15,6 +15,7 @@ class Answer < ApplicationRecord
   scope :by_votes, -> { order(vote_score: :desc, created_at: :asc) }
   scope :correct, -> { where(is_correct: true) }
   scope :recent, -> { order(created_at: :desc) }
+  scope :not_deleted, -> { where(deleted_at: nil) }
 
   # Instance methods
   def author

@@ -184,12 +184,17 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - Answer ordering by vote score `[x]`
 - Question show page with answers `[x]`
 
-### Phase 6: Spaces & Moderation `[~]`
-- Space CRUD (admin only) - **read only implemented**
+### Phase 6: Spaces & Moderation `[x]`
+- Space CRUD (admin only) `[x]`
 - SpaceModerator join model `[x]`
-- Pundit policies for authorization `[ ]`
+- Pundit policies for authorization `[x]`
+  - SpacePolicy: admin-only CRUD, moderators can manage moderator list
+  - QuestionPolicy: owner edit/delete, moderator hard-delete
+  - AnswerPolicy: owner edit/delete, moderator hard-delete
+  - CommentPolicy: owner edit/delete, moderator hard-delete
 - Moderator: mark answer as solved (is_correct) `[x]`
-- Admin: assign/remove moderators - **seed data only**
+- Admin/Moderator: manage space moderators `[x]`
+- Type-ahead user search for moderator management `[x]`
 
 ### Phase 7: Web UI & Navigation `[x]`
 - Custom CSS styling (no framework) `[x]`
@@ -255,8 +260,7 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 
 ## Current Status
 
-**Completed Phases**: 1, 3, 4, 5, 7
-**In Progress**: 6 (Moderation - need Pundit policies, admin UI)
+**Completed Phases**: 1, 3, 4, 5, 6, 7
 **Not Started**: 2 (Helm), 8-13
 
 ### What's Working
@@ -267,15 +271,17 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - Nested comments with replies (up to 3 levels deep)
 - Karma system with gamification (questions, answers, solved, best answers, votes)
 - User badges showing karma, solved answer count, best answer count
-- Space subscriptions and moderator assignments (via seeds)
+- Space subscriptions and moderator assignments
 - "Solved" designation for moderator-approved answers
 - "Best" designation for highest-voted answers per question
 - Sign-in modal for unauthenticated users attempting protected actions
-- 100% test coverage
+- **Pundit authorization** for all resources (Questions, Answers, Comments, Spaces)
+- **Moderator management UI** with type-ahead user search (admins and space moderators)
+- 100% test coverage (635 tests)
 
 ### Next Actions
-1. **Phase 6 (Authorization)**: Add Pundit policies for role-based access, admin UI for spaces
-2. **Phase 2 (Helm)**: Create Kubernetes deployment charts
+1. **Phase 2 (Helm)**: Create Kubernetes deployment charts
+2. **Phase 8 (LDAP SSO)**: Add LDAP/ActiveDirectory authentication
 
 ---
 
@@ -330,9 +336,18 @@ Always verify both before considering any task complete.
 │       ├── values.yaml
 │       ├── templates/
 │       └── tests/
+├── app/
+│   ├── policies/             # Pundit authorization policies
+│   │   ├── application_policy.rb
+│   │   ├── space_policy.rb
+│   │   ├── question_policy.rb
+│   │   ├── answer_policy.rb
+│   │   └── comment_policy.rb
+│   └── ...
 ├── spec/
 │   ├── factories/            # FactoryBot factories
 │   ├── models/
+│   ├── policies/             # Policy specs
 │   ├── requests/
 │   ├── jobs/
 │   └── support/
