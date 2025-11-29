@@ -11,7 +11,7 @@ class AnswersController < ApplicationController
 
     if @answer.save
       redirect_to question_path(@question, anchor: "answer-#{@answer.id}"),
-                  notice: "Answer posted successfully."
+                  notice: "Answer posted successfully.", status: :see_other
     else
       # Re-render the question page with the error
       @answers = @question.answers.by_votes.includes(:user, comments: [ :user, { replies: :user } ])

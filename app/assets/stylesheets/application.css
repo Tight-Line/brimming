@@ -148,6 +148,26 @@ ul, ol {
   padding: 2rem 0;
 }
 
+/* Flash Messages */
+.flash {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.flash-notice {
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+.flash-alert {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
 /* Two Column Layout */
 .two-column {
   display: grid;
@@ -707,6 +727,7 @@ textarea.form-control {
 .comments-section {
   margin-top: 1rem;
   padding-top: 1rem;
+  padding-bottom: 1rem;
   border-top: 1px solid var(--border-color);
 }
 
@@ -778,6 +799,28 @@ textarea.form-control {
 
 .comment-replies {
   margin-top: 0.5rem;
+}
+
+.comment-reply-btn {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 0;
+  margin-left: 0.5rem;
+}
+
+.comment-reply-btn:hover {
+  color: var(--primary-color);
+}
+
+.comment-reply-form {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.comment-reply-form .comment-form-wrapper {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
 }
 
 /* Comment Form */

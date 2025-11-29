@@ -15,9 +15,9 @@ class CommentsController < ApplicationController
     end
 
     if @comment.save
-      redirect_to redirect_path_for_comment, notice: "Comment posted."
+      redirect_to redirect_path_for_comment, notice: "Comment posted.", status: :see_other
     else
-      redirect_to redirect_path_for_comment, alert: @comment.errors.full_messages.join(", ")
+      redirect_to redirect_path_for_comment, alert: @comment.errors.full_messages.join(", "), status: :see_other
     end
   end
 

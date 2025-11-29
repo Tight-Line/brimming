@@ -1,6 +1,6 @@
 <% # Local variables: url, placeholder (optional), parent_comment (optional for replies) %>
 <div class="comment-form-wrapper">
-  <%= form_with url: url, class: "comment-form-inline", data: { controller: "editor", editor_mode_value: "plain" } do |f| %>
+  <%= form_with url: url, scope: :comment, class: "comment-form-inline", data: { controller: "editor", editor_mode_value: "plain" } do |f| %>
     <div class="comment-input-group">
       <div class="comment-editor-toggle" data-editor-target="modeButtons">
         <button type="button" data-mode="plain" data-action="editor#setModePlain" class="editor-toggle-btn active" title="Plain text">

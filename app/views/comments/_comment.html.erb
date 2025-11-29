@@ -1,4 +1,4 @@
-<div class="comment <%= 'comment-reply' if comment.reply? %>" id="comment-<%= comment.id %>" style="margin-left: <%= [comment.depth * 24, 72].min %>px;">
+<div class="comment <%= 'comment-reply' if comment.reply? %>" id="comment-<%= comment.id %>" style="margin-left: <%= [comment.depth * 24, 72].min %>px;" data-controller="comment-reply">
   <div class="comment-body markdown-body">
     <%= markdown(comment.body) %>
   </div>
@@ -8,6 +8,14 @@
     <span class="comment-date"><%= time_ago_in_words(comment.created_at) %> ago</span>
     <% if comment.edited? %>
       <span class="comment-edited">(edited)</span>
+    <% end %>
+    <% if user_signed_in? && comment.depth < 3 %>
+      <button type="button" class="btn-link comment-reply-btn" data-action="comment-reply#toggle">Reply</button>
+    <% end %>
+  </div>
+  <div class="comment-reply-form" data-comment-reply-target="form" style="display: none;">
+    <% if user_signed_in? %>
+      <%= render "comments/form", url: comment_replies_path(comment), placeholder: "Write a reply..." %>
     <% end %>
   </div>
   <% if comment.replies.any? %>
