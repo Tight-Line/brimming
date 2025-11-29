@@ -4,8 +4,6 @@ class CommentsController < ApplicationController
   before_action :require_login, only: [ :create, :edit, :update, :destroy, :hard_delete, :upvote, :remove_vote ]
   before_action :set_comment, only: [ :edit, :update, :destroy, :hard_delete, :upvote, :remove_vote ]
   before_action :set_commentable, only: [ :create ]
-  before_action :authorize_owner!, only: [ :edit, :update, :destroy ]
-  before_action :authorize_moderator!, only: [ :hard_delete ]
 
   def create
     @comment = @commentable.comments.build(comment_params)
@@ -16,6 +14,8 @@ class CommentsController < ApplicationController
       @comment.parent_comment = Comment.find(params[:parent_comment_id])
     end
 
+    authorize @comment
+
     if @comment.save
       redirect_to redirect_path_for_comment, notice: "Comment posted.", status: :see_other
     else
@@ -24,9 +24,11 @@ class CommentsController < ApplicationController
   end
 
   def edit
+    authorize @comment
   end
 
   def update
+    authorize @comment
     if @comment.update(comment_params)
       @comment.record_edit!(current_user)
       redirect_to redirect_path_for_existing_comment, notice: "Comment updated.", status: :see_other
@@ -36,22 +38,26 @@ class CommentsController < ApplicationController
   end
 
   def destroy
+    authorize @comment
     @comment.soft_delete!
     redirect_to redirect_path_for_existing_comment, notice: "Comment deleted.", status: :see_other
   end
 
   def hard_delete
+    authorize @comment
     redirect_path = redirect_path_for_hard_delete
     @comment.destroy!
     redirect_to redirect_path, notice: "Comment permanently deleted.", status: :see_other
   end
 
   def upvote
+    authorize @comment, :vote?
     @comment.upvote_by(current_user)
     respond_to_vote
   end
 
   def remove_vote
+    authorize @comment, :vote?
     @comment.remove_vote_by(current_user)
     respond_to_vote
   end
@@ -101,18 +107,6 @@ class CommentsController < ApplicationController
     else
       question_path(question)
     end
-  end
-
-  def authorize_owner!
-    return if @comment.owned_by?(current_user)
-
-    redirect_to redirect_path_for_existing_comment, alert: "You can only edit or delete your own comments."
-  end
-
-  def authorize_moderator!
-    return if current_user.can_moderate?(@comment.space)
-
-    redirect_to redirect_path_for_existing_comment, alert: "Only moderators can permanently delete content."
   end
 
   def respond_to_vote

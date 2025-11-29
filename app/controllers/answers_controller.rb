@@ -4,12 +4,11 @@ class AnswersController < ApplicationController
   before_action :require_login, only: [ :create, :edit, :update, :destroy, :hard_delete, :upvote, :downvote, :remove_vote ]
   before_action :set_question, only: [ :create ]
   before_action :set_answer, only: [ :edit, :update, :destroy, :hard_delete, :upvote, :downvote, :remove_vote ]
-  before_action :authorize_owner!, only: [ :edit, :update, :destroy ]
-  before_action :authorize_moderator!, only: [ :hard_delete ]
 
   def create
     @answer = @question.answers.build(answer_params)
     @answer.user = current_user
+    authorize @answer
 
     if @answer.save
       redirect_to question_path(@question, anchor: "answer-#{@answer.id}"),
@@ -23,10 +22,12 @@ class AnswersController < ApplicationController
   end
 
   def edit
+    authorize @answer
     @question = @answer.question
   end
 
   def update
+    authorize @answer
     if @answer.update(answer_params)
       @answer.record_edit!(current_user)
       redirect_to question_path(@answer.question, anchor: "answer-#{@answer.id}"),
@@ -38,12 +39,14 @@ class AnswersController < ApplicationController
   end
 
   def destroy
+    authorize @answer
     @answer.soft_delete!
     redirect_to question_path(@answer.question, anchor: "answer-#{@answer.id}"),
                 notice: "Answer deleted.", status: :see_other
   end
 
   def hard_delete
+    authorize @answer
     question = @answer.question
     @answer.destroy!
     redirect_to question_path(question),
@@ -51,16 +54,19 @@ class AnswersController < ApplicationController
   end
 
   def upvote
+    authorize @answer, :vote?
     @answer.upvote_by(current_user)
     respond_to_vote
   end
 
   def downvote
+    authorize @answer, :vote?
     @answer.downvote_by(current_user)
     respond_to_vote
   end
 
   def remove_vote
+    authorize @answer, :vote?
     @answer.remove_vote_by(current_user)
     respond_to_vote
   end
@@ -77,18 +83,6 @@ class AnswersController < ApplicationController
 
   def answer_params
     params.require(:answer).permit(:body)
-  end
-
-  def authorize_owner!
-    return if @answer.owned_by?(current_user)
-
-    redirect_to question_path(@answer.question), alert: "You can only edit or delete your own answers."
-  end
-
-  def authorize_moderator!
-    return if current_user.can_moderate?(@answer.space)
-
-    redirect_to question_path(@answer.question), alert: "Only moderators can permanently delete content."
   end
 
   def respond_to_vote

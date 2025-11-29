@@ -1,0 +1,33 @@
+<%= form_with model: space, class: "space-form" do |f| %>
+  <% if space.errors.any? %>
+    <div class="form-errors">
+      <h3><%= pluralize(space.errors.count, "error") %> prevented this space from being saved:</h3>
+      <ul>
+        <% space.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <%= f.label :name %>
+    <%= f.text_field :name, class: "form-control", required: true,
+        placeholder: "Enter space name",
+        maxlength: 100 %>
+    <small class="form-hint">A short, descriptive name for the space</small>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :description %>
+    <%= f.text_area :description, class: "form-control",
+        rows: 4,
+        placeholder: "Describe what this space is for..." %>
+    <small class="form-hint">Optional description to help users understand the purpose of this space</small>
+  </div>
+
+  <div class="form-actions">
+    <%= f.submit space.persisted? ? "Update Space" : "Create Space", class: "btn btn-primary" %>
+    <%= link_to "Cancel", space.persisted? ? space_path(space) : spaces_path, class: "btn btn-secondary" %>
+  </div>
+<% end %>

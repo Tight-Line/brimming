@@ -19,6 +19,7 @@ class Comment < ApplicationRecord
   scope :top_level, -> { where(parent_comment_id: nil) }
   scope :recent, -> { order(created_at: :asc) }
   scope :by_votes, -> { order(vote_score: :desc, created_at: :asc) }
+  scope :not_deleted, -> { where(deleted_at: nil) }
 
   # Instance methods
   def author

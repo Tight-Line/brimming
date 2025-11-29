@@ -1,0 +1,71 @@
+<% content_for(:title) { "Moderators - #{@space.name} - Brimming" } %>
+
+<div class="page-header">
+  <h1>Manage Moderators</h1>
+  <p class="text-muted"><%= link_to @space.name, space_path(@space) %></p>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h2>Current Moderators (<%= @moderators.count %>)</h2>
+  </div>
+
+  <% if @moderators.any? %>
+    <ul class="moderator-list">
+      <% @moderators.each do |moderator| %>
+        <li class="moderator-item">
+          <div class="moderator-info">
+            <%= render 'shared/user_badge', user: moderator %>
+          </div>
+          <div class="moderator-actions">
+            <%= button_to "Remove",
+                remove_moderator_space_path(@space, user_id: moderator.id),
+                method: :delete,
+                class: "btn btn-small btn-danger",
+                data: { turbo_confirm: "Remove #{moderator.display_name} as a moderator?" } %>
+          </div>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <div class="empty-state">
+      <p>No moderators assigned yet.</p>
+    </div>
+  <% end %>
+</div>
+
+<div class="card mt-4">
+  <div class="card-header">
+    <h2>Add Moderator</h2>
+  </div>
+
+  <%= form_with url: add_moderator_space_path(@space), method: :post, class: "add-moderator-form" do |f| %>
+    <div class="form-group"
+         data-controller="user-search"
+         data-user-search-url-value="<%= search_users_path %>"
+         data-user-search-exclude-value="<%= @moderators.pluck(:id).join(',') %>">
+      <%= f.label :user_id, "Search for user" %>
+      <div class="typeahead-wrapper">
+        <input type="text"
+               class="form-control"
+               placeholder="Type username or name..."
+               autocomplete="off"
+               data-user-search-target="input"
+               data-action="input->user-search#onInput keydown->user-search#onKeydown blur->user-search#onBlur">
+        <input type="hidden"
+               name="user_id"
+               required
+               data-user-search-target="hiddenInput">
+        <div class="typeahead-results" data-user-search-target="results"></div>
+      </div>
+      <small class="form-hint">Search by username or full name</small>
+    </div>
+    <div class="form-actions">
+      <%= f.submit "Add Moderator", class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</div>
+
+<div class="mt-4">
+  <%= link_to "← Back to #{@space.name}", space_path(@space), class: "btn btn-secondary" %>
+</div>

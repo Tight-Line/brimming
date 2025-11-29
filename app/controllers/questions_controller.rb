@@ -3,15 +3,14 @@
 class QuestionsController < ApplicationController
   before_action :require_login, only: [ :new, :create, :edit, :update, :destroy, :hard_delete, :upvote, :downvote, :remove_vote ]
   before_action :set_question, only: [ :show, :edit, :update, :destroy, :hard_delete, :upvote, :downvote, :remove_vote ]
-  before_action :authorize_owner!, only: [ :edit, :update, :destroy ]
-  before_action :authorize_moderator!, only: [ :hard_delete ]
 
   def index
-    @questions = Question.not_deleted.recent.includes(:user, :space)
+    @questions = policy_scope(Question).recent.includes(:user, :space)
     @questions = @questions.by_space(Space.find_by(slug: params[:space])) if params[:space].present?
   end
 
   def show
+    authorize @question
     if @question.deleted?
       redirect_to questions_path, alert: "This question has been deleted."
       return
@@ -22,11 +21,13 @@ class QuestionsController < ApplicationController
 
   def new
     @question = Question.new
+    authorize @question
     @spaces = Space.alphabetical
   end
 
   def create
     @question = current_user.questions.build(question_params)
+    authorize @question
 
     if @question.save
       redirect_to @question, notice: "Question posted successfully."
@@ -37,10 +38,12 @@ class QuestionsController < ApplicationController
   end
 
   def edit
+    authorize @question
     @spaces = Space.alphabetical
   end
 
   def update
+    authorize @question
     if @question.update(question_params)
       @question.record_edit!(current_user)
       redirect_to @question, notice: "Question updated successfully.", status: :see_other
@@ -51,26 +54,31 @@ class QuestionsController < ApplicationController
   end
 
   def destroy
+    authorize @question
     @question.soft_delete!
     redirect_to questions_path, notice: "Question deleted.", status: :see_other
   end
 
   def hard_delete
+    authorize @question
     @question.destroy!
     redirect_to questions_path, notice: "Question permanently deleted.", status: :see_other
   end
 
   def upvote
+    authorize @question, :vote?
     @question.upvote_by(current_user)
     respond_to_vote
   end
 
   def downvote
+    authorize @question, :vote?
     @question.downvote_by(current_user)
     respond_to_vote
   end
 
   def remove_vote
+    authorize @question, :vote?
     @question.remove_vote_by(current_user)
     respond_to_vote
   end
@@ -83,18 +91,6 @@ class QuestionsController < ApplicationController
 
   def question_params
     params.require(:question).permit(:title, :body, :space_id)
-  end
-
-  def authorize_owner!
-    return if @question.owned_by?(current_user)
-
-    redirect_to @question, alert: "You can only edit or delete your own questions."
-  end
-
-  def authorize_moderator!
-    return if current_user.can_moderate?(@question.space)
-
-    redirect_to @question, alert: "Only moderators can permanently delete content."
   end
 
   def respond_to_vote

@@ -39,6 +39,55 @@ RSpec.describe User do
     it { is_expected.to define_enum_for(:role).with_values(user: 0, admin: 2) }
   end
 
+  describe ".search" do
+    let!(:alice) { create(:user, username: "alice", full_name: "Alice Smith", email: "alice@example.com") }
+    let!(:bob) { create(:user, username: "bob", full_name: "Bob Jones", email: "bob@test.com") }
+    let!(:charlie) { create(:user, username: "charlie", full_name: nil, email: "charlie@example.com") }
+
+    it "returns empty when query is blank" do
+      expect(described_class.search("")).to be_empty
+      expect(described_class.search(nil)).to be_empty
+    end
+
+    it "searches by username" do
+      expect(described_class.search("alice")).to include(alice)
+      expect(described_class.search("alice")).not_to include(bob)
+    end
+
+    it "searches by full_name" do
+      expect(described_class.search("Smith")).to include(alice)
+      expect(described_class.search("Jones")).to include(bob)
+    end
+
+    it "does not search by email" do
+      expect(described_class.search("test.com")).not_to include(bob)
+      expect(described_class.search("example.com")).not_to include(alice, charlie)
+    end
+
+    it "is case insensitive" do
+      expect(described_class.search("ALICE")).to include(alice)
+      expect(described_class.search("alice")).to include(alice)
+    end
+
+    it "matches partial strings" do
+      expect(described_class.search("ali")).to include(alice)
+      expect(described_class.search("ob")).to include(bob)
+    end
+
+    it "orders results by username" do
+      results = described_class.search("alice")
+      expect(results.to_a).to eq([ alice ])
+    end
+
+    it "limits results to 10" do
+      15.times do |i|
+        create(:user, username: "srchuser#{i}", email: "srchuser#{i}@test.com")
+      end
+      results = described_class.search("srchuser")
+      expect(results.count).to eq(10)
+    end
+  end
+
   describe "callbacks" do
     describe "before_validation :normalize_email" do
       it "downcases and strips email" do

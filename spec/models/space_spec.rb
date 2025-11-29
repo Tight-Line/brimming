@@ -107,4 +107,18 @@ RSpec.describe Space do
       expect(space.moderators).not_to include(user)
     end
   end
+
+  describe "#moderator?" do
+    let(:space) { create(:space) }
+    let(:user) { create(:user) }
+
+    it "returns true if user is a moderator" do
+      space.add_moderator(user)
+      expect(space.moderator?(user)).to be true
+    end
+
+    it "returns false if user is not a moderator" do
+      expect(space.moderator?(user)).to be false
+    end
+  end
 end

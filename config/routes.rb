@@ -46,7 +46,17 @@ Rails.application.routes.draw do
   # Markdown preview endpoint
   post "markdown/preview", to: "markdown#preview"
 
-  resources :spaces, only: [ :index, :show ]
+  resources :spaces do
+    member do
+      get :moderators
+      post :add_moderator
+      delete :remove_moderator
+    end
+  end
 
-  resources :users, only: [ :show ], param: :username
+  resources :users, only: [ :show ], param: :username do
+    collection do
+      get :search
+    end
+  end
 end
