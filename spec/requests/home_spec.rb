@@ -35,6 +35,7 @@ RSpec.describe "Home" do
       unsubscribed_category = create(:category, name: "Unsubscribed Category")
       create(:category_subscription, user: user, category: subscribed_category)
 
+      sign_in user
       get root_path
 
       expect(response.body).to include("Subscribed Category")

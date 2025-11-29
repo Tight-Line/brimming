@@ -1,10 +1,10 @@
 <%# Vote button for comments (upvote only) %>
 <%
-  user_voted = signed_in? && comment.voted_by?(current_user)
+  user_voted = user_signed_in? && comment.voted_by?(current_user)
 %>
 
 <span class="comment-vote" id="comment-<%= comment.id %>-votes">
-  <% if signed_in? %>
+  <% if user_signed_in? %>
     <% if user_voted %>
       <%= button_to remove_vote_comment_path(comment),
                    method: :delete,

@@ -138,6 +138,13 @@ helm install brimming helm/brimming \
 | `DB_NAME` | Database name | `brimming` |
 | `REDIS_URL` | Valkey/Redis URL | `redis://valkey:6379/0` |
 | `SECRET_KEY_BASE` | Rails secret key | - |
+| `SMTP_HOST` | SMTP server hostname | - |
+| `SMTP_PORT` | SMTP server port | `587` |
+| `SMTP_TLS` | Enable TLS (`true`/`false`) | - |
+| `SMTP_USER` | SMTP username (optional) | - |
+| `SMTP_PASS` | SMTP password (optional) | - |
+| `SMTP_AUTH` | SMTP auth method | `plain` |
+| `MAILER_FROM` | Default sender email | `noreply@brimming.local` |
 
 ### Database Schema
 
@@ -146,6 +153,22 @@ All application tables are created in the `brimming` schema (not `public`). This
 - **Database name**: `brimming` in all environments except test (`brimming_test`)
 - **Schema**: `brimming` (search_path: `brimming,public`)
 - **Console access**: `make db-console` opens psql with correct search_path
+
+### Email (Development)
+
+Development uses [Mailhog](https://github.com/mailhog/MailHog) to capture all outgoing emails without actually sending them.
+
+| Service | URL |
+|---------|-----|
+| **Web Application** | http://localhost:3000 |
+| **Mailhog Web UI** | http://localhost:8025 |
+
+All emails sent by the application (password resets, notifications, etc.) are captured by Mailhog and viewable in the web UI. No actual emails are sent.
+
+The development environment is pre-configured with:
+- `SMTP_HOST=mailhog` (port 1025)
+- `SMTP_TLS=false`
+- `MAILER_FROM=noreply@brimming.local`
 
 ### SSO Configuration
 

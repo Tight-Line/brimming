@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
 class User < ApplicationRecord
+  # Include default devise modules. Others available are:
+  # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
+  devise :database_authenticatable, :registerable,
+         :recoverable, :rememberable, :validatable
+
   # Enums
   enum :role, { user: 0, moderator: 1, admin: 2 }, default: :user
 
@@ -14,19 +19,13 @@ class User < ApplicationRecord
   has_many :category_subscriptions, dependent: :destroy
   has_many :subscribed_categories, through: :category_subscriptions, source: :category
 
-  # Validations
-  validates :email, presence: true,
-                    uniqueness: { case_sensitive: false },
-                    format: { with: URI::MailTo::EMAIL_REGEXP }
+  # Validations (email handled by Devise's :validatable module)
   validates :username, presence: true,
                        uniqueness: { case_sensitive: false },
                        length: { minimum: 3, maximum: 30 },
                        format: { with: /\A[a-zA-Z0-9_]+\z/,
                                  message: "can only contain letters, numbers, and underscores" }
   validates :role, presence: true
-
-  # Callbacks
-  before_validation :normalize_email
 
   # Instance methods
   def to_param
@@ -99,9 +98,4 @@ class User < ApplicationRecord
       question_vote_karma + answer_vote_karma + comment_vote_karma
   end
 
-  private
-
-  def normalize_email
-    self.email = email.to_s.downcase.strip
-  end
 end

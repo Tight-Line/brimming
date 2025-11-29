@@ -26,6 +26,7 @@ RSpec.describe "Categories" do
       create(:category, name: "Other Category")
       create(:category_subscription, user: user, category: subscribed_category)
 
+      sign_in user
       get categories_path
 
       expect(response.body).to include("badge-subscribed")
@@ -88,6 +89,7 @@ RSpec.describe "Categories" do
       category = create(:category)
       create(:category_subscription, user: user, category: category)
 
+      sign_in user
       get category_path(category)
 
       expect(response.body).to include("You are subscribed")

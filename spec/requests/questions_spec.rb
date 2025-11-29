@@ -145,10 +145,11 @@ RSpec.describe "Questions" do
   end
 
   describe "POST /questions/:id/upvote" do
+    let(:user) { create(:user) }
     let(:question) { create(:question, vote_score: 0) }
 
     context "when signed in" do
-      before { create(:user) } # Creates user for current_user stub
+      before { sign_in user }
 
       it "upvotes the question" do
         post upvote_question_path(question)
@@ -172,10 +173,11 @@ RSpec.describe "Questions" do
   end
 
   describe "POST /questions/:id/downvote" do
+    let(:user) { create(:user) }
     let(:question) { create(:question, vote_score: 0) }
 
     context "when signed in" do
-      before { create(:user) }
+      before { sign_in user }
 
       it "downvotes the question" do
         post downvote_question_path(question)
@@ -192,12 +194,13 @@ RSpec.describe "Questions" do
   end
 
   describe "DELETE /questions/:id/remove_vote" do
-    let!(:voter) { create(:user) } # Created first so it's User.first (current_user)
+    let(:user) { create(:user) }
     let(:question_author) { create(:user) }
     let(:question) { create(:question, user: question_author, vote_score: 1) }
 
     before do
-      create(:question_vote, question: question, user: voter, value: 1)
+      sign_in user
+      create(:question_vote, question: question, user: user, value: 1)
     end
 
     it "removes the vote" do

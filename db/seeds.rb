@@ -8,6 +8,9 @@
 
 puts "Seeding database..."
 
+# Default password for all seed users (development only!)
+DEFAULT_PASSWORD = "password123"
+
 # =============================================================================
 # Users
 # =============================================================================
@@ -17,6 +20,7 @@ puts "Creating users..."
 admin = User.find_or_create_by!(email: "admin@example.com") do |u|
   u.username = "admin"
   u.full_name = "System Administrator"
+  u.password = DEFAULT_PASSWORD
   u.role = :admin
   u.avatar_url = "https://api.dicebear.com/7.x/identicon/svg?seed=admin"
 end
@@ -30,6 +34,7 @@ moderators = [
   User.find_or_create_by!(email: attrs[:email]) do |u|
     u.username = attrs[:username]
     u.full_name = attrs[:full_name]
+    u.password = DEFAULT_PASSWORD
     u.role = :moderator
     u.avatar_url = "https://api.dicebear.com/7.x/identicon/svg?seed=#{attrs[:username]}"
   end
@@ -51,6 +56,7 @@ experts = [
   User.find_or_create_by!(email: attrs[:email]) do |u|
     u.username = attrs[:username]
     u.full_name = attrs[:full_name]
+    u.password = DEFAULT_PASSWORD
     u.role = :user
     u.avatar_url = "https://api.dicebear.com/7.x/identicon/svg?seed=#{attrs[:username]}"
   end
@@ -76,6 +82,7 @@ intermediates = [
   User.find_or_create_by!(email: attrs[:email]) do |u|
     u.username = attrs[:username]
     u.full_name = attrs[:full_name]
+    u.password = DEFAULT_PASSWORD
     u.role = :user
     u.avatar_url = "https://api.dicebear.com/7.x/identicon/svg?seed=#{attrs[:username]}"
   end
@@ -96,6 +103,7 @@ newbies = [
 ].map do |attrs|
   User.find_or_create_by!(email: attrs[:email]) do |u|
     u.username = attrs[:username]
+    u.password = DEFAULT_PASSWORD
     u.role = :user
     u.avatar_url = "https://api.dicebear.com/7.x/identicon/svg?seed=#{attrs[:username]}"
   end
@@ -2928,3 +2936,8 @@ puts "  - Top-level: #{Comment.where(parent_comment_id: nil).count}"
 puts "  - Replies: #{Comment.where.not(parent_comment_id: nil).count}"
 puts "  - Edited: #{Comment.where.not(edited_at: nil).count}"
 puts "Comment Votes: #{CommentVote.count}"
+puts ""
+puts "Login credentials (development only):"
+puts "  Email: admin@example.com"
+puts "  Password: #{DEFAULT_PASSWORD}"
+puts "  (All seed users use the same password)"

@@ -166,13 +166,13 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - CategoryModerator (user_id, category_id)
 - Database migrations with proper indexes and constraints
 
-### Phase 4: Authentication Foundation `[ ]`
-- Devise setup for User model
-- Registration (email + username + password)
-- Login/logout
-- Password reset
-- Session management
-- Basic authorization helper methods
+### Phase 4: Authentication Foundation `[x]`
+- Devise setup for User model `[x]`
+- Registration (email + username + password) `[x]`
+- Login/logout `[x]`
+- Password reset (Devise recoverable) `[x]`
+- Session management (Devise rememberable) `[x]`
+- Basic authorization helper methods `[x]`
 
 ### Phase 5: Core Q&A Features `[~]`
 - Questions CRUD (create, read, update, delete own) - **read only implemented**
@@ -255,12 +255,13 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 
 ## Current Status
 
-**Completed Phases**: 1, 3, 7
+**Completed Phases**: 1, 3, 4, 7
 **In Progress**: 5 (Q&A Features - need CRUD), 6 (Moderation - need Pundit policies)
-**Not Started**: 2 (Helm), 4 (Authentication), 8-13
+**Not Started**: 2 (Helm), 8-13
 
 ### What's Working
 - Full data model with Users, Categories, Questions, Answers, Comments, Votes
+- Devise authentication with registration (username + email + password), login/logout
 - Read-only web UI for browsing questions, categories, and user profiles
 - Voting system for questions, answers, and comments
 - Nested comments with replies
@@ -269,12 +270,12 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - Category subscriptions and moderator assignments (via seeds)
 - "Solved" designation for moderator-approved answers
 - "Best" designation for highest-voted answers per question
-- 100% test coverage (281 specs)
+- 100% test coverage (298 specs)
 
 ### Next Actions
-1. **Phase 4 (Authentication)**: Add Devise for user registration/login
-2. **Phase 5 (CRUD)**: Add create/update/delete for questions, answers, comments
-3. **Phase 6 (Authorization)**: Add Pundit policies for role-based access
+1. **Phase 5 (CRUD)**: Add create/update/delete for questions, answers, comments
+2. **Phase 6 (Authorization)**: Add Pundit policies for role-based access
+3. **Phase 2 (Helm)**: Create Kubernetes deployment charts
 
 ---
 
