@@ -68,7 +68,7 @@ export default class extends Controller {
     })
 
     // Update sign-up link with return URL
-    const signUpLinks = this.dialogTarget.querySelectorAll("a[href*='sign_up']")
+    const signUpLinks = this.dialogTarget.querySelectorAll("a[data-sign-up-link]")
     signUpLinks.forEach(link => {
       const url = new URL(link.href, window.location.origin)
       url.searchParams.set("return_to", this.returnUrlValue)

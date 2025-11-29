@@ -9,7 +9,7 @@
     <% if comment.edited? %>
       <span class="comment-edited">(edited)</span>
     <% end %>
-    <% if user_signed_in? && comment.depth < 3 %>
+    <% if user_signed_in? && comment.allows_replies? %>
       <button type="button" class="btn-link comment-reply-btn" data-action="comment-reply#toggle">Reply</button>
     <% end %>
   </div>

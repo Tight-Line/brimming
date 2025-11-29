@@ -198,6 +198,28 @@ RSpec.describe Comment do
     end
   end
 
+  describe "#allows_replies?" do
+    it "returns true for comments below max depth" do
+      comment = create(:comment)
+      expect(comment.allows_replies?).to be true
+    end
+
+    it "returns true for comments at depth 2" do
+      grandparent = create(:comment)
+      parent = create(:comment, parent_comment: grandparent, commentable: grandparent.commentable)
+      child = create(:comment, parent_comment: parent, commentable: parent.commentable)
+      expect(child.allows_replies?).to be true
+    end
+
+    it "returns false for comments at max depth" do
+      level0 = create(:comment)
+      level1 = create(:comment, parent_comment: level0, commentable: level0.commentable)
+      level2 = create(:comment, parent_comment: level1, commentable: level1.commentable)
+      level3 = create(:comment, parent_comment: level2, commentable: level2.commentable)
+      expect(level3.allows_replies?).to be false
+    end
+  end
+
   describe "polymorphic association" do
     it "can belong to a question" do
       question = create(:question)
