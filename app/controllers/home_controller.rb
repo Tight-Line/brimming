@@ -2,7 +2,7 @@
 
 class HomeController < ApplicationController
   def index
-    @recent_questions = Question.recent.includes(:user, :space).limit(10)
+    @recent_questions = Question.not_deleted.recent.includes(:user, :space).limit(10)
     @spaces = Space.alphabetical
   end
 end

@@ -14,6 +14,7 @@ class Question < ApplicationRecord
   validates :body, presence: true, length: { minimum: 20, maximum: 10_000 }
 
   # Scopes
+  scope :not_deleted, -> { where(deleted_at: nil) }
   scope :recent, -> { order(created_at: :desc) }
   scope :by_space, ->(space) { where(space: space) }
 
@@ -86,6 +87,14 @@ class Question < ApplicationRecord
 
   def recalculate_vote_score!
     update!(vote_score: question_votes.sum(:value))
+  end
+
+  def deleted?
+    deleted_at.present?
+  end
+
+  def soft_delete!
+    update!(deleted_at: Time.current)
   end
 
   private

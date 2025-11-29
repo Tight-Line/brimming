@@ -1,23 +1,51 @@
-<div class="comment <%= 'comment-reply' if comment.reply? %>" id="comment-<%= comment.id %>" style="margin-left: <%= [comment.depth * 24, 72].min %>px;" data-controller="comment-reply">
-  <div class="comment-body markdown-body">
-    <%= markdown(comment.body) %>
-  </div>
-  <div class="comment-meta">
-    <%= render 'votes/comment_vote_button', comment: comment %>
-    <%= render 'shared/user_badge', user: comment.author, show_karma: false %>
-    <span class="comment-date"><%= time_ago_in_words(comment.created_at) %> ago</span>
-    <% if comment.edited? %>
-      <span class="comment-edited">(edited)</span>
+<div class="comment <%= 'comment-reply' if comment.reply? %> <%= 'comment-deleted' if comment.deleted? %>" id="comment-<%= comment.id %>" style="margin-left: <%= [comment.depth * 24, 72].min %>px;" data-controller="comment-reply">
+  <% if comment.deleted? %>
+    <div class="comment-body comment-deleted-message">
+      <em>This comment has been deleted.</em>
+    </div>
+    <% if user_signed_in? && current_user.can_moderate?(comment.space) %>
+      <div class="comment-meta moderator-actions">
+        <%= button_to "Permanently Delete", hard_delete_comment_path(comment), method: :delete,
+            class: "btn-link btn-link-danger",
+            form: { data: { turbo: false }, onsubmit: "return confirm('Are you sure you want to PERMANENTLY delete this comment and all its replies? This cannot be undone.')" } %>
+      </div>
     <% end %>
-    <% if user_signed_in? && comment.allows_replies? %>
-      <button type="button" class="btn-link comment-reply-btn" data-action="comment-reply#toggle">Reply</button>
-    <% end %>
-  </div>
-  <div class="comment-reply-form" data-comment-reply-target="form" style="display: none;">
-    <% if user_signed_in? %>
-      <%= render "comments/form", url: comment_replies_path(comment), placeholder: "Write a reply..." %>
-    <% end %>
-  </div>
+  <% else %>
+    <div class="comment-body markdown-body">
+      <%= markdown(comment.body) %>
+    </div>
+    <div class="comment-meta">
+      <%= render 'votes/comment_vote_button', comment: comment %>
+      <%= render 'shared/user_badge', user: comment.author %>
+      <span class="comment-date"><%= time_ago_in_words(comment.created_at) %> ago</span>
+      <% if comment.edited? %>
+        <span class="comment-edited">(edited)</span>
+      <% end %>
+      <% if user_signed_in? %>
+        <span class="comment-actions">
+          <% if comment.allows_replies? %>
+            <button type="button" class="btn-link" data-action="comment-reply#toggle">Reply</button>
+          <% end %>
+          <% if comment.owned_by?(current_user) %>
+            <%= link_to "Edit", edit_comment_path(comment), class: "btn-link" %>
+            <%= button_to "Delete", comment_path(comment), method: :delete,
+                class: "btn-link btn-link-danger",
+                form: { data: { turbo: false }, onsubmit: "return confirm('Are you sure you want to delete this comment?')" } %>
+          <% end %>
+          <% if current_user.can_moderate?(comment.space) %>
+            <%= button_to "Permanently Delete", hard_delete_comment_path(comment), method: :delete,
+                class: "btn-link btn-link-danger",
+                form: { data: { turbo: false }, onsubmit: "return confirm('Are you sure you want to PERMANENTLY delete this comment and all its replies? This cannot be undone.')" } %>
+          <% end %>
+        </span>
+      <% end %>
+    </div>
+    <div class="comment-reply-form" data-comment-reply-target="form" style="display: none;">
+      <% if user_signed_in? %>
+        <%= render "comments/form", url: comment_replies_path(comment), placeholder: "Write a reply..." %>
+      <% end %>
+    </div>
+  <% end %>
   <% if comment.replies.any? %>
     <div class="comment-replies">
       <%= render partial: 'comments/comment', collection: comment.replies.sort_by(&:created_at), as: :comment %>

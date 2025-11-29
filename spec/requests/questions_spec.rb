@@ -70,6 +70,15 @@ RSpec.describe "Questions" do
       expect(response.body).to include(question.space.name)
     end
 
+    it "redirects to questions index for deleted questions" do
+      question = create(:question, deleted_at: Time.current)
+
+      get question_path(question)
+
+      expect(response).to redirect_to(questions_path)
+      expect(flash[:alert]).to include("deleted")
+    end
+
     it "displays answers ordered by votes" do
       question = create(:question)
       low_vote_answer = create(:answer, question: question, body: "Low vote answer body here", vote_score: 1)
@@ -298,6 +307,227 @@ RSpec.describe "Questions" do
       delete remove_vote_question_path(question)
 
       expect(response).to redirect_to(question_path(question))
+    end
+  end
+
+  describe "GET /questions/:id/edit" do
+    let(:user) { create(:user) }
+    let(:question) { create(:question, user: user) }
+
+    context "when signed in as owner" do
+      before { sign_in user }
+
+      it "returns http success" do
+        get edit_question_path(question)
+        expect(response).to have_http_status(:success)
+      end
+
+      it "displays the edit form" do
+        get edit_question_path(question)
+        expect(response.body).to include("Edit Question")
+        expect(response.body).to include(question.title)
+      end
+    end
+
+    context "when signed in as different user" do
+      let(:other_user) { create(:user) }
+
+      before { sign_in other_user }
+
+      it "redirects with alert" do
+        get edit_question_path(question)
+        expect(response).to redirect_to(question_path(question))
+        expect(flash[:alert]).to include("your own questions")
+      end
+    end
+
+    context "when not signed in" do
+      it "redirects to sign in" do
+        get edit_question_path(question)
+        expect(response).to redirect_to(new_user_session_path)
+      end
+    end
+  end
+
+  describe "PATCH /questions/:id" do
+    let(:user) { create(:user) }
+    let(:space) { create(:space) }
+    let(:question) { create(:question, user: user, space: space) }
+
+    context "when signed in as owner" do
+      before { sign_in user }
+
+      context "with valid parameters" do
+        it "updates the question" do
+          patch question_path(question), params: { question: { title: "Updated title here" } }
+          expect(question.reload.title).to eq("Updated title here")
+        end
+
+        it "records the edit" do
+          patch question_path(question), params: { question: { title: "Updated title here" } }
+          expect(question.reload.edited?).to be true
+          expect(question.last_editor).to eq(user)
+        end
+
+        it "redirects to the question" do
+          patch question_path(question), params: { question: { title: "Updated title here" } }
+          expect(response).to redirect_to(question_path(question))
+        end
+      end
+
+      context "with invalid parameters" do
+        it "does not update the question" do
+          original_title = question.title
+          patch question_path(question), params: { question: { title: "" } }
+          expect(question.reload.title).to eq(original_title)
+        end
+
+        it "re-renders the edit form" do
+          patch question_path(question), params: { question: { title: "" } }
+          expect(response).to have_http_status(:unprocessable_entity)
+        end
+      end
+    end
+
+    context "when signed in as different user" do
+      let(:other_user) { create(:user) }
+
+      before { sign_in other_user }
+
+      it "does not update the question" do
+        original_title = question.title
+        patch question_path(question), params: { question: { title: "Hacked title" } }
+        expect(question.reload.title).to eq(original_title)
+      end
+
+      it "redirects with alert" do
+        patch question_path(question), params: { question: { title: "Hacked title" } }
+        expect(response).to redirect_to(question_path(question))
+      end
+    end
+
+    context "when not signed in" do
+      it "redirects to sign in" do
+        patch question_path(question), params: { question: { title: "New title" } }
+        expect(response).to redirect_to(new_user_session_path)
+      end
+    end
+  end
+
+  describe "DELETE /questions/:id" do
+    let(:user) { create(:user) }
+    let!(:question) { create(:question, user: user) }
+
+    context "when signed in as owner" do
+      before { sign_in user }
+
+      it "soft deletes the question" do
+        expect {
+          delete question_path(question)
+        }.not_to change(Question, :count)
+
+        expect(question.reload.deleted?).to be true
+      end
+
+      it "redirects to questions index" do
+        delete question_path(question)
+        expect(response).to redirect_to(questions_path)
+      end
+    end
+
+    context "when signed in as different user" do
+      let(:other_user) { create(:user) }
+
+      before { sign_in other_user }
+
+      it "does not soft delete the question" do
+        delete question_path(question)
+        expect(question.reload.deleted?).to be false
+      end
+
+      it "redirects with alert" do
+        delete question_path(question)
+        expect(response).to redirect_to(question_path(question))
+      end
+    end
+
+    context "when not signed in" do
+      it "redirects to sign in" do
+        delete question_path(question)
+        expect(response).to redirect_to(new_user_session_path)
+      end
+    end
+  end
+
+  describe "DELETE /questions/:id/hard_delete" do
+    let!(:question) { create(:question) }
+    let(:space) { question.space }
+
+    context "when signed in as admin" do
+      let(:admin) { create(:user, role: :admin) }
+
+      before { sign_in admin }
+
+      it "permanently deletes the question" do
+        expect {
+          delete hard_delete_question_path(question)
+        }.to change(Question, :count).by(-1)
+      end
+
+      it "also deletes child answers and comments" do
+        answer = create(:answer, question: question)
+        create(:comment, commentable: question)
+        create(:comment, commentable: answer)
+
+        expect {
+          delete hard_delete_question_path(question)
+        }.to change(Answer, :count).by(-1).and change(Comment, :count).by(-2)
+      end
+
+      it "redirects to questions index" do
+        delete hard_delete_question_path(question)
+        expect(response).to redirect_to(questions_path)
+      end
+    end
+
+    context "when signed in as space moderator" do
+      let(:moderator) { create(:user) }
+
+      before do
+        create(:space_moderator, space: space, user: moderator)
+        sign_in moderator
+      end
+
+      it "permanently deletes the question" do
+        expect {
+          delete hard_delete_question_path(question)
+        }.to change(Question, :count).by(-1)
+      end
+    end
+
+    context "when signed in as regular user" do
+      let(:user) { create(:user) }
+
+      before { sign_in user }
+
+      it "does not delete the question" do
+        expect {
+          delete hard_delete_question_path(question)
+        }.not_to change(Question, :count)
+      end
+
+      it "redirects with alert" do
+        delete hard_delete_question_path(question)
+        expect(response).to redirect_to(question_path(question))
+        expect(flash[:alert]).to include("moderators")
+      end
+    end
+
+    context "when not signed in" do
+      it "redirects to sign in" do
+        delete hard_delete_question_path(question)
+        expect(response).to redirect_to(new_user_session_path)
+      end
     end
   end
 end

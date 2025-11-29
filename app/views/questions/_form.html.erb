@@ -55,7 +55,7 @@
   </div>
 
   <div class="form-actions">
-    <%= f.submit "Post Question", class: "btn btn-primary" %>
-    <%= link_to "Cancel", questions_path, class: "btn btn-secondary" %>
+    <%= f.submit question.persisted? ? "Update Question" : "Post Question", class: "btn btn-primary" %>
+    <%= link_to "Cancel", question.persisted? ? question_path(question) : questions_path, class: "btn btn-secondary" %>
   </div>
 <% end %>

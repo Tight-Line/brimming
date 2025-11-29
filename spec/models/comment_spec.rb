@@ -218,6 +218,30 @@ RSpec.describe Comment do
       level3 = create(:comment, parent_comment: level2, commentable: level2.commentable)
       expect(level3.allows_replies?).to be false
     end
+
+    it "returns false for deleted comments" do
+      comment = create(:comment, deleted_at: Time.current)
+      expect(comment.allows_replies?).to be false
+    end
+  end
+
+  describe "#deleted?" do
+    it "returns true when deleted_at is present" do
+      comment = create(:comment, deleted_at: Time.current)
+      expect(comment.deleted?).to be true
+    end
+
+    it "returns false when deleted_at is nil" do
+      comment = create(:comment)
+      expect(comment.deleted?).to be false
+    end
+  end
+
+  describe "#soft_delete!" do
+    it "sets deleted_at to current time" do
+      comment = create(:comment)
+      expect { comment.soft_delete! }.to change { comment.deleted? }.from(false).to(true)
+    end
   end
 
   describe "polymorphic association" do
@@ -231,6 +255,23 @@ RSpec.describe Comment do
       answer = create(:answer)
       comment = create(:comment, commentable: answer)
       expect(comment.commentable).to eq(answer)
+    end
+  end
+
+  describe "#space" do
+    it "returns the space for a comment on a question" do
+      space = create(:space)
+      question = create(:question, space: space)
+      comment = create(:comment, commentable: question)
+      expect(comment.space).to eq(space)
+    end
+
+    it "returns the space for a comment on an answer" do
+      space = create(:space)
+      question = create(:question, space: space)
+      answer = create(:answer, question: question)
+      comment = create(:comment, commentable: answer)
+      expect(comment.space).to eq(space)
     end
   end
 end

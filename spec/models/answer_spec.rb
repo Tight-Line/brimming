@@ -228,4 +228,32 @@ RSpec.describe Answer do
       expect(answer.comments).to include(comment)
     end
   end
+
+  describe "#deleted?" do
+    it "returns true when deleted_at is present" do
+      answer = create(:answer, deleted_at: Time.current)
+      expect(answer.deleted?).to be true
+    end
+
+    it "returns false when deleted_at is nil" do
+      answer = create(:answer)
+      expect(answer.deleted?).to be false
+    end
+  end
+
+  describe "#soft_delete!" do
+    it "sets deleted_at to current time" do
+      answer = create(:answer)
+      expect { answer.soft_delete! }.to change { answer.deleted? }.from(false).to(true)
+    end
+  end
+
+  describe "#space" do
+    it "returns the question's space" do
+      space = create(:space)
+      question = create(:question, space: space)
+      answer = create(:answer, question: question)
+      expect(answer.space).to eq(space)
+    end
+  end
 end
