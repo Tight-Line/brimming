@@ -100,5 +100,4 @@ class User < ApplicationRecord
     question_karma + answer_karma + solved_answer_karma +
       question_vote_karma + answer_vote_karma + comment_vote_karma
   end
-
 end
