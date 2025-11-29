@@ -318,4 +318,148 @@ RSpec.describe User do
       expect(user.karma).to eq(60)
     end
   end
+
+  describe "#ldap_user?" do
+    it "returns true when user has ldap provider" do
+      user = create(:user, provider: "ldap")
+      expect(user.ldap_user?).to be true
+    end
+
+    it "returns false when user has no provider" do
+      user = create(:user, provider: nil)
+      expect(user.ldap_user?).to be false
+    end
+
+    it "returns false when user has different provider" do
+      user = create(:user, provider: "google")
+      expect(user.ldap_user?).to be false
+    end
+  end
+
+  describe ".from_omniauth" do
+    let(:ldap_server) { create(:ldap_server) }
+    let(:auth_hash) do
+      OpenStruct.new(
+        provider: "ldap",
+        uid: "testuser",
+        info: OpenStruct.new(
+          email: "testuser@example.com",
+          name: "Test User",
+          nickname: "testuser"
+        ),
+        extra: OpenStruct.new(
+          raw_info: OpenStruct.new(
+            dn: "uid=testuser,ou=users,dc=example,dc=com"
+          )
+        )
+      )
+    end
+
+    context "when user does not exist" do
+      it "creates a new user" do
+        expect {
+          User.from_omniauth(auth_hash, ldap_server)
+        }.to change(User, :count).by(1)
+      end
+
+      it "sets LDAP attributes" do
+        user = User.from_omniauth(auth_hash, ldap_server)
+        expect(user.provider).to eq("ldap")
+        expect(user.uid).to eq("testuser")
+        expect(user.ldap_dn).to eq("uid=testuser,ou=users,dc=example,dc=com")
+        expect(user.email).to eq("testuser@example.com")
+        expect(user.full_name).to eq("Test User")
+      end
+    end
+
+    context "when user exists with same email" do
+      let!(:existing_user) { create(:user, email: "testuser@example.com") }
+
+      it "updates existing user with LDAP info" do
+        expect {
+          User.from_omniauth(auth_hash, ldap_server)
+        }.not_to change(User, :count)
+
+        existing_user.reload
+        expect(existing_user.provider).to eq("ldap")
+        expect(existing_user.uid).to eq("testuser")
+      end
+    end
+
+    context "when user exists with same provider and uid" do
+      let!(:existing_user) { create(:user, provider: "ldap", uid: "testuser", email: "old@example.com") }
+
+      it "finds user by provider and uid" do
+        user = User.from_omniauth(auth_hash, ldap_server)
+        expect(user.id).to eq(existing_user.id)
+      end
+    end
+
+    context "when auth hash has missing extra data" do
+      let(:auth_hash_no_extra) do
+        OpenStruct.new(
+          provider: "ldap",
+          uid: "noextra",
+          info: OpenStruct.new(
+            email: "noextra@example.com",
+            name: "No Extra User",
+            nickname: "noextra"
+          ),
+          extra: nil
+        )
+      end
+
+      it "creates user with nil ldap_dn" do
+        user = User.from_omniauth(auth_hash_no_extra, ldap_server)
+        expect(user.ldap_dn).to be_nil
+      end
+    end
+
+    context "when auth hash has extra but no raw_info" do
+      let(:auth_hash_no_raw_info) do
+        OpenStruct.new(
+          provider: "ldap",
+          uid: "norawinfo",
+          info: OpenStruct.new(
+            email: "norawinfo@example.com",
+            name: "No Raw Info User",
+            nickname: "norawinfo"
+          ),
+          extra: OpenStruct.new(raw_info: nil)
+        )
+      end
+
+      it "creates user with nil ldap_dn" do
+        user = User.from_omniauth(auth_hash_no_raw_info, ldap_server)
+        expect(user.ldap_dn).to be_nil
+      end
+    end
+  end
+
+  describe ".generate_unique_username" do
+    it "returns base username when not taken" do
+      expect(User.generate_unique_username("newuser")).to eq("newuser")
+    end
+
+    it "sanitizes special characters" do
+      expect(User.generate_unique_username("user@domain.com")).to eq("user_domain_com")
+    end
+
+    it "truncates long usernames to 25 characters" do
+      long_name = "a" * 50
+      expect(User.generate_unique_username(long_name).length).to eq(25)
+    end
+
+    it "appends counter when username is taken" do
+      create(:user, username: "takenuser")
+      expect(User.generate_unique_username("takenuser")).to eq("takenuser_1")
+    end
+
+    it "increments counter for multiple conflicts" do
+      create(:user, username: "popular")
+      create(:user, username: "popular_1")
+      create(:user, username: "popular_2")
+      expect(User.generate_unique_username("popular")).to eq("popular_3")
+    end
+  end
 end

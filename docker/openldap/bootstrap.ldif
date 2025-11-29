@@ -1,0 +1,125 @@
+# Brimming Development LDAP Directory
+# This file bootstraps the OpenLDAP server with test users and groups
+# Note: Base DN (dc=brimming,dc=local) is created automatically by osixia/openldap
+
+# Organizational Units
+dn: ou=users,dc=brimming,dc=local
+objectClass: organizationalUnit
+ou: users
+
+dn: ou=groups,dc=brimming,dc=local
+objectClass: organizationalUnit
+ou: groups
+
+# =============================================================================
+# Users
+# All users have password: password123
+# =============================================================================
+
+dn: uid=jsmith,ou=users,dc=brimming,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: jsmith
+sn: Smith
+givenName: John
+cn: John Smith
+displayName: John Smith
+mail: john.smith@brimming.local
+uidNumber: 1001
+gidNumber: 1001
+homeDirectory: /home/jsmith
+userPassword: password123
+
+dn: uid=mjones,ou=users,dc=brimming,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: mjones
+sn: Jones
+givenName: Mary
+cn: Mary Jones
+displayName: Mary Jones
+mail: mary.jones@brimming.local
+uidNumber: 1002
+gidNumber: 1001
+homeDirectory: /home/mjones
+userPassword: password123
+
+dn: uid=bwilson,ou=users,dc=brimming,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: bwilson
+sn: Wilson
+givenName: Bob
+cn: Bob Wilson
+displayName: Bob Wilson
+mail: bob.wilson@brimming.local
+uidNumber: 1003
+gidNumber: 1001
+homeDirectory: /home/bwilson
+userPassword: password123
+
+dn: uid=agarcia,ou=users,dc=brimming,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: agarcia
+sn: Garcia
+givenName: Ana
+cn: Ana Garcia
+displayName: Ana Garcia
+mail: ana.garcia@brimming.local
+uidNumber: 1004
+gidNumber: 1001
+homeDirectory: /home/agarcia
+userPassword: password123
+
+dn: uid=dlee,ou=users,dc=brimming,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: dlee
+sn: Lee
+givenName: David
+cn: David Lee
+displayName: David Lee
+mail: david.lee@brimming.local
+uidNumber: 1005
+gidNumber: 1001
+homeDirectory: /home/dlee
+userPassword: password123
+
+# =============================================================================
+# Groups
+# =============================================================================
+
+dn: cn=engineering,ou=groups,dc=brimming,dc=local
+objectClass: groupOfNames
+cn: engineering
+description: Engineering Team
+member: uid=jsmith,ou=users,dc=brimming,dc=local
+member: uid=mjones,ou=users,dc=brimming,dc=local
+member: uid=bwilson,ou=users,dc=brimming,dc=local
+
+dn: cn=devops,ou=groups,dc=brimming,dc=local
+objectClass: groupOfNames
+cn: devops
+description: DevOps Team
+member: uid=bwilson,ou=users,dc=brimming,dc=local
+member: uid=dlee,ou=users,dc=brimming,dc=local
+
+dn: cn=design,ou=groups,dc=brimming,dc=local
+objectClass: groupOfNames
+cn: design
+description: Design Team
+member: uid=agarcia,ou=users,dc=brimming,dc=local
+member: uid=mjones,ou=users,dc=brimming,dc=local
+
+dn: cn=managers,ou=groups,dc=brimming,dc=local
+objectClass: groupOfNames
+cn: managers
+description: Management Team
+member: uid=jsmith,ou=users,dc=brimming,dc=local
+member: uid=agarcia,ou=users,dc=brimming,dc=local

@@ -77,7 +77,7 @@ class CommentsController < ApplicationController
       @commentable = parent.commentable
       params[:parent_comment_id] = parent.id
     else
-      @commentable = Question.find(params[:question_id] || params[:id])
+      @commentable = Question.find_by!(slug: params[:question_id] || params[:id])
     end
   end
 

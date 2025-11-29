@@ -32,7 +32,7 @@ make test
 
 ```bash
 make up        # Start all services in the background
-make server    # Start Rails server (accessible at localhost:3000)
+make server    # Start Rails server (accessible at localhost:33000)
 make console   # Open Rails console
 make shell     # Open bash shell in dev container
 ```

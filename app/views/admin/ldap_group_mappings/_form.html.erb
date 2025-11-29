@@ -1,0 +1,42 @@
+<%= form_with model: [:admin, @ldap_server, @ldap_group_mapping], class: "form" do |f| %>
+  <% if @ldap_group_mapping.errors.any? %>
+    <div class="alert alert-danger">
+      <h4><%= pluralize(@ldap_group_mapping.errors.count, "error") %> prevented this mapping from being saved:</h4>
+      <ul>
+        <% @ldap_group_mapping.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <%= f.label :group_pattern, "Group Pattern" %>
+    <%= f.text_field :group_pattern, class: "form-control", placeholder: "cn=developers,ou=groups,dc=example,dc=com" %>
+    <small class="form-text text-muted">
+      The LDAP group DN or name pattern to match against user's group memberships
+    </small>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :pattern_type, "Pattern Type" %>
+    <%= f.select :pattern_type,
+                 options_for_select(
+                   LdapGroupMapping::PATTERN_TYPES.map { |t| [t.titleize, t] },
+                   @ldap_group_mapping.pattern_type
+                 ),
+                 {},
+                 class: "form-control" %>
+    <small class="form-text text-muted">
+      <strong>Exact:</strong> Group DN must match the pattern exactly<br>
+      <strong>Prefix:</strong> Group DN must start with the pattern<br>
+      <strong>Suffix:</strong> Group DN must end with the pattern<br>
+      <strong>Contains:</strong> Group DN must contain the pattern anywhere
+    </small>
+  </div>
+
+  <div class="form-actions">
+    <%= f.submit class: "btn btn-primary" %>
+    <%= link_to "Cancel", admin_ldap_server_path(@ldap_server), class: "btn btn-link" %>
+  </div>
+<% end %>

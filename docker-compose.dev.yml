@@ -9,7 +9,7 @@ services:
       - bundle_cache:/usr/local/bundle
     working_dir: /src
     ports:
-      - "3000:3000"
+      - "33000:3000"
     environment:
       RAILS_ENV: development
       DB_HOST: postgres
@@ -76,7 +76,7 @@ services:
       - postgres_data:/var/lib/postgresql
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
-      - "5432:5432"
+      - "35432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U brimming"]
       interval: 5s
@@ -86,17 +86,48 @@ services:
   valkey:
     image: valkey/valkey:9.0.0
     ports:
-      - "6379:6379"
+      - "36379:6379"
     volumes:
       - valkey_data:/data
 
   mailhog:
     image: mailhog/mailhog:v1.0.1
     ports:
-      - "1025:1025"   # SMTP
-      - "8025:8025"   # Web UI
+      - "30125:1025"   # SMTP
+      - "33025:8025"   # Web UI
+
+  openldap:
+    image: osixia/openldap:1.5.0
+    environment:
+      LDAP_ORGANISATION: "Brimming Development"
+      LDAP_DOMAIN: "brimming.local"
+      LDAP_BASE_DN: "dc=brimming,dc=local"
+      LDAP_ADMIN_PASSWORD: "admin_secret"
+      LDAP_CONFIG_PASSWORD: "config_secret"
+      LDAP_READONLY_USER: "false"
+      LDAP_TLS: "false"
+    ports:
+      - "30389:389"     # LDAP
+      - "30636:636"     # LDAPS
+    volumes:
+      - openldap_data:/var/lib/ldap
+      - openldap_config:/etc/ldap/slapd.d
+      - ./docker/openldap/bootstrap.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/50-bootstrap.ldif:ro
+    command: --copy-service
+
+  phpldapadmin:
+    image: osixia/phpldapadmin:0.9.0
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: openldap
+      PHPLDAPADMIN_HTTPS: "false"
+    ports:
+      - "38080:80"     # Web UI for LDAP management
+    depends_on:
+      - openldap
 
 volumes:
   bundle_cache:
   postgres_data:
   valkey_data:
+  openldap_data:
+  openldap_config:

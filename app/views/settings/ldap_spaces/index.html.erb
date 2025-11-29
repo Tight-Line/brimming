@@ -1,0 +1,85 @@
+<div class="settings-container">
+  <div class="page-header">
+    <h1>LDAP Space Assignments</h1>
+    <p class="text-muted">
+      These spaces were automatically assigned based on your LDAP group memberships.
+      You can opt out of any space you don't want to be subscribed to.
+    </p>
+  </div>
+
+  <% if @ldap_mappings.empty? %>
+    <div class="empty-state">
+      <p>No LDAP group mappings are currently configured for your account.</p>
+      <p>Contact your administrator if you believe this is an error.</p>
+    </div>
+  <% else %>
+    <% @ldap_mappings.each do |mapping_data| %>
+      <div class="card mb-4">
+        <div class="card-header">
+          <strong>Group Pattern:</strong> <%= mapping_data[:mapping].group_pattern %>
+          <span class="badge badge-secondary"><%= mapping_data[:mapping].pattern_type %></span>
+        </div>
+        <div class="card-body">
+          <% if mapping_data[:spaces].empty? %>
+            <p class="text-muted">No spaces mapped to this group.</p>
+          <% else %>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Space</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% mapping_data[:spaces].each do |space_data| %>
+                  <tr>
+                    <td>
+                      <%= link_to space_data[:space].name, space_path(space_data[:space]) %>
+                      <% if space_data[:space].description.present? %>
+                        <br><small class="text-muted"><%= truncate(space_data[:space].description, length: 100) %></small>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if space_data[:opted_out] %>
+                        <span class="badge badge-warning">Opted Out</span>
+                      <% elsif space_data[:subscribed] %>
+                        <span class="badge badge-success">Subscribed</span>
+                      <% else %>
+                        <span class="badge badge-secondary">Not Subscribed</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if space_data[:opted_out] %>
+                        <%= button_to "Opt Back In",
+                                      opt_in_settings_ldap_spaces_path(
+                                        mapping_id: mapping_data[:mapping].id,
+                                        space_id: space_data[:space].id
+                                      ),
+                                      method: :post,
+                                      class: "btn btn-sm btn-success" %>
+                      <% else %>
+                        <%= button_to "Opt Out",
+                                      opt_out_settings_ldap_spaces_path(
+                                        mapping_id: mapping_data[:mapping].id,
+                                        space_id: space_data[:space].id
+                                      ),
+                                      method: :post,
+                                      class: "btn btn-sm btn-outline-danger",
+                                      data: { confirm: "Are you sure you want to opt out of '#{space_data[:space].name}'? You won't be automatically re-subscribed on future logins." } %>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+
+  <div class="mt-4">
+    <%= link_to "← Back to Home", root_path, class: "btn btn-link" %>
+  </div>
+</div>

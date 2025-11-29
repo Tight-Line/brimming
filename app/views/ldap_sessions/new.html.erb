@@ -1,0 +1,43 @@
+<div class="auth-container">
+  <div class="auth-box">
+    <h1>Sign in with LDAP</h1>
+
+    <%= form_tag ldap_sign_in_path, method: :post, class: "auth-form" do %>
+      <div class="form-group">
+        <%= label_tag :ldap_server_id, "LDAP Server" %>
+        <%= select_tag :ldap_server_id,
+                       options_from_collection_for_select(@ldap_servers, :id, :name),
+                       prompt: "Select server...",
+                       class: "form-control",
+                       required: true %>
+      </div>
+
+      <div class="form-group">
+        <%= label_tag :username, "Username" %>
+        <%= text_field_tag :username, nil,
+                           class: "form-control",
+                           placeholder: "Enter your LDAP username",
+                           autocomplete: "username",
+                           required: true %>
+      </div>
+
+      <div class="form-group">
+        <%= label_tag :password, "Password" %>
+        <%= password_field_tag :password, nil,
+                               class: "form-control",
+                               placeholder: "Enter your password",
+                               autocomplete: "current-password",
+                               required: true %>
+      </div>
+
+      <div class="form-actions">
+        <%= submit_tag "Sign in", class: "btn btn-primary btn-block" %>
+      </div>
+    <% end %>
+
+    <div class="auth-links">
+      <p>Or <%= link_to "sign in with email/password", new_user_session_path %></p>
+      <p>Don't have an account? <%= link_to "Sign up", new_user_registration_path %></p>
+    </div>
+  </div>
+</div>

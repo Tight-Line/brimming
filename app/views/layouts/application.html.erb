@@ -30,6 +30,9 @@
         <nav class="site-nav">
           <%= link_to "Questions", questions_path, class: current_page?(questions_path) ? "active" : "" %>
           <%= link_to "Spaces", spaces_path, class: current_page?(spaces_path) ? "active" : "" %>
+          <% if current_user&.admin? %>
+            <%= link_to "LDAP", admin_ldap_servers_path, class: request.path.start_with?("/admin") ? "active" : "" %>
+          <% end %>
         </nav>
 
         <div class="user-menu">
@@ -37,6 +40,9 @@
             <span class="user-greeting">
               <%= render 'shared/user_badge', user: current_user %>
             </span>
+            <% if current_user.ldap_user? %>
+              <%= link_to "LDAP Spaces", settings_ldap_spaces_path, class: "btn-settings" %>
+            <% end %>
             <%= button_to "Log out", destroy_user_session_path, method: :delete, class: "btn-logout" %>
           <% else %>
             <%= link_to "Log in", new_user_session_path, class: "btn-login" %>

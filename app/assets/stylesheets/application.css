@@ -1553,6 +1553,38 @@ textarea.form-control {
   color: var(--text-color);
 }
 
+.btn-settings {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.btn-settings:hover {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+/* Settings Pages */
+.settings-container {
+  max-width: 800px;
+}
+
+.settings-container .page-header {
+  margin-bottom: 2rem;
+}
+
+.settings-container .page-header h1 {
+  margin-bottom: 0.5rem;
+}
+
+.settings-container .empty-state {
+  text-align: center;
+  padding: 3rem;
+  background: var(--white);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+}
+
 /* ==========================================================================
    Markdown Body Styles
    ========================================================================== */

@@ -47,7 +47,7 @@ make setup
 # Start all services
 make up
 
-# Access the application at http://localhost:3000
+# Access the application at http://localhost:33000
 ```
 
 ## Development
@@ -154,21 +154,58 @@ All application tables are created in the `brimming` schema (not `public`). This
 - **Schema**: `brimming` (search_path: `brimming,public`)
 - **Console access**: `make db-console` opens psql with correct search_path
 
-### Email (Development)
+### Development Services
 
-Development uses [Mailhog](https://github.com/mailhog/MailHog) to capture all outgoing emails without actually sending them.
+All development services run via Docker Compose with non-standard ports to avoid conflicts:
 
-| Service | URL |
-|---------|-----|
-| **Web Application** | http://localhost:3000 |
-| **Mailhog Web UI** | http://localhost:8025 |
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| **Web Application** | http://localhost:33000 | See "Test Accounts" below |
+| **Mailhog** (email viewer) | http://localhost:33025 | No login required |
+| **phpLDAPadmin** | http://localhost:38080 | See "LDAP" below |
+| **PostgreSQL** | localhost:35432 | `brimming` / `brimming_dev` |
+| **Valkey (Redis)** | localhost:36379 | No auth |
+| **OpenLDAP** | localhost:30389 | See "LDAP" below |
 
-All emails sent by the application (password resets, notifications, etc.) are captured by Mailhog and viewable in the web UI. No actual emails are sent.
+#### Test Accounts
 
-The development environment is pre-configured with:
-- `SMTP_HOST=mailhog` (port 1025)
-- `SMTP_TLS=false`
-- `MAILER_FROM=noreply@brimming.local`
+After running `make db-seed`, these accounts are available:
+
+| Email | Password | Role |
+|-------|----------|------|
+| admin@example.com | password123 | Admin |
+| sarah.chen@example.com | password123 | User (moderator) |
+| *(all seed users)* | password123 | Various |
+
+#### LDAP Test Users
+
+Login via "Sign in with LDAP" using **username** (not email):
+
+| Username | Password | Name | Groups |
+|----------|----------|------|--------|
+| jsmith | password123 | John Smith | engineering, managers |
+| mjones | password123 | Mary Jones | engineering, design |
+| bwilson | password123 | Bob Wilson | engineering, devops |
+| agarcia | password123 | Ana Garcia | design, managers |
+| dlee | password123 | David Lee | devops |
+
+#### phpLDAPadmin
+
+To browse/edit LDAP data at http://localhost:38080:
+- **Login DN**: `cn=admin,dc=brimming,dc=local`
+- **Password**: `admin_secret`
+
+#### Email (Mailhog)
+
+Development uses [Mailhog](https://github.com/mailhog/MailHog) to capture all outgoing emails without actually sending them. Visit http://localhost:33025 to view captured emails (no login required).
+
+#### Database Console
+
+```bash
+make db-console  # Opens psql with correct schema
+```
+
+Direct connection: `psql -h localhost -p 35432 -U brimming -d brimming`
 
 ### SSO Configuration
 

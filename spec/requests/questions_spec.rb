@@ -59,6 +59,15 @@ RSpec.describe "Questions" do
       expect(response).to have_http_status(:success)
     end
 
+    it "uses slug in URL" do
+      question = create(:question, title: "How do I solve this problem?")
+
+      expect(question_path(question)).to eq("/questions/#{question.slug}")
+      get question_path(question)
+
+      expect(response).to have_http_status(:success)
+    end
+
     it "displays the question" do
       question = create(:question)
 

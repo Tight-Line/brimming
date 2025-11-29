@@ -1,5 +1,31 @@
 Rails.application.routes.draw do
   devise_for :users
+
+  # LDAP authentication (custom implementation, not using OmniAuth routes)
+  get "ldap/sign_in", to: "ldap_sessions#new", as: :ldap_sign_in
+  post "ldap/sign_in", to: "ldap_sessions#create"
+
+  # Admin namespace
+  namespace :admin do
+    resources :ldap_servers do
+      resources :ldap_group_mappings, except: [ :index ] do
+        member do
+          post :add_space
+          delete :remove_space
+        end
+      end
+    end
+  end
+
+  # User settings
+  namespace :settings do
+    resources :ldap_spaces, only: [ :index ] do
+      collection do
+        post :opt_out
+        post :opt_in
+      end
+    end
+  end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

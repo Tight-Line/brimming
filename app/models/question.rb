@@ -12,6 +12,13 @@ class Question < ApplicationRecord
   # Validations
   validates :title, presence: true, length: { minimum: 10, maximum: 200 }
   validates :body, presence: true, length: { minimum: 20, maximum: 10_000 }
+  validates :slug, presence: true,
+                   uniqueness: { case_sensitive: false },
+                   format: { with: /\A[a-z0-9-]+\z/,
+                             message: "can only contain lowercase letters, numbers, and hyphens" }
+
+  # Callbacks
+  before_validation :generate_slug, if: -> { slug.blank? && title.present? }
 
   # Scopes
   scope :not_deleted, -> { where(deleted_at: nil) }
@@ -19,6 +26,10 @@ class Question < ApplicationRecord
   scope :by_space, ->(space) { where(space: space) }
 
   # Instance methods
+  def to_param
+    slug
+  end
+
   def author
     user
   end
@@ -101,5 +112,25 @@ class Question < ApplicationRecord
 
   def update_vote_score!(delta)
     increment!(:vote_score, delta)
+  end
+
+  def generate_slug
+    base_slug = title.downcase
+                     .gsub(/[^a-z0-9\s-]/, "")  # Remove special characters
+                     .gsub(/\s+/, "-")           # Replace spaces with hyphens
+                     .gsub(/-+/, "-")            # Collapse multiple hyphens
+                     .gsub(/^-|-$/, "")          # Remove leading/trailing hyphens
+                     .truncate(80, omission: "") # Limit length
+
+    # Ensure uniqueness by appending a number if needed
+    slug_candidate = base_slug
+    counter = 1
+
+    while Question.exists?(slug: slug_candidate)
+      slug_candidate = "#{base_slug}-#{counter}"
+      counter += 1
+    end
+
+    self.slug = slug_candidate
   end
 end

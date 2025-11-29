@@ -21,6 +21,16 @@ gem "devise", "~> 4.9"
 # Authorization [https://github.com/varvet/pundit]
 gem "pundit", "~> 2.4"
 
+# OmniAuth for SSO [https://github.com/omniauth/omniauth]
+gem "omniauth", "~> 2.1"
+gem "omniauth-rails_csrf_protection", "~> 1.0"
+
+# LDAP authentication [https://github.com/intridea/omniauth-ldap]
+gem "omniauth-ldap", "~> 2.0"
+
+# Net-LDAP for direct LDAP queries (group membership)
+gem "net-ldap", "~> 0.19"
+
 # Markdown rendering with syntax highlighting
 gem "redcarpet", "~> 3.6"
 gem "rouge", "~> 4.0"
