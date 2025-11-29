@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class QuestionsController < ApplicationController
-  before_action :require_login, only: [ :upvote, :downvote, :remove_vote ]
+  before_action :require_login, only: [ :new, :create, :upvote, :downvote, :remove_vote ]
   before_action :set_question, only: [ :show, :upvote, :downvote, :remove_vote ]
 
   def index
@@ -12,6 +12,22 @@ class QuestionsController < ApplicationController
   def show
     @answers = @question.answers.by_votes.includes(:user, comments: [ :user, { replies: :user } ])
     @question_comments = @question.comments.top_level.includes(:user, replies: [ :user, { replies: :user } ]).recent
+  end
+
+  def new
+    @question = Question.new
+    @spaces = Space.alphabetical
+  end
+
+  def create
+    @question = current_user.questions.build(question_params)
+
+    if @question.save
+      redirect_to @question, notice: "Question posted successfully."
+    else
+      @spaces = Space.alphabetical
+      render :new, status: :unprocessable_entity
+    end
   end
 
   def upvote
@@ -33,6 +49,10 @@ class QuestionsController < ApplicationController
 
   def set_question
     @question = Question.find(params[:id])
+  end
+
+  def question_params
+    params.require(:question).permit(:title, :body, :space_id)
   end
 
   def respond_to_vote

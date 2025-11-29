@@ -1,0 +1,26 @@
+<% # Local variables: url, placeholder (optional), parent_comment (optional for replies) %>
+<div class="comment-form-wrapper">
+  <%= form_with url: url, class: "comment-form-inline", data: { controller: "editor", editor_mode_value: "plain" } do |f| %>
+    <div class="comment-input-group">
+      <div class="comment-editor-toggle" data-editor-target="modeButtons">
+        <button type="button" data-mode="plain" data-action="editor#setModePlain" class="editor-toggle-btn active" title="Plain text">
+          Aa
+        </button>
+        <button type="button" data-mode="markdown" data-action="editor#setModeMarkdown" class="editor-toggle-btn" title="Markdown">
+          M&darr;
+        </button>
+      </div>
+
+      <%= f.text_area :body,
+          class: "comment-textarea",
+          placeholder: placeholder || "Write a comment...",
+          rows: 2,
+          required: true,
+          data: { editor_target: "textarea" } %>
+    </div>
+
+    <div class="comment-form-actions">
+      <%= f.submit "Post", class: "btn btn-sm btn-primary" %>
+    </div>
+  <% end %>
+</div>

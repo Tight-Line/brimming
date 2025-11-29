@@ -1,6 +1,13 @@
 <% content_for(:title) { "Questions - Brimming" } %>
 
-<h1>Questions</h1>
+<div class="page-header-with-action">
+  <h1>Questions</h1>
+  <% if user_signed_in? %>
+    <%= link_to "Ask Question", new_question_path, class: "btn btn-primary" %>
+  <% else %>
+    <button type="button" class="btn btn-primary" data-action="modal#open">Ask Question</button>
+  <% end %>
+</div>
 
 <div class="card">
   <% if @questions.any? %>

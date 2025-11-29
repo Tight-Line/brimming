@@ -1,0 +1,47 @@
+<div class="card answer-form-card">
+  <div class="card-header">
+    <h3>Your Answer</h3>
+  </div>
+
+  <%= form_with model: [question, answer], class: "answer-form" do |f| %>
+    <% if answer.errors.any? %>
+      <div class="form-errors">
+        <ul>
+          <% answer.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="form-group" data-controller="editor" data-editor-preview-path-value="/markdown/preview">
+      <div class="editor-toolbar" data-editor-target="modeButtons">
+        <button type="button" data-mode="plain" data-action="editor#setModePlain" class="editor-mode-btn active">
+          Plain Text
+        </button>
+        <button type="button" data-mode="markdown" data-action="editor#setModeMarkdown" class="editor-mode-btn">
+          Markdown
+        </button>
+        <button type="button" data-mode="preview" data-action="editor#setModePreview" class="editor-mode-btn">
+          Preview
+        </button>
+      </div>
+
+      <%= f.text_area :body, class: "form-control editor-textarea", required: true,
+          rows: 10,
+          placeholder: "Write your answer here. Be detailed and provide examples if possible.",
+          data: { editor_target: "textarea" } %>
+
+      <div class="editor-preview markdown-body" data-editor-target="preview" style="display: none;"></div>
+
+      <small class="form-hint">
+        10-10,000 characters. Use Markdown for formatting with **bold**, *italic*, `code`, and
+        <code>```language</code> for code blocks.
+      </small>
+    </div>
+
+    <div class="form-actions">
+      <%= f.submit "Post Answer", class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</div>

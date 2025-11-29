@@ -1,0 +1,61 @@
+<%= form_with model: question, class: "question-form" do |f| %>
+  <% if question.errors.any? %>
+    <div class="form-errors">
+      <h3><%= pluralize(question.errors.count, "error") %> prevented this question from being saved:</h3>
+      <ul>
+        <% question.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <%= f.label :space_id, "Space" %>
+    <%= f.select :space_id, spaces.map { |s| [s.name, s.id] },
+        { include_blank: "Select a space..." },
+        class: "form-control", required: true %>
+    <small class="form-hint">Choose the most relevant space for your question</small>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :title %>
+    <%= f.text_field :title, class: "form-control", required: true,
+        placeholder: "What's your question? Be specific.",
+        maxlength: 200 %>
+    <small class="form-hint">10-200 characters</small>
+  </div>
+
+  <div class="form-group" data-controller="editor" data-editor-preview-path-value="/markdown/preview">
+    <%= f.label :body, "Details" %>
+
+    <div class="editor-toolbar" data-editor-target="modeButtons">
+      <button type="button" data-mode="plain" data-action="editor#setModePlain" class="editor-mode-btn active">
+        Plain Text
+      </button>
+      <button type="button" data-mode="markdown" data-action="editor#setModeMarkdown" class="editor-mode-btn">
+        Markdown
+      </button>
+      <button type="button" data-mode="preview" data-action="editor#setModePreview" class="editor-mode-btn">
+        Preview
+      </button>
+    </div>
+
+    <%= f.text_area :body, class: "form-control editor-textarea", required: true,
+        rows: 12,
+        placeholder: "Provide details about your question. Include any error messages, code snippets, or context that would help others understand your problem.",
+        data: { editor_target: "textarea" } %>
+
+    <div class="editor-preview markdown-body" data-editor-target="preview" style="display: none;"></div>
+
+    <small class="form-hint">
+      20-10,000 characters. Use Markdown mode for formatting with **bold**, *italic*, `code`, and
+      <code>```language</code> for code blocks.
+    </small>
+  </div>
+
+  <div class="form-actions">
+    <%= f.submit "Post Question", class: "btn btn-primary" %>
+    <%= link_to "Cancel", questions_path, class: "btn btn-secondary" %>
+  </div>
+<% end %>

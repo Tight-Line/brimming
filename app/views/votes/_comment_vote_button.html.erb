@@ -23,9 +23,9 @@
       <% end %>
     <% end %>
   <% else %>
-    <span class="comment-vote-btn disabled" title="Sign in to vote">
+    <button type="button" class="comment-vote-btn" title="Sign in to vote" data-action="modal#open">
       <span class="vote-arrow-small">&#9650;</span>
-    </span>
+    </button>
   <% end %>
   <% if comment.vote_score > 0 %>
     <span class="comment-vote-count"><%= comment.vote_score %></span>
