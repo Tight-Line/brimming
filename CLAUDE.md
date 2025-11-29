@@ -174,15 +174,15 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - Session management (Devise rememberable) `[x]`
 - Basic authorization helper methods `[x]`
 
-### Phase 5: Core Q&A Features `[~]`
-- Questions CRUD (create, read, update, delete own) - **read only implemented**
-- Answers CRUD - **read only implemented**
+### Phase 5: Core Q&A Features `[x]`
+- Questions: full CRUD (create, read, edit, delete own) `[x]`
+- Answers: full CRUD (create, read, edit, delete own) `[x]`
+- Comments: full CRUD with nested replies `[x]`
 - Voting on questions (one vote per user per question) `[x]`
 - Voting on answers (one vote per user per answer) `[x]`
 - Voting on comments (upvote only) `[x]`
 - Answer ordering by vote score `[x]`
 - Question show page with answers `[x]`
-- Nested comments on questions and answers `[x]`
 
 ### Phase 6: Spaces & Moderation `[~]`
 - Space CRUD (admin only) - **read only implemented**
@@ -255,27 +255,27 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 
 ## Current Status
 
-**Completed Phases**: 1, 3, 4, 7
-**In Progress**: 5 (Q&A Features - need CRUD), 6 (Moderation - need Pundit policies)
+**Completed Phases**: 1, 3, 4, 5, 7
+**In Progress**: 6 (Moderation - need Pundit policies, admin UI)
 **Not Started**: 2 (Helm), 8-13
 
 ### What's Working
 - Full data model with Users, Spaces, Questions, Answers, Comments, Votes
 - Devise authentication with registration (username + email + password), login/logout
-- Read-only web UI for browsing questions, spaces, and user profiles
-- Voting system for questions, answers, and comments
-- Nested comments with replies
+- Full web UI for browsing and creating questions, answers, and comments
+- Voting system for questions, answers, and comments (with Turbo Stream updates)
+- Nested comments with replies (up to 3 levels deep)
 - Karma system with gamification (questions, answers, solved, best answers, votes)
 - User badges showing karma, solved answer count, best answer count
 - Space subscriptions and moderator assignments (via seeds)
 - "Solved" designation for moderator-approved answers
 - "Best" designation for highest-voted answers per question
-- 100% test coverage (298 specs)
+- Sign-in modal for unauthenticated users attempting protected actions
+- 100% test coverage
 
 ### Next Actions
-1. **Phase 5 (CRUD)**: Add create/update/delete for questions, answers, comments
-2. **Phase 6 (Authorization)**: Add Pundit policies for role-based access
-3. **Phase 2 (Helm)**: Create Kubernetes deployment charts
+1. **Phase 6 (Authorization)**: Add Pundit policies for role-based access, admin UI for spaces
+2. **Phase 2 (Helm)**: Create Kubernetes deployment charts
 
 ---
 

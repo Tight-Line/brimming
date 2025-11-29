@@ -13,13 +13,14 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   root "home#index"
 
-  resources :questions, only: [ :index, :show, :new, :create ] do
+  resources :questions, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
     member do
       post :upvote
       post :downvote
       delete :remove_vote
+      delete :hard_delete
     end
-    resources :answers, only: [ :create ], shallow: true
+    resources :answers, only: [ :create, :edit, :update, :destroy ], shallow: true
     resources :comments, only: [ :create ], shallow: true
   end
 
@@ -28,14 +29,16 @@ Rails.application.routes.draw do
       post :upvote
       post :downvote
       delete :remove_vote
+      delete :hard_delete
     end
     resources :comments, only: [ :create ], shallow: true
   end
 
-  resources :comments, only: [] do
+  resources :comments, only: [ :edit, :update, :destroy ] do
     member do
       post :upvote
       delete :remove_vote
+      delete :hard_delete
     end
     resources :comments, only: [ :create ], as: :replies
   end

@@ -78,6 +78,18 @@ class Answer < ApplicationRecord
     update!(vote_score: votes.sum(:value))
   end
 
+  def deleted?
+    deleted_at.present?
+  end
+
+  def soft_delete!
+    update!(deleted_at: Time.current)
+  end
+
+  def space
+    question.space
+  end
+
   private
 
   def update_vote_score!(delta)

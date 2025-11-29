@@ -132,4 +132,295 @@ RSpec.describe "Comments" do
       expect(response).to redirect_to(root_path)
     end
   end
+
+  describe "GET /comments/:id/edit" do
+    let(:question) { create(:question) }
+    let(:comment) { create(:comment, commentable: question, user: user) }
+
+    context "when signed in as owner" do
+      before { sign_in user }
+
+      it "returns http success" do
+        get edit_comment_path(comment)
+        expect(response).to have_http_status(:success)
+      end
+
+      it "displays the edit form" do
+        get edit_comment_path(comment)
+        expect(response.body).to include("Edit Comment")
+        expect(response.body).to include(comment.body)
+      end
+    end
+
+    context "when signed in as different user" do
+      let(:other_user) { create(:user) }
+
+      before { sign_in other_user }
+
+      it "redirects with alert" do
+        get edit_comment_path(comment)
+        expect(response).to redirect_to(question_path(question, anchor: "comment-#{comment.id}"))
+        expect(flash[:alert]).to include("your own comments")
+      end
+    end
+
+    context "when not signed in" do
+      it "redirects to sign in" do
+        get edit_comment_path(comment)
+        expect(response).to redirect_to(new_user_session_path)
+      end
+    end
+  end
+
+  describe "PATCH /comments/:id" do
+    let(:question) { create(:question) }
+    let(:comment) { create(:comment, commentable: question, user: user) }
+
+    context "when signed in as owner" do
+      before { sign_in user }
+
+      context "with valid parameters" do
+        it "updates the comment" do
+          patch comment_path(comment), params: { comment: { body: "Updated comment body" } }
+          expect(comment.reload.body).to eq("Updated comment body")
+        end
+
+        it "records the edit" do
+          patch comment_path(comment), params: { comment: { body: "Updated comment body" } }
+          expect(comment.reload.edited?).to be true
+          expect(comment.last_editor).to eq(user)
+        end
+
+        it "redirects to the question with anchor" do
+          patch comment_path(comment), params: { comment: { body: "Updated comment body" } }
+          expect(response).to redirect_to(question_path(question, anchor: "comment-#{comment.id}"))
+        end
+      end
+
+      context "with invalid parameters" do
+        it "does not update the comment" do
+          original_body = comment.body
+          patch comment_path(comment), params: { comment: { body: "" } }
+          expect(comment.reload.body).to eq(original_body)
+        end
+
+        it "re-renders the edit form" do
+          patch comment_path(comment), params: { comment: { body: "" } }
+          expect(response).to have_http_status(:unprocessable_entity)
+        end
+      end
+    end
+
+    context "when signed in as different user" do
+      let(:other_user) { create(:user) }
+
+      before { sign_in other_user }
+
+      it "does not update the comment" do
+        original_body = comment.body
+        patch comment_path(comment), params: { comment: { body: "Hacked" } }
+        expect(comment.reload.body).to eq(original_body)
+      end
+
+      it "redirects with alert" do
+        patch comment_path(comment), params: { comment: { body: "Hacked" } }
+        expect(response).to redirect_to(question_path(question, anchor: "comment-#{comment.id}"))
+      end
+    end
+
+    context "when not signed in" do
+      it "redirects to sign in" do
+        patch comment_path(comment), params: { comment: { body: "New body" } }
+        expect(response).to redirect_to(new_user_session_path)
+      end
+    end
+  end
+
+  describe "DELETE /comments/:id" do
+    let(:question) { create(:question) }
+    let!(:comment) { create(:comment, commentable: question, user: user) }
+
+    context "when signed in as owner" do
+      before { sign_in user }
+
+      it "soft deletes the comment" do
+        expect {
+          delete comment_path(comment)
+        }.not_to change(Comment, :count)
+
+        expect(comment.reload.deleted?).to be true
+      end
+
+      it "redirects to the comment" do
+        delete comment_path(comment)
+        expect(response).to redirect_to(question_path(question, anchor: "comment-#{comment.id}"))
+      end
+    end
+
+    context "when signed in as different user" do
+      let(:other_user) { create(:user) }
+
+      before { sign_in other_user }
+
+      it "does not soft delete the comment" do
+        delete comment_path(comment)
+        expect(comment.reload.deleted?).to be false
+      end
+
+      it "redirects with alert" do
+        delete comment_path(comment)
+        expect(response).to redirect_to(question_path(question, anchor: "comment-#{comment.id}"))
+      end
+    end
+
+    context "when not signed in" do
+      it "redirects to sign in" do
+        delete comment_path(comment)
+        expect(response).to redirect_to(new_user_session_path)
+      end
+    end
+  end
+
+  describe "comment on answer" do
+    let(:answer) { create(:answer) }
+    let(:comment) { create(:comment, commentable: answer, user: user) }
+
+    context "when editing" do
+      before { sign_in user }
+
+      it "redirects to the question containing the answer" do
+        patch comment_path(comment), params: { comment: { body: "Updated comment" } }
+        expect(response).to redirect_to(question_path(answer.question, anchor: "comment-#{comment.id}"))
+      end
+    end
+
+    context "when deleting" do
+      before { sign_in user }
+
+      it "redirects to the comment" do
+        delete comment_path(comment)
+        expect(response).to redirect_to(question_path(answer.question, anchor: "comment-#{comment.id}"))
+      end
+    end
+  end
+
+  describe "reply to comment on question" do
+    let(:question) { create(:question) }
+    let(:parent_comment) { create(:comment, commentable: question) }
+    let(:reply) { create(:comment, commentable: question, parent_comment: parent_comment, user: user) }
+
+    context "when deleting" do
+      before { sign_in user }
+
+      it "redirects to the reply (soft deleted)" do
+        delete comment_path(reply)
+        expect(response).to redirect_to(question_path(question, anchor: "comment-#{reply.id}"))
+      end
+    end
+  end
+
+  describe "reply to comment on answer" do
+    let(:answer) { create(:answer) }
+    let(:parent_comment) { create(:comment, commentable: answer) }
+    let(:reply) { create(:comment, commentable: answer, parent_comment: parent_comment, user: user) }
+
+    context "when deleting" do
+      before { sign_in user }
+
+      it "redirects to the reply (soft deleted)" do
+        delete comment_path(reply)
+        expect(response).to redirect_to(question_path(answer.question, anchor: "comment-#{reply.id}"))
+      end
+    end
+  end
+
+  describe "DELETE /comments/:id/hard_delete" do
+    let(:question) { create(:question) }
+    let(:space) { question.space }
+    let!(:comment) { create(:comment, commentable: question) }
+
+    context "when signed in as admin" do
+      let(:admin) { create(:user, role: :admin) }
+
+      before { sign_in admin }
+
+      it "permanently deletes the comment" do
+        expect {
+          delete hard_delete_comment_path(comment)
+        }.to change(Comment, :count).by(-1)
+      end
+
+      it "also deletes child replies" do
+        reply1 = create(:comment, commentable: question, parent_comment: comment)
+        create(:comment, commentable: question, parent_comment: reply1)
+
+        expect {
+          delete hard_delete_comment_path(comment)
+        }.to change(Comment, :count).by(-3)
+      end
+
+      it "redirects to the question" do
+        delete hard_delete_comment_path(comment)
+        expect(response).to redirect_to(question_path(question))
+      end
+
+      context "when comment is a reply" do
+        let(:parent) { create(:comment, commentable: question) }
+        let!(:reply) { create(:comment, commentable: question, parent_comment: parent) }
+
+        it "redirects to parent comment anchor" do
+          delete hard_delete_comment_path(reply)
+          expect(response).to redirect_to(question_path(question, anchor: "comment-#{parent.id}"))
+        end
+      end
+
+      context "when comment is on an answer" do
+        let(:answer) { create(:answer, question: question) }
+        let!(:answer_comment) { create(:comment, commentable: answer) }
+
+        it "redirects to the answer anchor" do
+          delete hard_delete_comment_path(answer_comment)
+          expect(response).to redirect_to(question_path(question, anchor: "answer-#{answer.id}"))
+        end
+      end
+    end
+
+    context "when signed in as space moderator" do
+      let(:moderator) { create(:user) }
+
+      before do
+        create(:space_moderator, space: space, user: moderator)
+        sign_in moderator
+      end
+
+      it "permanently deletes the comment" do
+        expect {
+          delete hard_delete_comment_path(comment)
+        }.to change(Comment, :count).by(-1)
+      end
+    end
+
+    context "when signed in as regular user" do
+      before { sign_in user }
+
+      it "does not delete the comment" do
+        expect {
+          delete hard_delete_comment_path(comment)
+        }.not_to change(Comment, :count)
+      end
+
+      it "redirects with alert" do
+        delete hard_delete_comment_path(comment)
+        expect(response).to redirect_to(question_path(question, anchor: "comment-#{comment.id}"))
+        expect(flash[:alert]).to include("moderators")
+      end
+    end
+
+    context "when not signed in" do
+      it "redirects to sign in" do
+        delete hard_delete_comment_path(comment)
+        expect(response).to redirect_to(new_user_session_path)
+      end
+    end
+  end
 end

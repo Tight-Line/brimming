@@ -67,6 +67,19 @@ class Comment < ApplicationRecord
   end
 
   def allows_replies?
-    depth < MAX_DEPTH
+    depth < MAX_DEPTH && !deleted?
+  end
+
+  def deleted?
+    deleted_at.present?
+  end
+
+  def soft_delete!
+    update!(deleted_at: Time.current)
+  end
+
+  # Returns the space this comment belongs to (through question or answer)
+  def space
+    commentable.is_a?(Question) ? commentable.space : commentable.question.space
   end
 end

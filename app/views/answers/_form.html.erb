@@ -1,9 +1,9 @@
 <div class="card answer-form-card">
   <div class="card-header">
-    <h3>Your Answer</h3>
+    <h3><%= answer.persisted? ? "Edit Answer" : "Your Answer" %></h3>
   </div>
 
-  <%= form_with model: [question, answer], class: "answer-form" do |f| %>
+  <%= form_with model: answer.persisted? ? answer : [question, answer], class: "answer-form" do |f| %>
     <% if answer.errors.any? %>
       <div class="form-errors">
         <ul>
@@ -41,7 +41,10 @@
     </div>
 
     <div class="form-actions">
-      <%= f.submit "Post Answer", class: "btn btn-primary" %>
+      <%= f.submit answer.persisted? ? "Update Answer" : "Post Answer", class: "btn btn-primary" %>
+      <% if answer.persisted? %>
+        <%= link_to "Cancel", question_path(question, anchor: "answer-#{answer.id}"), class: "btn btn-secondary" %>
+      <% end %>
     </div>
   <% end %>
 </div>

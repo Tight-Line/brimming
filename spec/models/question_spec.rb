@@ -21,6 +21,15 @@ RSpec.describe Question do
   end
 
   describe "scopes" do
+    describe ".not_deleted" do
+      it "excludes soft-deleted questions" do
+        active = create(:question)
+        create(:question, deleted_at: Time.current)
+
+        expect(described_class.not_deleted).to eq([ active ])
+      end
+    end
+
     describe ".recent" do
       it "orders questions by created_at descending" do
         old_question = create(:question, created_at: 2.days.ago)
@@ -259,6 +268,25 @@ RSpec.describe Question do
 
       question.recalculate_vote_score!
       expect(question.vote_score).to eq(1)
+    end
+  end
+
+  describe "#deleted?" do
+    it "returns true when deleted_at is present" do
+      question = create(:question, deleted_at: Time.current)
+      expect(question.deleted?).to be true
+    end
+
+    it "returns false when deleted_at is nil" do
+      question = create(:question)
+      expect(question.deleted?).to be false
+    end
+  end
+
+  describe "#soft_delete!" do
+    it "sets deleted_at to current time" do
+      question = create(:question)
+      expect { question.soft_delete! }.to change { question.deleted? }.from(false).to(true)
     end
   end
 end

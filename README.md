@@ -176,32 +176,47 @@ LDAP and social SSO providers are configured through the admin panel. See the [S
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         Ingress                              │
-└─────────────────────────────────────────────────────────────┘
-                              │
-              ┌───────────────┼───────────────┐
-              ▼               ▼               ▼
-        ┌──────────┐   ┌──────────┐   ┌──────────┐
-        │   App    │   │   App    │   │   App    │
-        │ (Rails)  │   │ (Rails)  │   │ (Rails)  │
-        └────┬─────┘   └────┬─────┘   └────┬─────┘
-             │              │              │
-             └──────────────┼──────────────┘
-                            │
-     ┌──────────────────────┼──────────────────────┐
-     ▼                      ▼                      ▼
-┌──────────┐          ┌──────────┐          ┌──────────┐
-│PostgreSQL│          │  Valkey  │          │OpenSearch│
-└──────────┘          └──────────┘          └──────────┘
-                            │
-                      ┌─────┴─────┐
-                      ▼           ▼
-                ┌──────────┐ ┌──────────┐
-                │ Worker   │ │ Worker   │
-                │(Sidekiq) │ │(Sidekiq) │
-                └──────────┘ └──────────┘
+```mermaid
+flowchart TB
+    subgraph Ingress
+        LB[Load Balancer / Ingress]
+    end
+
+    subgraph App Layer
+        App1[App<br/>Rails]
+        App2[App<br/>Rails]
+        App3[App<br/>Rails]
+    end
+
+    subgraph Data Layer
+        PG[(PostgreSQL)]
+        VK[(Valkey)]
+        OS[(OpenSearch)]
+    end
+
+    subgraph Workers
+        W1[Worker<br/>Sidekiq]
+        W2[Worker<br/>Sidekiq]
+    end
+
+    LB --> App1
+    LB --> App2
+    LB --> App3
+
+    App1 --> PG
+    App2 --> PG
+    App3 --> PG
+
+    App1 --> VK
+    App2 --> VK
+    App3 --> VK
+
+    App1 --> OS
+    App2 --> OS
+    App3 --> OS
+
+    VK --> W1
+    VK --> W2
 ```
 
 ## Contributing

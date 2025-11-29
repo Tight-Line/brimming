@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_29_141759) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_29_191627) do
   create_schema "brimming", if_not_exists: true
 
   # These are extensions that must be enabled in order to support this database
@@ -19,6 +19,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_29_141759) do
   create_table "brimming.answers", force: :cascade do |t|
     t.text "body", null: false
     t.datetime "created_at", null: false
+    t.datetime "deleted_at"
     t.datetime "edited_at"
     t.boolean "is_correct", default: false, null: false
     t.bigint "last_editor_id"
@@ -49,6 +50,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_29_141759) do
     t.bigint "commentable_id", null: false
     t.string "commentable_type", null: false
     t.datetime "created_at", null: false
+    t.datetime "deleted_at"
     t.datetime "edited_at"
     t.bigint "last_editor_id"
     t.bigint "parent_comment_id"
@@ -76,6 +78,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_29_141759) do
   create_table "brimming.questions", force: :cascade do |t|
     t.text "body", null: false
     t.datetime "created_at", null: false
+    t.datetime "deleted_at"
     t.datetime "edited_at"
     t.bigint "last_editor_id"
     t.bigint "space_id", null: false

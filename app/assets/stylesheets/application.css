@@ -372,8 +372,9 @@ ul, ol {
 
 .answer-meta {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
   align-items: center;
+  gap: 0.5rem;
   font-size: 0.875rem;
   color: var(--text-muted);
 }
@@ -772,6 +773,7 @@ textarea.form-control {
 .comment-meta {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
   margin-top: 0.25rem;
   font-size: 0.75rem;
@@ -792,6 +794,18 @@ textarea.form-control {
   color: var(--text-muted);
 }
 
+.comment-deleted .comment-deleted-message,
+.answer-deleted .answer-deleted-message {
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 0.5rem 0;
+}
+
+.comment-deleted,
+.answer-deleted {
+  opacity: 0.7;
+}
+
 .comment-score {
   font-weight: 600;
   color: var(--success-color);
@@ -801,15 +815,20 @@ textarea.form-control {
   margin-top: 0.5rem;
 }
 
-.comment-reply-btn {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  padding: 0;
-  margin-left: 0.5rem;
+.comment-actions,
+.answer-actions,
+.question-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
 }
 
-.comment-reply-btn:hover {
-  color: var(--primary-color);
+.comment-actions form,
+.answer-actions form,
+.question-actions form {
+  display: inline;
+  margin: 0;
+  padding: 0;
 }
 
 .comment-reply-form {
@@ -920,6 +939,31 @@ textarea.form-control {
 
 .btn-link:hover {
   color: var(--primary-dark);
+}
+
+.btn-link-danger {
+  color: #dc3545;
+}
+
+.btn-link-danger:hover {
+  color: #a71d2a;
+}
+
+.owner-actions,
+.moderator-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+}
+
+/* Make button_to forms inline within comment meta */
+.comment-meta form,
+.owner-actions form,
+.moderator-actions form {
+  display: inline;
+  margin: 0;
+  padding: 0;
 }
 
 /* Vote Controls */

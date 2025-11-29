@@ -128,4 +128,218 @@ RSpec.describe "Answers" do
       expect(response).to redirect_to(question_path(answer.question))
     end
   end
+
+  describe "GET /answers/:id/edit" do
+    let(:answer) { create(:answer, user: user) }
+
+    context "when signed in as owner" do
+      before { sign_in user }
+
+      it "returns http success" do
+        get edit_answer_path(answer)
+        expect(response).to have_http_status(:success)
+      end
+
+      it "displays the edit form" do
+        get edit_answer_path(answer)
+        expect(response.body).to include("Edit Answer")
+        expect(response.body).to include(answer.body)
+      end
+    end
+
+    context "when signed in as different user" do
+      let(:other_user) { create(:user) }
+
+      before { sign_in other_user }
+
+      it "redirects with alert" do
+        get edit_answer_path(answer)
+        expect(response).to redirect_to(question_path(answer.question))
+        expect(flash[:alert]).to include("your own answers")
+      end
+    end
+
+    context "when not signed in" do
+      it "redirects to sign in" do
+        get edit_answer_path(answer)
+        expect(response).to redirect_to(new_user_session_path)
+      end
+    end
+  end
+
+  describe "PATCH /answers/:id" do
+    let(:answer) { create(:answer, user: user) }
+
+    context "when signed in as owner" do
+      before { sign_in user }
+
+      context "with valid parameters" do
+        it "updates the answer" do
+          patch answer_path(answer), params: { answer: { body: "Updated answer body here" } }
+          expect(answer.reload.body).to eq("Updated answer body here")
+        end
+
+        it "records the edit" do
+          patch answer_path(answer), params: { answer: { body: "Updated answer body here" } }
+          expect(answer.reload.edited?).to be true
+          expect(answer.last_editor).to eq(user)
+        end
+
+        it "redirects to the question with anchor" do
+          patch answer_path(answer), params: { answer: { body: "Updated answer body here" } }
+          expect(response).to redirect_to(question_path(answer.question, anchor: "answer-#{answer.id}"))
+        end
+      end
+
+      context "with invalid parameters" do
+        it "does not update the answer" do
+          original_body = answer.body
+          patch answer_path(answer), params: { answer: { body: "short" } }
+          expect(answer.reload.body).to eq(original_body)
+        end
+
+        it "re-renders the edit form" do
+          patch answer_path(answer), params: { answer: { body: "short" } }
+          expect(response).to have_http_status(:unprocessable_entity)
+        end
+      end
+    end
+
+    context "when signed in as different user" do
+      let(:other_user) { create(:user) }
+
+      before { sign_in other_user }
+
+      it "does not update the answer" do
+        original_body = answer.body
+        patch answer_path(answer), params: { answer: { body: "Hacked answer" } }
+        expect(answer.reload.body).to eq(original_body)
+      end
+
+      it "redirects with alert" do
+        patch answer_path(answer), params: { answer: { body: "Hacked answer" } }
+        expect(response).to redirect_to(question_path(answer.question))
+      end
+    end
+
+    context "when not signed in" do
+      it "redirects to sign in" do
+        patch answer_path(answer), params: { answer: { body: "New body content" } }
+        expect(response).to redirect_to(new_user_session_path)
+      end
+    end
+  end
+
+  describe "DELETE /answers/:id" do
+    let!(:answer) { create(:answer, user: user) }
+
+    context "when signed in as owner" do
+      before { sign_in user }
+
+      it "soft deletes the answer" do
+        expect {
+          delete answer_path(answer)
+        }.not_to change(Answer, :count)
+
+        expect(answer.reload.deleted?).to be true
+      end
+
+      it "redirects to the answer" do
+        delete answer_path(answer)
+        expect(response).to redirect_to(question_path(answer.question, anchor: "answer-#{answer.id}"))
+      end
+    end
+
+    context "when signed in as different user" do
+      let(:other_user) { create(:user) }
+
+      before { sign_in other_user }
+
+      it "does not soft delete the answer" do
+        delete answer_path(answer)
+        expect(answer.reload.deleted?).to be false
+      end
+
+      it "redirects with alert" do
+        delete answer_path(answer)
+        expect(response).to redirect_to(question_path(answer.question))
+      end
+    end
+
+    context "when not signed in" do
+      it "redirects to sign in" do
+        delete answer_path(answer)
+        expect(response).to redirect_to(new_user_session_path)
+      end
+    end
+  end
+
+  describe "DELETE /answers/:id/hard_delete" do
+    let!(:answer) { create(:answer) }
+    let(:space) { answer.question.space }
+
+    context "when signed in as admin" do
+      let(:admin) { create(:user, role: :admin) }
+
+      before { sign_in admin }
+
+      it "permanently deletes the answer" do
+        expect {
+          delete hard_delete_answer_path(answer)
+        }.to change(Answer, :count).by(-1)
+      end
+
+      it "also deletes child comments" do
+        create(:comment, commentable: answer)
+        create(:comment, commentable: answer)
+
+        expect {
+          delete hard_delete_answer_path(answer)
+        }.to change(Comment, :count).by(-2)
+      end
+
+      it "redirects to the question" do
+        delete hard_delete_answer_path(answer)
+        expect(response).to redirect_to(question_path(answer.question))
+      end
+    end
+
+    context "when signed in as space moderator" do
+      let(:moderator) { create(:user) }
+
+      before do
+        create(:space_moderator, space: space, user: moderator)
+        sign_in moderator
+      end
+
+      it "permanently deletes the answer" do
+        expect {
+          delete hard_delete_answer_path(answer)
+        }.to change(Answer, :count).by(-1)
+      end
+    end
+
+    context "when signed in as regular user" do
+      before { sign_in user }
+
+      it "does not delete the answer" do
+        expect {
+          delete hard_delete_answer_path(answer)
+        }.not_to change(Answer, :count)
+      end
+
+      it "redirects with alert" do
+        delete hard_delete_answer_path(answer)
+        expect(response).to redirect_to(question_path(answer.question))
+        expect(flash[:alert]).to include("moderators")
+      end
+    end
+
+    context "when not signed in" do
+      it "redirects to sign in" do
+        delete hard_delete_answer_path(answer)
+        expect(response).to redirect_to(new_user_session_path)
+      end
+    end
+  end
 end
