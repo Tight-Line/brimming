@@ -1,0 +1,95 @@
+<div class="admin-container">
+  <div class="page-header">
+    <h1>Group Mapping</h1>
+    <div class="actions">
+      <%= link_to "Edit", edit_admin_ldap_server_ldap_group_mapping_path(@ldap_server, @ldap_group_mapping), class: "btn btn-secondary" %>
+      <%= link_to "Back to Server", admin_ldap_server_path(@ldap_server), class: "btn btn-link" %>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>Pattern Details</h3>
+    </div>
+    <div class="card-body">
+      <dl class="details-list">
+        <dt>LDAP Server</dt>
+        <dd><%= link_to @ldap_server.name, admin_ldap_server_path(@ldap_server) %></dd>
+
+        <dt>Group Pattern</dt>
+        <dd><code><%= @ldap_group_mapping.group_pattern %></code></dd>
+
+        <dt>Match Type</dt>
+        <dd>
+          <%= @ldap_group_mapping.pattern_type.titleize %>
+          <small class="text-muted">
+            <% case @ldap_group_mapping.pattern_type %>
+            <% when "exact" %>
+              (Group DN must match exactly)
+            <% when "prefix" %>
+              (Group DN must start with this pattern)
+            <% when "suffix" %>
+              (Group DN must end with this pattern)
+            <% when "contains" %>
+              (Group DN must contain this pattern)
+            <% end %>
+          </small>
+        </dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="card mt-4">
+    <div class="card-header">
+      <h3>Mapped Spaces</h3>
+    </div>
+    <div class="card-body">
+      <p class="text-muted">Users in matching LDAP groups will be automatically subscribed to these spaces.</p>
+
+      <% if @mapped_spaces.any? %>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Space</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @mapped_spaces.each do |space| %>
+              <tr>
+                <td><%= link_to space.name, space_path(space) %></td>
+                <td>
+                  <%= button_to "Remove",
+                                remove_space_admin_ldap_server_ldap_group_mapping_path(@ldap_server, @ldap_group_mapping, space_id: space.id),
+                                method: :delete,
+                                class: "btn btn-sm btn-danger",
+                                data: { turbo_confirm: "Remove #{space.name} from this mapping?" } %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-muted">No spaces mapped yet.</p>
+      <% end %>
+
+      <hr>
+
+      <h4>Add Space</h4>
+      <% unmapped_spaces = @spaces - @mapped_spaces %>
+      <% if unmapped_spaces.any? %>
+        <%= form_with url: add_space_admin_ldap_server_ldap_group_mapping_path(@ldap_server, @ldap_group_mapping), method: :post, class: "form-inline" do |f| %>
+          <div class="form-group mr-2">
+            <%= select_tag :space_id,
+                           options_from_collection_for_select(unmapped_spaces, :id, :name),
+                           prompt: "Select a space...",
+                           class: "form-control" %>
+          </div>
+          <%= submit_tag "Add Space", class: "btn btn-primary" %>
+        <% end %>
+      <% else %>
+        <p class="text-muted">All spaces are already mapped.</p>
+      <% end %>
+    </div>
+  </div>
+</div>

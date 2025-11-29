@@ -4,7 +4,7 @@ class ApplicationController < ActionController::Base
   include Pundit::Authorization
 
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
-  # Skip in test environment as RSpec uses a simple HTTP client without browser headers
+  # Skipped in test environment as RSpec uses a simple HTTP client without browser headers.
   unless Rails.env.test?
     allow_browser versions: :modern
   end

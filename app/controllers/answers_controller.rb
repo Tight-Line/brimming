@@ -74,7 +74,7 @@ class AnswersController < ApplicationController
   private
 
   def set_question
-    @question = Question.find(params[:question_id])
+    @question = Question.find_by!(slug: params[:question_id])
   end
 
   def set_answer

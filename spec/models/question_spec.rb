@@ -9,6 +9,23 @@ RSpec.describe Question do
 
     it { is_expected.to validate_presence_of(:body) }
     it { is_expected.to validate_length_of(:body).is_at_least(20).is_at_most(10_000) }
+
+    it { is_expected.to validate_presence_of(:slug) }
+
+    describe "slug uniqueness" do
+      subject { create(:question) }
+
+      it { is_expected.to validate_uniqueness_of(:slug).case_insensitive }
+    end
+
+    it "validates slug format" do
+      question = build(:question, slug: "valid-slug-123")
+      expect(question).to be_valid
+
+      question.slug = "Invalid Slug!"
+      expect(question).not_to be_valid
+      expect(question.errors[:slug]).to include("can only contain lowercase letters, numbers, and hyphens")
+    end
   end
 
   describe "associations" do
@@ -18,6 +35,44 @@ RSpec.describe Question do
     it { is_expected.to have_many(:answers).dependent(:destroy) }
     it { is_expected.to have_many(:comments).dependent(:destroy) }
     it { is_expected.to have_many(:question_votes).dependent(:destroy) }
+  end
+
+  describe "slug generation" do
+    it "generates a slug from the title" do
+      question = create(:question, title: "How do I solve this problem?")
+      expect(question.slug).to eq("how-do-i-solve-this-problem")
+    end
+
+    it "removes special characters from slug" do
+      question = create(:question, title: "What's the best way to do this?!?")
+      expect(question.slug).to eq("whats-the-best-way-to-do-this")
+    end
+
+    it "handles duplicate titles by appending a number" do
+      create(:question, title: "How do I solve this problem?")
+      question2 = create(:question, title: "How do I solve this problem?")
+      expect(question2.slug).to eq("how-do-i-solve-this-problem-1")
+    end
+
+    it "truncates long titles" do
+      long_title = "A" * 150 + " is this a good question?"
+      question = create(:question, title: long_title)
+      expect(question.slug.length).to be <= 80
+    end
+
+    it "does not regenerate slug on update" do
+      question = create(:question, title: "Original title question here")
+      original_slug = question.slug
+      question.update!(title: "New updated title question here")
+      expect(question.slug).to eq(original_slug)
+    end
+  end
+
+  describe "#to_param" do
+    it "returns the slug" do
+      question = create(:question, title: "How do I solve this problem?")
+      expect(question.to_param).to eq(question.slug)
+    end
   end
 
   describe "scopes" do

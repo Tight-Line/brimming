@@ -1,0 +1,102 @@
+<div class="admin-container">
+  <div class="page-header">
+    <h1><%= @ldap_server.name %></h1>
+    <div class="actions">
+      <%= link_to "Edit", edit_admin_ldap_server_path(@ldap_server), class: "btn btn-secondary" %>
+      <%= link_to "Back to List", admin_ldap_servers_path, class: "btn btn-link" %>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>Server Configuration</h3>
+    </div>
+    <div class="card-body">
+      <dl class="details-list">
+        <dt>Status</dt>
+        <dd>
+          <% if @ldap_server.enabled? %>
+            <span class="badge badge-success">Enabled</span>
+          <% else %>
+            <span class="badge badge-secondary">Disabled</span>
+          <% end %>
+        </dd>
+
+        <dt>Host</dt>
+        <dd><%= @ldap_server.host %>:<%= @ldap_server.port %></dd>
+
+        <dt>Encryption</dt>
+        <dd><%= @ldap_server.encryption %></dd>
+
+        <dt>Bind DN</dt>
+        <dd><%= @ldap_server.bind_dn.presence || "(anonymous)" %></dd>
+
+        <dt>User Search Base</dt>
+        <dd><code><%= @ldap_server.user_search_base %></code></dd>
+
+        <dt>User Search Filter</dt>
+        <dd><code><%= @ldap_server.user_search_filter %></code></dd>
+
+        <dt>Group Search Base</dt>
+        <dd><code><%= @ldap_server.group_search_base.presence || "(not configured)" %></code></dd>
+
+        <dt>Group Search Filter</dt>
+        <dd><code><%= @ldap_server.group_search_filter %></code></dd>
+
+        <dt>UID Attribute</dt>
+        <dd><%= @ldap_server.uid_attribute %></dd>
+
+        <dt>Email Attribute</dt>
+        <dd><%= @ldap_server.email_attribute %></dd>
+
+        <dt>Name Attribute</dt>
+        <dd><%= @ldap_server.name_attribute %></dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="card mt-4">
+    <div class="card-header">
+      <h3>Group Mappings</h3>
+      <%= link_to "Add Mapping", new_admin_ldap_server_ldap_group_mapping_path(@ldap_server), class: "btn btn-sm btn-primary" %>
+    </div>
+    <div class="card-body">
+      <% if @ldap_group_mappings.any? %>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Pattern</th>
+              <th>Type</th>
+              <th>Mapped Spaces</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @ldap_group_mappings.each do |mapping| %>
+              <tr>
+                <td><code><%= mapping.group_pattern %></code></td>
+                <td><%= mapping.pattern_type %></td>
+                <td>
+                  <% if mapping.spaces.any? %>
+                    <%= mapping.spaces.map(&:name).join(", ") %>
+                  <% else %>
+                    <span class="text-muted">(no spaces)</span>
+                  <% end %>
+                </td>
+                <td>
+                  <%= link_to "Manage", admin_ldap_server_ldap_group_mapping_path(@ldap_server, mapping), class: "btn btn-sm btn-secondary" %>
+                  <%= button_to "Delete", admin_ldap_server_ldap_group_mapping_path(@ldap_server, mapping),
+                                method: :delete,
+                                class: "btn btn-sm btn-danger",
+                                data: { turbo_confirm: "Delete this group mapping?" } %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-muted">No group mappings configured. Group mappings allow you to automatically subscribe users to spaces based on their LDAP group membership.</p>
+      <% end %>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,128 @@
+<%= form_with model: [:admin, @ldap_server], class: "form" do |f| %>
+  <% if @ldap_server.errors.any? %>
+    <div class="alert alert-danger">
+      <h4><%= pluralize(@ldap_server.errors.count, "error") %> prevented this server from being saved:</h4>
+      <ul>
+        <% @ldap_server.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <fieldset>
+    <legend>Basic Settings</legend>
+
+    <div class="form-group">
+      <%= f.label :name, "Server Name" %>
+      <%= f.text_field :name, class: "form-control", placeholder: "e.g., Corporate LDAP" %>
+      <small class="form-text text-muted">A friendly name to identify this LDAP server</small>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group col-md-8">
+        <%= f.label :host, "Host" %>
+        <%= f.text_field :host, class: "form-control", placeholder: "ldap.example.com" %>
+      </div>
+      <div class="form-group col-md-4">
+        <%= f.label :port, "Port" %>
+        <%= f.number_field :port, class: "form-control" %>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <%= f.label :encryption, "Encryption" %>
+      <%= f.select :encryption,
+                   options_for_select(LdapServer::ENCRYPTION_OPTIONS.map { |e| [e.titleize, e] }, @ldap_server.encryption),
+                   {},
+                   class: "form-control" %>
+      <small class="form-text text-muted">
+        Plain = No encryption (port 389), StartTLS = Upgrade to TLS (port 389), Simple TLS = SSL/TLS (port 636)
+      </small>
+    </div>
+
+    <div class="form-group">
+      <div class="form-check">
+        <%= f.check_box :enabled, class: "form-check-input" %>
+        <%= f.label :enabled, "Enabled", class: "form-check-label" %>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Bind Credentials</legend>
+    <small class="form-text text-muted mb-3">
+      <strong>Required for Active Directory.</strong> Use a service account with read access to search users.
+      For AD, use UPN format (user@domain) or full DN.
+    </small>
+
+    <div class="form-group">
+      <%= f.label :bind_dn, "Bind DN" %>
+      <%= f.text_field :bind_dn, class: "form-control", placeholder: "svc_ldap@example.com or cn=admin,dc=example,dc=com" %>
+    </div>
+
+    <div class="form-group">
+      <%= f.label :bind_password, "Bind Password" %>
+      <%= f.password_field :bind_password, class: "form-control", autocomplete: "new-password" %>
+      <% if @ldap_server.persisted? && @ldap_server.bind_password.present? %>
+        <small class="form-text text-muted">Leave blank to keep current password</small>
+      <% end %>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>User Search</legend>
+
+    <div class="form-group">
+      <%= f.label :user_search_base, "User Search Base" %>
+      <%= f.text_field :user_search_base, class: "form-control", placeholder: "ou=users,dc=example,dc=com" %>
+      <small class="form-text text-muted">The DN where user accounts are located</small>
+    </div>
+
+    <div class="form-group">
+      <%= f.label :user_search_filter, "User Search Filter" %>
+      <%= f.text_field :user_search_filter, class: "form-control", placeholder: "(uid=%{username})" %>
+      <small class="form-text text-muted">Use %{username} as placeholder for the login username</small>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Group Search (Optional)</legend>
+    <small class="form-text text-muted mb-3">Configure to enable automatic space subscriptions based on LDAP groups</small>
+
+    <div class="form-group">
+      <%= f.label :group_search_base, "Group Search Base" %>
+      <%= f.text_field :group_search_base, class: "form-control", placeholder: "ou=groups,dc=example,dc=com" %>
+    </div>
+
+    <div class="form-group">
+      <%= f.label :group_search_filter, "Group Search Filter" %>
+      <%= f.text_field :group_search_filter, class: "form-control", placeholder: "(member=%{dn})" %>
+      <small class="form-text text-muted">Use %{dn} as placeholder for the user's DN</small>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Attribute Mapping</legend>
+
+    <div class="form-row">
+      <div class="form-group col-md-4">
+        <%= f.label :uid_attribute, "UID Attribute" %>
+        <%= f.text_field :uid_attribute, class: "form-control", placeholder: "uid" %>
+      </div>
+      <div class="form-group col-md-4">
+        <%= f.label :email_attribute, "Email Attribute" %>
+        <%= f.text_field :email_attribute, class: "form-control", placeholder: "mail" %>
+      </div>
+      <div class="form-group col-md-4">
+        <%= f.label :name_attribute, "Display Name Attribute" %>
+        <%= f.text_field :name_attribute, class: "form-control", placeholder: "cn" %>
+      </div>
+    </div>
+  </fieldset>
+
+  <div class="form-actions">
+    <%= f.submit class: "btn btn-primary" %>
+    <%= link_to "Cancel", admin_ldap_servers_path, class: "btn btn-link" %>
+  </div>
+<% end %>

@@ -1,6 +1,15 @@
 <div class="auth-container">
   <h2>Log in</h2>
 
+  <% if LdapServer.enabled.exists? %>
+    <div class="sso-options">
+      <%= link_to "Sign in with LDAP", ldap_sign_in_path, class: "btn btn-secondary btn-block" %>
+      <div class="divider">
+        <span>or sign in with email</span>
+      </div>
+    </div>
+  <% end %>
+
   <%= form_for(resource, as: resource_name, url: session_path(resource_name), html: { class: "auth-form" }) do |f| %>
     <div class="form-group">
       <%= f.label :email %>

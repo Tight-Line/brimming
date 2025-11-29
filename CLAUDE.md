@@ -94,7 +94,7 @@ make logs
 # Development
 make shell      # Open bash in dev container
 make console    # Rails console
-make server     # Start Rails server at localhost:3000
+make server     # Start Rails server at localhost:33000
 
 # Database
 make db-create
@@ -108,6 +108,12 @@ make test           # Run all tests
 make test-models    # Model specs only
 make test-requests  # Request specs only
 make test-jobs      # Job specs only
+
+# IMPORTANT: When running rspec directly (not via make), you MUST set RAILS_ENV=test
+# Example: docker-compose -f docker-compose.dev.yml exec -T dev env RAILS_ENV=test bundle exec rspec
+# This is required because `allow_browser versions: :modern` is conditionally skipped
+# in test environment, and without RAILS_ENV=test the class loads with browser checks enabled,
+# causing 403 Forbidden responses in tests.
 
 # Code quality
 make lint       # RuboCop

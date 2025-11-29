@@ -2,7 +2,8 @@
 
 class User < ApplicationRecord
   # Include default devise modules. Others available are:
-  # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
+  # :confirmable, :lockable, :timeoutable, :trackable
+  # Note: We use custom LDAP authentication instead of :omniauthable
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable
 
@@ -30,6 +31,7 @@ class User < ApplicationRecord
   has_many :subscribed_spaces, through: :space_subscriptions, source: :space
   has_many :space_moderators, dependent: :destroy
   has_many :moderated_spaces, through: :space_moderators, source: :space
+  has_many :space_opt_outs, dependent: :destroy
 
   # Validations (email handled by Devise's :validatable module)
   validates :username, presence: true,
@@ -109,5 +111,58 @@ class User < ApplicationRecord
 
     question_karma + answer_karma + solved_answer_karma +
       question_vote_karma + answer_vote_karma + comment_vote_karma
+  end
+
+  # True if this user authenticated via LDAP
+  def ldap_user?
+    provider == "ldap"
+  end
+
+  # Find or create a user from OmniAuth LDAP callback
+  def self.from_omniauth(auth, ldap_server)
+    email = auth.info.email
+    uid = auth.uid
+    dn = auth.extra&.raw_info&.dn
+
+    # Try to find by provider+uid first, then by email
+    user = find_by(provider: auth.provider, uid: uid)
+    user ||= find_by(email: email)
+
+    if user
+      # Update existing user with LDAP info if not already set
+      user.update!(
+        provider: auth.provider,
+        uid: uid,
+        ldap_dn: dn,
+        full_name: auth.info.name.presence || user.full_name
+      )
+    else
+      # Create new user from LDAP data
+      user = create!(
+        provider: auth.provider,
+        uid: uid,
+        ldap_dn: dn,
+        email: email,
+        username: generate_unique_username(auth.info.nickname || email.split("@").first),
+        full_name: auth.info.name,
+        password: Devise.friendly_token[0, 20]
+      )
+    end
+
+    user
+  end
+
+  # Generate a unique username from base name
+  def self.generate_unique_username(base)
+    base = base.gsub(/[^a-zA-Z0-9_]/, "_").first(25)
+    username = base
+
+    counter = 1
+    while exists?(username: username)
+      username = "#{base}_#{counter}"
+      counter += 1
+    end
+
+    username
   end
 end
