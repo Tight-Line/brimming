@@ -122,10 +122,10 @@ flowchart TB
 
         S[Answer Created/Updated] --> T[Answer callback<br/>refresh_question_search_vector!]
 
-        Q --> V[GenerateQuestionEmbeddingJob]
+        Q --> V[GenerateQuestionEmbeddingJob<br/>Sidekiq Worker]
         V --> W[EmbeddingService.prepare_question_text<br/>title + body + best answer]
-        W --> X[Generate embedding vector]
-        X --> Y[Store in questions.embedding column]
+        W --> X[Generate embedding vector<br/>via API call]
+        X --> Y[(PostgreSQL<br/>questions.embedding)]
     end
 
     I --> Z[Return to User]
