@@ -1,0 +1,64 @@
+<%# TODO: i18n %>
+<% content_for(:title) { "#{@tag.name} - #{@space.name} - Brimming" } %>
+
+<div class="page-header">
+  <div>
+    <nav class="breadcrumb">
+      <%= link_to @space.name, space_path(@space) %> /
+      <%= link_to "Tags", tags_path(space_slug: @space.slug) %> /
+      <span class="current"><%= @tag.name %></span>
+    </nav>
+    <h1 class="tag-header">
+      <span class="tag tag-large"><%= @tag.name %></span>
+    </h1>
+    <% if @tag.description.present? %>
+      <p class="tag-full-description"><%= @tag.description %></p>
+    <% end %>
+  </div>
+  <% if policy(@tag).destroy? %>
+    <div class="page-actions">
+      <%= button_to tag_path(@tag, space_slug: @space.slug), method: :delete,
+          class: "btn btn-small btn-danger",
+          data: { turbo_confirm: "Are you sure you want to delete this tag? Questions will not be affected." } do %>
+        <%# TODO: i18n %>
+        Delete Tag
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <%# TODO: i18n %>
+    <h2>Questions tagged "<%= @tag.name %>" (<%= @questions.count %>)</h2>
+  </div>
+
+  <% if @questions.any? %>
+    <ul class="question-list">
+      <% @questions.each do |question| %>
+        <li class="question-item">
+          <div class="question-title">
+            <%= link_to question.title, question_path(question) %>
+          </div>
+          <div class="question-meta">
+            <span>by <%= render 'shared/user_badge', user: question.author %></span>
+            <%# TODO: i18n %>
+            <span><%= question.answers_count %> answers</span>
+            <% if question.has_correct_answer? %>
+              <%# TODO: i18n %>
+              <span class="badge badge-success">Solved</span>
+            <% end %>
+            <% question.tags.reject { |t| t.id == @tag.id }.first(3).each do |tag| %>
+              <%= link_to tag.name, tag_path(tag, space_slug: @space.slug), class: "tag" %>
+            <% end %>
+          </div>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <div class="empty-state">
+      <%# TODO: i18n %>
+      <p>No questions with this tag yet.</p>
+    </div>
+  <% end %>
+</div>

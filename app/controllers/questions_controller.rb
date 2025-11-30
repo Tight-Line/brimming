@@ -30,6 +30,7 @@ class QuestionsController < ApplicationController
     authorize @question
 
     if @question.save
+      # TODO: i18n
       redirect_to @question, notice: "Question posted successfully."
     else
       @spaces = Space.alphabetical
@@ -46,6 +47,7 @@ class QuestionsController < ApplicationController
     authorize @question
     if @question.update(question_params)
       @question.record_edit!(current_user)
+      # TODO: i18n
       redirect_to @question, notice: "Question updated successfully.", status: :see_other
     else
       @spaces = Space.alphabetical
@@ -56,12 +58,14 @@ class QuestionsController < ApplicationController
   def destroy
     authorize @question
     @question.soft_delete!
+    # TODO: i18n
     redirect_to questions_path, notice: "Question deleted.", status: :see_other
   end
 
   def hard_delete
     authorize @question
     @question.destroy!
+    # TODO: i18n
     redirect_to questions_path, notice: "Question permanently deleted.", status: :see_other
   end
 

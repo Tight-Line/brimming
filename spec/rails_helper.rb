@@ -7,6 +7,10 @@ abort("The Rails environment is running in production mode!") if Rails.env.produ
 require "rspec/rails"
 require "database_cleaner/active_record"
 require "shoulda/matchers"
+require "webmock/rspec"
+
+# Allow localhost connections for test database
+WebMock.disable_net_connect!(allow_localhost: true)
 
 # Require all support files
 Rails.root.glob("spec/support/**/*.rb").sort_by(&:to_s).each { |f| require f }
@@ -38,6 +42,12 @@ RSpec.configure do |config|
 
   # Include Devise test helpers for request specs
   config.include Devise::Test::IntegrationHelpers, type: :request
+
+  # Include ActiveJob test helpers and use :test queue adapter
+  config.include ActiveJob::TestHelper
+  config.before(:each) do
+    ActiveJob::Base.queue_adapter = :test
+  end
 
   # DatabaseCleaner configuration
   config.before(:suite) do

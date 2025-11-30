@@ -8,7 +8,7 @@ DEV_EXEC = $(COMPOSE_DEV) exec -T dev
 DEV_EXEC_TTY = $(COMPOSE_DEV) exec dev
 DEV_RUN = $(COMPOSE_DEV) run --rm dev
 
-.PHONY: help setup build up down restart logs shell console db-create db-migrate db-rollback db-reset db-seed db-console test test-models test-requests test-jobs test-all lint lint-fix security coverage clean helm-lint helm-test ci
+.PHONY: help setup build up down restart logs shell console db-create db-migrate db-rollback db-reset db-seed db-console search-setup search-reindex search-rebuild test test-models test-requests test-jobs test-all lint lint-fix security coverage clean helm-lint helm-test ci
 
 # Default target
 help:
@@ -32,7 +32,7 @@ help:
 	@echo "  make db-create    - Create databases"
 	@echo "  make db-migrate   - Run pending migrations"
 	@echo "  make db-rollback  - Rollback last migration"
-	@echo "  make db-reset     - Drop, create, migrate, and seed database"
+	@echo "  make db-reset     - Drop, create, migrate, seed, and reindex"
 	@echo "  make db-seed      - Load seed data"
 	@echo "  make db-console   - Open psql console (schema: brimming)"
 	@echo ""

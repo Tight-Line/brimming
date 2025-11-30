@@ -1,34 +1,42 @@
+x-rails-env: &rails-env
+  RAILS_ENV: development
+  DB_HOST: postgres
+  DB_PORT: 5432
+  DB_USER: brimming
+  DB_PASS: brimming_dev
+  DB_NAME: brimming
+  REDIS_URL: redis://valkey:6379/0
+  SMTP_HOST: mailhog
+  SMTP_PORT: 1025
+  SMTP_TLS: "false"
+  MAILER_FROM: noreply@brimming.local
+
+x-rails-depends: &rails-depends
+  postgres:
+    condition: service_healthy
+  valkey:
+    condition: service_started
+  mailhog:
+    condition: service_started
+
+x-rails-volumes: &rails-volumes
+  - .:/src
+  - bundle_cache:/usr/local/bundle
+
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile.dev
     command: bash -c "bundle install && bundle exec rails server -b 0.0.0.0"
-    volumes:
-      - .:/src
-      - bundle_cache:/usr/local/bundle
+    volumes: *rails-volumes
     working_dir: /src
     ports:
       - "33000:3000"
     environment:
-      RAILS_ENV: development
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: brimming
-      DB_PASS: brimming_dev
-      DB_NAME: brimming
-      REDIS_URL: redis://valkey:6379/0
-      SMTP_HOST: mailhog
-      SMTP_PORT: 1025
-      SMTP_TLS: "false"
-      MAILER_FROM: noreply@brimming.local
+      <<: *rails-env
     depends_on:
-      postgres:
-        condition: service_healthy
-      valkey:
-        condition: service_started
-      mailhog:
-        condition: service_started
+      <<: *rails-depends
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3000/up || exit 1"]
       interval: 10s
@@ -40,34 +48,29 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     command: tail -f /dev/null
-    volumes:
-      - .:/src
-      - bundle_cache:/usr/local/bundle
+    volumes: *rails-volumes
     working_dir: /src
     stdin_open: true
     tty: true
     environment:
-      RAILS_ENV: development
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: brimming
-      DB_PASS: brimming_dev
-      DB_NAME: brimming
-      REDIS_URL: redis://valkey:6379/0
-      SMTP_HOST: mailhog
-      SMTP_PORT: 1025
-      SMTP_TLS: "false"
-      MAILER_FROM: noreply@brimming.local
+      <<: *rails-env
     depends_on:
-      postgres:
-        condition: service_healthy
-      valkey:
-        condition: service_started
-      mailhog:
-        condition: service_started
+      <<: *rails-depends
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: bash -c "bundle install && bundle exec sidekiq"
+    volumes: *rails-volumes
+    working_dir: /src
+    environment:
+      <<: *rails-env
+    depends_on:
+      <<: *rails-depends
 
   postgres:
-    image: postgres:18.1-bookworm
+    image: pgvector/pgvector:pg17
     environment:
       POSTGRES_USER: brimming
       POSTGRES_PASSWORD: brimming_dev

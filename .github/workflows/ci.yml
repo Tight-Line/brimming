@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:18.1-bookworm
+        image: pgvector/pgvector:pg17
         env:
           POSTGRES_USER: brimming
           POSTGRES_PASSWORD: brimming_test
@@ -60,8 +60,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        volumes:
-          - /var/lib/postgresql
 
       valkey:
         image: valkey/valkey:9.0.0
@@ -92,12 +90,39 @@ jobs:
 
       - name: Set up database
         run: |
-          bundle exec rails db:create db:migrate
+          bundle exec rails db:create
+          psql -h localhost -U brimming -d brimming_test -f db/structure.sql
+          bundle exec rails db:environment:set RAILS_ENV=test
+        env:
+          PGPASSWORD: brimming_test
 
       - name: Run tests with coverage
         run: bundle exec rspec
 
+      - name: Show uncovered lines (if any)
+        if: failure()
+        run: |
+          if [ -f coverage/.last_run.json ]; then
+            cat coverage/.last_run.json
+          fi
+          if [ -f coverage/.resultset.json ]; then
+            ruby -rjson -e '
+              data = JSON.parse(File.read("coverage/.resultset.json"))
+              data.each do |suite, info|
+                info["coverage"].each do |file, lines|
+                  next unless lines.is_a?(Hash) && lines["lines"]
+                  lines["lines"].each_with_index do |count, idx|
+                    if count == 0
+                      puts "#{file}:#{idx + 1} - uncovered"
+                    end
+                  end
+                end
+              end
+            '
+          fi
+
       - name: Upload coverage report
+        if: always()
         uses: actions/upload-artifact@v5
         with:
           name: coverage-report

@@ -30,8 +30,10 @@
         <nav class="site-nav">
           <%= link_to "Questions", questions_path, class: current_page?(questions_path) ? "active" : "" %>
           <%= link_to "Spaces", spaces_path, class: current_page?(spaces_path) ? "active" : "" %>
+          <%# TODO: i18n %>
+          <%= link_to "Search", search_path, class: current_page?(search_path) ? "active" : "" %>
           <% if current_user&.admin? %>
-            <%= link_to "LDAP", admin_ldap_servers_path, class: request.path.start_with?("/admin") ? "active" : "" %>
+            <%= link_to "Admin", admin_root_path, class: request.path.start_with?("/admin") ? "active" : "" %>
           <% end %>
         </nav>
 

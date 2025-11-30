@@ -8,6 +8,10 @@ class Answer < ApplicationRecord
   has_many :votes, dependent: :destroy
   has_many :comments, as: :commentable, dependent: :destroy
 
+  # Callbacks
+  after_commit :refresh_question_search_vector, on: %i[create update destroy]
+  after_commit :schedule_question_embedding_regeneration, on: %i[create update destroy], if: :embedding_regeneration_needed?
+
   # Validations
   validates :body, presence: true, length: { minimum: 10, maximum: 10_000 }
 
@@ -95,5 +99,31 @@ class Answer < ApplicationRecord
 
   def update_vote_score!(delta)
     increment!(:vote_score, delta)
+  end
+
+  def refresh_question_search_vector
+    question.refresh_search_vector!
+  end
+
+  def schedule_question_embedding_regeneration
+    GenerateQuestionEmbeddingJob.perform_later(question, force: true)
+  end
+
+  # Regenerate question embedding when:
+  # - Answer body changes (could affect "best answer" content)
+  # - Answer is marked/unmarked as correct (changes which is "best answer")
+  # - Answer is deleted or soft-deleted (could affect "best answer")
+  # - Answer vote_score changes significantly (could change which is "best answer")
+  def embedding_regeneration_needed?
+    return false unless EmbeddingService.available?
+
+    # Always regenerate on destroy (answer was removed)
+    return true if destroyed?
+
+    # Regenerate if body, is_correct, deleted_at, or vote_score changed
+    saved_change_to_body? ||
+      saved_change_to_is_correct? ||
+      saved_change_to_deleted_at? ||
+      saved_change_to_vote_score?
   end
 end

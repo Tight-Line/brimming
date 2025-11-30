@@ -17,6 +17,7 @@ class CommentsController < ApplicationController
     authorize @comment
 
     if @comment.save
+      # TODO: i18n
       redirect_to redirect_path_for_comment, notice: "Comment posted.", status: :see_other
     else
       redirect_to redirect_path_for_comment, alert: @comment.errors.full_messages.join(", "), status: :see_other
@@ -31,6 +32,7 @@ class CommentsController < ApplicationController
     authorize @comment
     if @comment.update(comment_params)
       @comment.record_edit!(current_user)
+      # TODO: i18n
       redirect_to redirect_path_for_existing_comment, notice: "Comment updated.", status: :see_other
     else
       render :edit, status: :unprocessable_entity
@@ -40,6 +42,7 @@ class CommentsController < ApplicationController
   def destroy
     authorize @comment
     @comment.soft_delete!
+    # TODO: i18n
     redirect_to redirect_path_for_existing_comment, notice: "Comment deleted.", status: :see_other
   end
 
@@ -47,6 +50,7 @@ class CommentsController < ApplicationController
     authorize @comment
     redirect_path = redirect_path_for_hard_delete
     @comment.destroy!
+    # TODO: i18n
     redirect_to redirect_path, notice: "Comment permanently deleted.", status: :see_other
   end
 

@@ -32,11 +32,12 @@
               <% end %>
             </td>
             <td><%= server.ldap_group_mappings.count %></td>
-            <td>
-              <%= link_to "Edit", edit_admin_ldap_server_path(server), class: "btn btn-sm btn-secondary" %>
-              <%= button_to "Delete", admin_ldap_server_path(server),
+            <td class="actions-cell">
+              <%= link_to "✎", edit_admin_ldap_server_path(server), class: "action-icon action-edit", title: "Edit" %>
+              <%= button_to "✕", admin_ldap_server_path(server),
                             method: :delete,
-                            class: "btn btn-sm btn-danger",
+                            class: "action-icon action-delete",
+                            title: "Delete",
                             data: { turbo_confirm: "Are you sure you want to delete this LDAP server?" } %>
             </td>
           </tr>

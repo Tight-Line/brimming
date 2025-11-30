@@ -83,4 +83,18 @@ class Comment < ApplicationRecord
   def space
     commentable.is_a?(Question) ? commentable.space : commentable.question.space
   end
+
+  # Returns the root question ID this comment belongs to (for search indexing)
+  def root_question_id
+    return commentable_id if commentable_type == "Question"
+
+    commentable.question_id
+  end
+
+  # Returns the root question this comment belongs to
+  def root_question
+    return commentable if commentable_type == "Question"
+
+    commentable.question
+  end
 end

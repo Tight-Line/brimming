@@ -1,24 +1,37 @@
 # frozen_string_literal: true
 
 class Question < ApplicationRecord
+  # Vector embedding for semantic search (via neighbor gem)
+  has_neighbors :embedding
+
+  # Constants
+  MAX_TAGS = 5
+
   # Associations
   belongs_to :user
   belongs_to :space
   belongs_to :last_editor, class_name: "User", optional: true
+  belongs_to :embedding_provider, optional: true
   has_many :answers, dependent: :destroy
   has_many :comments, as: :commentable, dependent: :destroy
   has_many :question_votes, dependent: :destroy
+  has_many :question_tags, dependent: :destroy
+  has_many :tags, through: :question_tags
 
   # Validations
   validates :title, presence: true, length: { minimum: 10, maximum: 200 }
   validates :body, presence: true, length: { minimum: 20, maximum: 10_000 }
   validates :slug, presence: true,
                    uniqueness: { case_sensitive: false },
+                   # TODO: i18n
                    format: { with: /\A[a-z0-9-]+\z/,
                              message: "can only contain lowercase letters, numbers, and hyphens" }
+  validate :tags_count_within_limit
+  validate :tags_belong_to_same_space
 
   # Callbacks
   before_validation :generate_slug, if: -> { slug.blank? && title.present? }
+  after_commit :schedule_embedding_generation, on: %i[create update], if: :embedding_generation_needed?
 
   # Scopes
   scope :not_deleted, -> { where(deleted_at: nil) }
@@ -108,7 +121,56 @@ class Question < ApplicationRecord
     update!(deleted_at: Time.current)
   end
 
+  # Tag helpers
+  def tag_names
+    tags.pluck(:name)
+  end
+
+  # Update the PostgreSQL full-text search vector.
+  # Called automatically by trigger when title/body change,
+  # but must be called manually when answers are added/modified/deleted.
+  def refresh_search_vector!
+    answer_text = answers.not_deleted.pluck(:body).join(" ")
+
+    self.class.where(id: id).update_all([
+      "search_vector = setweight(to_tsvector('english', COALESCE(?, '')), 'A') || " \
+      "setweight(to_tsvector('english', COALESCE(?, '')), 'B') || " \
+      "setweight(to_tsvector('english', COALESCE(?, '')), 'C')",
+      title, body, answer_text
+    ])
+  end
+
   private
+
+  def schedule_embedding_generation
+    GenerateQuestionEmbeddingJob.perform_later(self)
+  end
+
+  def embedding_generation_needed?
+    return false unless EmbeddingService.available?
+
+    # Generate embedding if:
+    # - No embedding yet, OR
+    # - Title or body changed since last embedding
+    embedding.nil? || (embedded_at.present? && (saved_change_to_title? || saved_change_to_body?))
+  end
+
+  # TODO: i18n
+  def tags_count_within_limit
+    return if tags.size <= MAX_TAGS
+
+    errors.add(:tags, "cannot exceed #{MAX_TAGS}")
+  end
+
+  # TODO: i18n
+  def tags_belong_to_same_space
+    return if tags.empty?
+
+    invalid_tags = tags.reject { |tag| tag.space_id == space_id }
+    return if invalid_tags.empty?
+
+    errors.add(:tags, "must belong to the same space as the question")
+  end
 
   def update_vote_score!(delta)
     increment!(:vote_score, delta)

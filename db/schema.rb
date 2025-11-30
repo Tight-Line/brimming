@@ -10,11 +10,12 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_29_220653) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_27_175000) do
   create_schema "brimming", if_not_exists: true
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+  enable_extension "vector"
 
   create_table "brimming.answers", force: :cascade do |t|
     t.text "body", null: false
@@ -64,6 +65,21 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_29_220653) do
     t.index ["user_id"], name: "index_comments_on_user_id"
   end
 
+  create_table "brimming.embedding_providers", force: :cascade do |t|
+    t.string "api_endpoint"
+    t.string "api_key"
+    t.datetime "created_at", null: false
+    t.integer "dimensions", null: false
+    t.string "embedding_model", null: false
+    t.boolean "enabled", default: false, null: false
+    t.string "name", null: false
+    t.string "provider_type", null: false
+    t.jsonb "settings", default: {}, null: false
+    t.datetime "updated_at", null: false
+    t.index ["enabled"], name: "index_embedding_providers_on_enabled"
+    t.index ["provider_type"], name: "index_embedding_providers_on_provider_type"
+  end
+
   create_table "brimming.ldap_group_mapping_spaces", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "ldap_group_mapping_id", null: false
@@ -105,6 +121,16 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_29_220653) do
     t.index ["name"], name: "index_ldap_servers_on_name", unique: true
   end
 
+  create_table "brimming.question_tags", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "question_id", null: false
+    t.bigint "tag_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["question_id", "tag_id"], name: "index_question_tags_on_question_id_and_tag_id", unique: true
+    t.index ["question_id"], name: "index_question_tags_on_question_id"
+    t.index ["tag_id"], name: "index_question_tags_on_tag_id"
+  end
+
   create_table "brimming.question_votes", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "question_id", null: false
@@ -114,29 +140,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_29_220653) do
     t.index ["question_id"], name: "index_question_votes_on_question_id"
     t.index ["user_id", "question_id"], name: "index_question_votes_on_user_id_and_question_id", unique: true
     t.index ["user_id"], name: "index_question_votes_on_user_id"
-  end
-
-  create_table "brimming.questions", force: :cascade do |t|
-    t.text "body", null: false
-    t.datetime "created_at", null: false
-    t.datetime "deleted_at"
-    t.datetime "edited_at"
-    t.bigint "last_editor_id"
-    t.string "slug"
-    t.bigint "space_id", null: false
-    t.string "title", null: false
-    t.datetime "updated_at", null: false
-    t.bigint "user_id", null: false
-    t.integer "views_count", default: 0, null: false
-    t.integer "vote_score", default: 0, null: false
-    t.index ["created_at"], name: "index_questions_on_created_at"
-    t.index ["last_editor_id"], name: "index_questions_on_last_editor_id"
-    t.index ["slug"], name: "index_questions_on_slug", unique: true
-    t.index ["space_id", "created_at"], name: "index_questions_on_space_id_and_created_at"
-    t.index ["space_id"], name: "index_questions_on_space_id"
-    t.index ["user_id"], name: "index_questions_on_user_id"
-    t.index ["views_count"], name: "index_questions_on_views_count"
-    t.index ["vote_score"], name: "index_questions_on_vote_score"
   end
 
   create_table "brimming.space_moderators", force: :cascade do |t|
@@ -181,6 +184,20 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_29_220653) do
     t.index ["slug"], name: "index_spaces_on_slug", unique: true
   end
 
+  create_table "brimming.tags", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.string "name", null: false
+    t.integer "questions_count", default: 0, null: false
+    t.string "slug", null: false
+    t.bigint "space_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["space_id", "name"], name: "index_tags_on_space_id_and_name", unique: true
+    t.index ["space_id", "questions_count"], name: "index_tags_on_space_id_and_questions_count"
+    t.index ["space_id", "slug"], name: "index_tags_on_space_id_and_slug", unique: true
+    t.index ["space_id"], name: "index_tags_on_space_id"
+  end
+
   create_table "brimming.users", force: :cascade do |t|
     t.string "avatar_url"
     t.datetime "created_at", null: false
@@ -213,31 +230,5 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_29_220653) do
     t.index ["user_id", "answer_id"], name: "index_votes_on_user_id_and_answer_id", unique: true
     t.index ["user_id"], name: "index_votes_on_user_id"
   end
-
-  add_foreign_key "brimming.answers", "brimming.questions"
-  add_foreign_key "brimming.answers", "brimming.users"
-  add_foreign_key "brimming.answers", "brimming.users", column: "last_editor_id"
-  add_foreign_key "brimming.comment_votes", "brimming.comments"
-  add_foreign_key "brimming.comment_votes", "brimming.users"
-  add_foreign_key "brimming.comments", "brimming.comments", column: "parent_comment_id"
-  add_foreign_key "brimming.comments", "brimming.users"
-  add_foreign_key "brimming.comments", "brimming.users", column: "last_editor_id"
-  add_foreign_key "brimming.ldap_group_mapping_spaces", "brimming.ldap_group_mappings"
-  add_foreign_key "brimming.ldap_group_mapping_spaces", "brimming.spaces"
-  add_foreign_key "brimming.ldap_group_mappings", "brimming.ldap_servers"
-  add_foreign_key "brimming.question_votes", "brimming.questions"
-  add_foreign_key "brimming.question_votes", "brimming.users"
-  add_foreign_key "brimming.questions", "brimming.spaces"
-  add_foreign_key "brimming.questions", "brimming.users"
-  add_foreign_key "brimming.questions", "brimming.users", column: "last_editor_id"
-  add_foreign_key "brimming.space_moderators", "brimming.spaces"
-  add_foreign_key "brimming.space_moderators", "brimming.users"
-  add_foreign_key "brimming.space_opt_outs", "brimming.ldap_group_mappings"
-  add_foreign_key "brimming.space_opt_outs", "brimming.spaces"
-  add_foreign_key "brimming.space_opt_outs", "brimming.users"
-  add_foreign_key "brimming.space_subscriptions", "brimming.spaces"
-  add_foreign_key "brimming.space_subscriptions", "brimming.users"
-  add_foreign_key "brimming.votes", "brimming.answers"
-  add_foreign_key "brimming.votes", "brimming.users"
 
 end

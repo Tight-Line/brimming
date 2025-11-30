@@ -3,6 +3,7 @@
 class Space < ApplicationRecord
   # Associations
   has_many :questions, dependent: :destroy
+  has_many :tags, dependent: :destroy
   has_many :space_moderators, dependent: :destroy
   has_many :moderators, through: :space_moderators, source: :user
   has_many :space_subscriptions, dependent: :destroy
@@ -14,6 +15,7 @@ class Space < ApplicationRecord
                    length: { minimum: 2, maximum: 100 }
   validates :slug, presence: true,
                    uniqueness: { case_sensitive: false },
+                   # TODO: i18n
                    format: { with: /\A[a-z0-9-]+\z/,
                              message: "can only contain lowercase letters, numbers, and hyphens" }
   validates :description, length: { maximum: 1000 }

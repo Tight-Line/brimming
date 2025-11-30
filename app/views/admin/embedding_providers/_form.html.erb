@@ -1,0 +1,119 @@
+<%= form_with model: [:admin, @embedding_provider], class: "form" do |f| %>
+  <% if @embedding_provider.errors.any? %>
+    <div class="alert alert-danger">
+      <h4><%= pluralize(@embedding_provider.errors.count, "error") %> prevented this provider from being saved:</h4>
+      <ul>
+        <% @embedding_provider.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <% unless @embedding_provider.persisted? %>
+    <%= f.hidden_field :provider_type %>
+  <% end %>
+
+  <fieldset>
+    <legend>Provider Settings</legend>
+
+    <div class="form-group">
+      <label>Provider Type</label>
+      <div class="form-control-static"><%= @embedding_provider.display_provider_type %></div>
+      <% if @embedding_provider.persisted? %>
+        <small class="form-text text-muted">
+          Provider type cannot be changed after creation.
+        </small>
+      <% end %>
+    </div>
+
+    <div class="form-group">
+      <%= f.label :name, "Display Name" %>
+      <%= f.text_field :name, class: "form-control", placeholder: "e.g., Production OpenAI" %>
+      <small class="form-text text-muted">A friendly name to identify this configuration</small>
+    </div>
+
+    <div class="form-group">
+      <%= f.label :embedding_model, "Model" %>
+      <% if @embedding_provider.persisted? %>
+        <%# Model is immutable after creation - create a new provider to change models %>
+        <div class="form-control-static"><%= @embedding_provider.embedding_model %></div>
+        <%= f.hidden_field :embedding_model %>
+        <small class="form-text text-muted">
+          Model cannot be changed after creation. To use a different model,
+          <%= link_to "create a new provider", new_admin_embedding_provider_path %> and activate it.
+        </small>
+      <% else %>
+        <% models = @embedding_provider.available_models %>
+        <% if models.any? %>
+          <%= f.select :embedding_model,
+                       options_for_select(
+                         models.map { |model, dims| ["#{model} (#{dims} dimensions)", model] },
+                         @embedding_provider.embedding_model
+                       ),
+                       {},
+                       class: "form-control" %>
+        <% else %>
+          <%= f.text_field :embedding_model, class: "form-control", placeholder: "model-name" %>
+          <small class="form-text text-muted">Enter the model identifier</small>
+        <% end %>
+      <% end %>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>API Credentials</legend>
+
+    <% if @embedding_provider.requires_api_key? %>
+      <div class="form-group">
+        <%= f.label :api_key, "API Key" %>
+        <%= f.password_field :api_key, class: "form-control", autocomplete: "new-password" %>
+        <% if @embedding_provider.persisted? && @embedding_provider.api_key.present? %>
+          <small class="form-text text-muted">Leave blank to keep current API key</small>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% if @embedding_provider.requires_api_endpoint? %>
+      <div class="form-group">
+        <%= f.label :api_endpoint, "API Endpoint" %>
+        <%= f.text_field :api_endpoint, class: "form-control" %>
+        <small class="form-text text-muted">
+          <% if @embedding_provider.provider_type == "ollama" %>
+            The URL of your Ollama server (use host.docker.internal instead of localhost if running in Docker)
+          <% else %>
+            Your Azure OpenAI endpoint URL (e.g., https://your-resource.openai.azure.com)
+          <% end %>
+        </small>
+      </div>
+    <% end %>
+
+    <% unless @embedding_provider.requires_api_key? || @embedding_provider.requires_api_endpoint? %>
+      <p class="text-muted">This provider type does not require API credentials.</p>
+    <% end %>
+  </fieldset>
+
+  <fieldset>
+    <legend>Search Settings</legend>
+
+    <div class="form-group">
+      <%= f.label :similarity_threshold, "Similarity Threshold" %>
+      <%= f.number_field :similarity_threshold,
+                         value: @embedding_provider.similarity_threshold,
+                         class: "form-control",
+                         step: 0.01,
+                         min: 0,
+                         max: 1 %>
+      <small class="form-text text-muted">
+        Minimum cosine similarity score (0-1) for vector search results.
+        Lower values return more results but may include less relevant matches.
+        Default for <%= @embedding_provider.display_provider_type %>: <%= @embedding_provider.default_similarity_threshold %>
+      </small>
+    </div>
+  </fieldset>
+
+  <div class="form-actions">
+    <%= f.submit class: "btn btn-primary" %>
+    <%= link_to "Cancel", admin_embedding_providers_path, class: "btn btn-link" %>
+  </div>
+<% end %>
