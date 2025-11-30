@@ -20,11 +20,11 @@ RUN apt-get update -qq && \
     ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
-# Install PostgreSQL 17 client tools (to match pgvector database version)
-RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
-    apt-get update -qq && \
-    apt-get install --no-install-recommends -y postgresql-client-17 && \
+# Install PostgreSQL client tools
+# Use Debian's default postgresql-client (version 15) which is compatible with PG17 server
+# The client version doesn't need to match server version for basic operations
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y postgresql-client && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Set production environment variables and enable jemalloc for reduced memory usage and latency.
