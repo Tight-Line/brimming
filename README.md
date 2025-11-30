@@ -214,41 +214,34 @@ LDAP and social SSO providers are configured through the admin panel. See the [S
 ## Architecture
 
 ```mermaid
-flowchart TB
+flowchart LR
     subgraph Ingress
-        LB[Load Balancer / Ingress]
+        LB[Load Balancer]
     end
 
-    subgraph App Layer
-        App1[App<br/>Rails]
-        App2[App<br/>Rails]
-        App3[App<br/>Rails]
+    subgraph App[Application Layer]
+        App1[Rails App]
+        App2[Rails App]
     end
 
-    subgraph Data Layer
+    subgraph Data[Data Layer]
         PG[(PostgreSQL<br/>+ pgvector)]
         VK[(Valkey)]
     end
 
-    subgraph Workers
-        W1[Worker<br/>Sidekiq]
-        W2[Worker<br/>Sidekiq]
+    subgraph Workers[Background Workers]
+        W1[Sidekiq]
+        W2[Sidekiq]
     end
 
     LB --> App1
     LB --> App2
-    LB --> App3
 
-    App1 --> PG
-    App2 --> PG
-    App3 --> PG
+    App1 & App2 --> PG
+    App1 & App2 --> VK
 
-    App1 --> VK
-    App2 --> VK
-    App3 --> VK
-
-    VK --> W1
-    VK --> W2
+    VK --> W1 & W2
+    W1 & W2 --> PG
 ```
 
 ## Contributing

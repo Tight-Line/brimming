@@ -87,49 +87,34 @@ Brimming uses **hybrid search** with a **vector-first, keyword-fallback** strate
 
 ```mermaid
 flowchart TB
-    subgraph User Request
-        A[User searches for 'how to fix rails migration'] --> B{SearchController}
+    subgraph Infrastructure
+        PG[(PostgreSQL<br/>pgvector + pg_trgm)]
+        VK[(Valkey/Redis)]
     end
 
-    subgraph HybridQueryService
+    subgraph WebApp[Web Application]
+        A[User searches] --> B[SearchController]
         B --> C[HybridQueryService]
-        C --> D{Sort by relevance<br/>and query present?}
-        D -->|No| E[PostgreSQL FTS Only]
-        D -->|Yes| F{EmbeddingService.available?}
-        F -->|No| E
-        F -->|Yes| G[VectorQueryService]
-        G --> H{Results above<br/>similarity threshold?}
-        H -->|Yes| I[Return Vector Results]
-        H -->|No| E
+        C --> D{Embeddings<br/>available?}
+        D -->|Yes| E[VectorQueryService]
+        D -->|No| F[PostgreSQL FTS]
+        E --> G{Results above<br/>threshold?}
+        G -->|Yes| H[Return vector results]
+        G -->|No| F
+        F --> I[ts_rank ordering]
     end
 
-    subgraph PostgreSQL Full-Text Search
-        E --> E1[questions.search_vector<br/>tsvector column]
-        E1 --> E2[plainto_tsquery]
-        E2 --> E3[ts_rank ordering]
-        E3 --> E4[Weighted: A=title, B=body, C=answers]
+    subgraph Workers[Sidekiq Workers]
+        J[GenerateQuestionEmbeddingJob]
+        J --> K[Fetch question from DB]
+        K --> L[Call embedding API]
+        L --> M[Store embedding in DB]
     end
 
-    subgraph Semantic Search Flow
-        G --> J1[EmbeddingService.client]
-        J1 --> J2[Generate query embedding<br/>via OpenAI/Cohere/Ollama]
-        J2 --> J3[pgvector nearest_neighbors<br/>cosine distance]
-        J3 --> J4[Filter by similarity_threshold]
-    end
-
-    subgraph Background Updates
-        Q[Question Created/Updated] --> R[PostgreSQL Trigger<br/>auto-updates search_vector]
-
-        S[Answer Created/Updated] --> T[Answer callback<br/>refresh_question_search_vector!]
-
-        Q --> V[GenerateQuestionEmbeddingJob<br/>Sidekiq Worker]
-        V --> W[EmbeddingService.prepare_question_text<br/>title + body + best answer]
-        W --> X[Generate embedding vector<br/>via API call]
-        X --> Y[(PostgreSQL<br/>questions.embedding)]
-    end
-
-    I --> Z[Return to User]
-    E4 --> Z
+    C -->|Query| PG
+    K -->|Read| PG
+    M -->|Write| PG
+    J -->|Consume jobs| VK
 ```
 
 **Key Components:**
