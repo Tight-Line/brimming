@@ -83,11 +83,12 @@
                     <span class="text-muted">(no spaces)</span>
                   <% end %>
                 </td>
-                <td>
-                  <%= link_to "Manage", admin_ldap_server_ldap_group_mapping_path(@ldap_server, mapping), class: "btn btn-sm btn-secondary" %>
-                  <%= button_to "Delete", admin_ldap_server_ldap_group_mapping_path(@ldap_server, mapping),
+                <td class="actions-cell">
+                  <%= link_to "⚙", admin_ldap_server_ldap_group_mapping_path(@ldap_server, mapping), class: "action-icon action-edit", title: "Manage" %>
+                  <%= button_to "✕", admin_ldap_server_ldap_group_mapping_path(@ldap_server, mapping),
                                 method: :delete,
-                                class: "btn btn-sm btn-danger",
+                                class: "action-icon action-delete",
+                                title: "Delete",
                                 data: { turbo_confirm: "Delete this group mapping?" } %>
                 </td>
               </tr>

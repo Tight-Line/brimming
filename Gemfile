@@ -23,7 +23,7 @@ gem "pundit", "~> 2.4"
 
 # OmniAuth for SSO [https://github.com/omniauth/omniauth]
 gem "omniauth", "~> 2.1"
-gem "omniauth-rails_csrf_protection", "~> 1.0"
+gem "omniauth-rails_csrf_protection", "~> 2.0"
 
 # LDAP authentication [https://github.com/intridea/omniauth-ldap]
 gem "omniauth-ldap", "~> 2.0"
@@ -43,6 +43,9 @@ gem "redis", "~> 5.0"
 
 # Background job processing with Sidekiq
 gem "sidekiq", "~> 8.0"
+
+# pgvector support for vector similarity search
+gem "neighbor", "~> 0.5"
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
@@ -88,6 +91,9 @@ group :test do
 
   # Clean database between tests
   gem "database_cleaner-active_record", "~> 2.0"
+
+  # HTTP request stubbing for external API tests
+  gem "webmock", "~> 3.0"
 end
 
 group :development do

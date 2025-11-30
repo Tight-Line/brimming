@@ -1,0 +1,87 @@
+<%# TODO: i18n %>
+<% content_for(:title) { "Tags - #{@space.name} - Brimming" } %>
+
+<div class="page-header-with-action">
+  <div>
+    <h1>Tags</h1>
+    <%# TODO: i18n %>
+    <p class="text-muted">Tags in <%= link_to @space.name, space_path(@space) %></p>
+  </div>
+  <% if policy(Tag.new(space: @space)).create? %>
+    <button type="button" class="btn btn-primary" data-controller="modal-toggle" data-action="modal-toggle#open" data-modal-toggle-target-value="new-tag-modal">
+      <%# TODO: i18n %>
+      Create Tag
+    </button>
+  <% end %>
+</div>
+
+<div class="card">
+  <% if @tags.any? %>
+    <ul class="tag-list">
+      <% @tags.each do |tag| %>
+        <li class="tag-item">
+          <div class="tag-info">
+            <span class="tag-name"><%= link_to tag.name, tag_path(tag, space_slug: @space.slug) %></span>
+            <% if tag.description.present? %>
+              <p class="tag-description"><%= truncate(tag.description, length: 150) %></p>
+            <% end %>
+          </div>
+          <div class="tag-stats">
+            <%# TODO: i18n %>
+            <span class="tag-count"><%= tag.questions_count %> <%= "question".pluralize(tag.questions_count) %></span>
+          </div>
+          <% if policy(tag).destroy? %>
+            <div class="tag-actions">
+              <%= button_to tag_path(tag, space_slug: @space.slug), method: :delete,
+                  class: "btn btn-small btn-danger",
+                  data: { turbo_confirm: "Are you sure you want to delete this tag?" } do %>
+                <%# TODO: i18n %>
+                Delete
+              <% end %>
+            </div>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <div class="empty-state">
+      <%# TODO: i18n %>
+      <p>No tags in this space yet.</p>
+      <% if policy(Tag.new(space: @space)).create? %>
+        <p>Create the first tag to help organize questions.</p>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+<% if policy(Tag.new(space: @space)).create? %>
+  <div id="new-tag-modal" class="modal" data-controller="modal">
+    <div class="modal-backdrop" data-action="click->modal#close"></div>
+    <div class="modal-content">
+      <button type="button" class="modal-close" data-action="modal#close">&times;</button>
+      <%# TODO: i18n %>
+      <h2>Create New Tag</h2>
+      <%= form_with url: tags_path(space_slug: @space.slug), method: :post, class: "tag-form" do |f| %>
+        <div class="form-group">
+          <%# TODO: i18n %>
+          <%= f.label :name, "Tag Name" %>
+          <%= f.text_field :name, class: "form-control", required: true, placeholder: "e.g., ruby, javascript, docker" %>
+          <%# TODO: i18n %>
+          <small class="form-hint">2-30 characters, lowercase letters, numbers, and hyphens only</small>
+        </div>
+
+        <div class="form-group">
+          <%# TODO: i18n %>
+          <%= f.label :description, "Description (optional)" %>
+          <%= f.text_area :description, class: "form-control", rows: 3, placeholder: "What topics does this tag cover?" %>
+        </div>
+
+        <div class="form-actions">
+          <%# TODO: i18n %>
+          <%= f.submit "Create Tag", class: "btn btn-primary" %>
+          <button type="button" class="btn btn-secondary" data-action="modal#close">Cancel</button>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>

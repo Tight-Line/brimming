@@ -1,5 +1,12 @@
+require "sidekiq/web"
+
 Rails.application.routes.draw do
   devise_for :users
+
+  # Sidekiq Web UI - admin only
+  authenticate :user, ->(user) { user.admin? } do
+    mount Sidekiq::Web => "/admin/sidekiq"
+  end
 
   # LDAP authentication (custom implementation, not using OmniAuth routes)
   get "ldap/sign_in", to: "ldap_sessions#new", as: :ldap_sign_in
@@ -7,12 +14,19 @@ Rails.application.routes.draw do
 
   # Admin namespace
   namespace :admin do
+    get "/", to: "dashboard#show", as: :root
     resources :ldap_servers do
       resources :ldap_group_mappings, except: [ :index ] do
         member do
           post :add_space
           delete :remove_space
         end
+      end
+    end
+    resources :embedding_providers do
+      member do
+        post :activate
+        post :reindex
       end
     end
   end
@@ -77,12 +91,29 @@ Rails.application.routes.draw do
       get :moderators
       post :add_moderator
       delete :remove_moderator
+      get :search
     end
   end
+
+  # Tags are scoped to spaces
+  scope "/spaces/:space_slug" do
+    resources :tags, only: [ :index, :show, :create, :destroy ], param: :slug do
+      collection do
+        get :search
+      end
+    end
+  end
+
+  # Global search
+  get "search", to: "search#index", as: :search
+  get "search/suggestions", to: "search#suggestions", as: :search_suggestions
 
   resources :users, only: [ :show ], param: :username do
     collection do
       get :search
+    end
+    member do
+      get :posts_search, path: "search"
     end
   end
 end

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title><%= content_for(:title) || "Admin - Brimming" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Brimming Admin">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="admin-body">
+    <header class="site-header">
+      <div class="container">
+        <%= link_to root_path, class: "site-logo" do %>
+          <img src="/icon.svg" alt="Brimming">
+          Brimming
+        <% end %>
+
+        <nav class="site-nav">
+          <%= link_to "Questions", questions_path %>
+          <%= link_to "Spaces", spaces_path %>
+          <%= link_to "Search", search_path %>
+          <%= link_to "Admin", admin_root_path, class: "active" %>
+        </nav>
+
+        <div class="user-menu">
+          <span class="user-greeting">
+            <%= render 'shared/user_badge', user: current_user %>
+          </span>
+          <%= button_to "Log out", destroy_user_session_path, method: :delete, class: "btn-logout" %>
+        </div>
+      </div>
+    </header>
+
+    <div class="admin-layout">
+      <aside class="admin-sidebar">
+        <nav class="admin-nav">
+          <h3>Administration</h3>
+          <%= link_to admin_root_path, class: "admin-nav-item #{'active' if current_page?(admin_root_path)}" do %>
+            <span class="admin-nav-icon">&#9656;</span>
+            Dashboard
+          <% end %>
+
+          <h4>Authentication</h4>
+          <%= link_to admin_ldap_servers_path, class: "admin-nav-item #{'active' if request.path.start_with?('/admin/ldap')}" do %>
+            <span class="admin-nav-icon">&#9656;</span>
+            LDAP Servers
+          <% end %>
+
+          <h4>AI & Search</h4>
+          <%= link_to admin_embedding_providers_path, class: "admin-nav-item #{'active' if request.path.start_with?('/admin/embedding')}" do %>
+            <span class="admin-nav-icon">&#9656;</span>
+            Embedding Providers
+          <% end %>
+
+          <h4>System</h4>
+          <%= link_to "/admin/sidekiq", class: "admin-nav-item", target: "_blank" do %>
+            <span class="admin-nav-icon">&#9656;</span>
+            Sidekiq
+            <span class="admin-nav-external">&#8599;</span>
+          <% end %>
+        </nav>
+      </aside>
+
+      <main class="admin-main">
+        <% if notice.present? %>
+          <div class="flash flash-notice"><%= notice %></div>
+        <% end %>
+        <% if alert.present? %>
+          <div class="flash flash-alert"><%= alert %></div>
+        <% end %>
+        <%= yield %>
+      </main>
+    </div>
+  </body>
+</html>

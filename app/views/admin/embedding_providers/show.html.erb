@@ -1,0 +1,87 @@
+<% content_for(:title) { "#{@embedding_provider.name} - Embedding Providers - Admin - Brimming" } %>
+
+<div class="admin-container">
+  <div class="page-header">
+    <h1><%= @embedding_provider.name %></h1>
+    <div class="actions">
+      <%= link_to "Edit", edit_admin_embedding_provider_path(@embedding_provider), class: "btn btn-secondary" %>
+      <%= link_to "Back to List", admin_embedding_providers_path, class: "btn btn-link" %>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>Provider Configuration</h3>
+    </div>
+    <div class="card-body">
+      <dl class="details-list">
+        <dt>Status</dt>
+        <dd>
+          <% if @embedding_provider.enabled? %>
+            <span class="badge badge-success">Enabled</span>
+          <% else %>
+            <span class="badge badge-secondary">Disabled</span>
+          <% end %>
+        </dd>
+
+        <dt>Provider Type</dt>
+        <dd><%= @embedding_provider.display_provider_type %></dd>
+
+        <dt>Model</dt>
+        <dd><code><%= @embedding_provider.embedding_model %></code></dd>
+
+        <dt>Dimensions</dt>
+        <dd><%= @embedding_provider.dimensions %></dd>
+
+        <% if @embedding_provider.requires_api_key? %>
+          <dt>API Key</dt>
+          <dd>
+            <% if @embedding_provider.api_key.present? %>
+              <span class="badge badge-success">Configured</span>
+            <% else %>
+              <span class="badge badge-warning">Not configured</span>
+            <% end %>
+          </dd>
+        <% end %>
+
+        <% if @embedding_provider.requires_api_endpoint? %>
+          <dt>API Endpoint</dt>
+          <dd><code><%= @embedding_provider.api_endpoint.presence || "(not set)" %></code></dd>
+        <% end %>
+      </dl>
+    </div>
+  </div>
+
+  <div class="card mt-4">
+    <div class="card-header">
+      <h3>Usage Statistics</h3>
+    </div>
+    <div class="card-body">
+      <% if Question.column_names.include?("embedding") %>
+        <% embedded_count = Question.where.not(embedding: nil).count %>
+        <% total_count = Question.count %>
+        <% coverage = total_count > 0 ? (embedded_count.to_f / total_count * 100).round(1) : 0 %>
+
+        <dl class="details-list">
+          <dt>Questions with Embeddings</dt>
+          <dd><%= embedded_count %> / <%= total_count %> (<%= coverage %>%)</dd>
+
+          <dt>Vector Dimensions</dt>
+          <dd><%= @embedding_provider.dimensions %></dd>
+        </dl>
+
+        <% if coverage < 100 && @embedding_provider.enabled? %>
+          <div class="health-progress mt-3">
+            <div class="progress-bar" style="width: <%= coverage %>%"></div>
+          </div>
+          <small class="text-muted">Embeddings are generated in the background. New questions are embedded automatically.</small>
+        <% end %>
+      <% else %>
+        <div class="alert alert-warning">
+          <strong>Embedding column not yet configured.</strong>
+          <p class="mb-0">The pgvector extension and embedding column need to be added to the questions table before embeddings can be generated.</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

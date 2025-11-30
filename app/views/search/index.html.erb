@@ -1,0 +1,200 @@
+<%# TODO: i18n %>
+<% content_for(:title) { "Search - Brimming" } %>
+
+<div class="page-header">
+  <h1>Search</h1>
+</div>
+
+<div class="search-container">
+  <%= form_with url: search_path, method: :get, class: "search-form", data: { turbo: false } do |f| %>
+    <div class="search-input-wrapper">
+      <input type="search"
+             name="q"
+             value="<%= @query %>"
+             placeholder="Search questions..."
+             class="form-control search-input"
+             autofocus>
+      <%= f.submit "Search", class: "btn btn-primary" %>
+    </div>
+
+    <div class="search-filters">
+      <% if @space %>
+        <span class="search-filter-active">
+          <%# TODO: i18n %>
+          in <%= link_to @space.name, space_path(@space) %>
+          <%= link_to "x", search_path(q: @query, user: @user&.username, tags: @tags, sort: @sort), class: "filter-remove" %>
+        </span>
+      <% end %>
+
+      <% if @user %>
+        <span class="search-filter-active">
+          <%# TODO: i18n %>
+          by <%= link_to @user.username, user_path(@user) %>
+          <%= link_to "x", search_path(q: @query, space: @space&.slug, tags: @tags, sort: @sort), class: "filter-remove" %>
+        </span>
+      <% end %>
+
+      <% @tags.each do |tag| %>
+        <span class="search-filter-active tag-filter">
+          <%= tag %>
+          <%= link_to "x", search_path(q: @query, space: @space&.slug, user: @user&.username, tags: @tags - [tag], sort: @sort), class: "filter-remove" %>
+        </span>
+      <% end %>
+    </div>
+
+    <% if @query.present? || @space.present? || @user.present? || @tags.any? %>
+      <div class="search-sort">
+        <%# TODO: i18n %>
+        <span class="sort-label">Sort by:</span>
+        <% sort_options = [
+          ["Relevance", "relevance"],
+          ["Newest", "newest"],
+          ["Oldest", "oldest"],
+          ["Most Votes", "votes"],
+          ["Recent Activity", "activity"]
+        ] %>
+        <% sort_options.each do |label, value| %>
+          <% if @sort == value || (@sort.blank? && value == "relevance") %>
+            <span class="sort-option active"><%= label %></span>
+          <% else %>
+            <%= link_to label, search_path(q: @query, space: @space&.slug, user: @user&.username, tags: @tags, sort: value), class: "sort-option" %>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+</div>
+
+<div class="card">
+  <% if @results && @results.hits.any? %>
+    <div class="search-results-header">
+      <%# TODO: i18n %>
+      <span class="results-count"><%= @results.total %> <%= "result".pluralize(@results.total) %></span>
+      <% if current_user&.admin? && @results.respond_to?(:search_mode) %>
+        <div class="search-debug-header">
+          <span class="debug-badge"><%= @results.search_mode %></span>
+          <% if @results.similarity_threshold %>
+            <span class="debug-stat">
+              <span class="debug-label">Threshold</span>
+              <span class="debug-value"><%= @results.similarity_threshold %></span>
+            </span>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <ul class="question-list">
+      <% @results.hits.each do |hit| %>
+        <% source = hit.source %>
+        <% question = source["question"] %>
+        <li class="question-item search-result">
+          <div class="search-result-stats">
+            <div class="stat">
+              <span class="stat-number <%= question["vote_score"].to_i.positive? ? 'positive' : '' %><%= question["vote_score"].to_i.negative? ? 'negative' : '' %>">
+                <%= question["vote_score"] || 0 %>
+              </span>
+              <%# TODO: i18n %>
+              <span class="stat-label">votes</span>
+            </div>
+            <div class="stat <%= source["answer_count"].to_i.positive? ? 'has-answers' : '' %> <%= question["has_correct_answer"] ? 'has-correct' : '' %>">
+              <span class="stat-number"><%= source["answer_count"] || 0 %></span>
+              <%# TODO: i18n %>
+              <span class="stat-label">answers</span>
+            </div>
+            <div class="stat">
+              <span class="stat-number"><%= question["views_count"] || 0 %></span>
+              <%# TODO: i18n %>
+              <span class="stat-label">views</span>
+            </div>
+          </div>
+
+          <div class="search-result-content">
+            <div class="question-title">
+              <%= link_to question["title"], question_path(question["slug"]) %>
+            </div>
+            <% if question["body"].present? %>
+              <div class="search-result-excerpt">
+                <%= truncate(strip_tags(question["body"]), length: 200) %>
+              </div>
+            <% end %>
+
+            <div class="search-result-meta">
+              <% if source["space"] %>
+                <span class="space"><%= link_to source["space"]["name"], space_path(source["space"]["slug"]) %></span>
+              <% end %>
+
+              <% if source["tags"].present? %>
+                <span class="tags">
+                  <% source["tags"].each do |tag| %>
+                    <%= link_to tag, search_path(tags: [tag]), class: "tag" %>
+                  <% end %>
+                </span>
+              <% end %>
+
+              <% if source["author"] %>
+                <%# TODO: i18n %>
+                <span>by <%= link_to source["author"]["username"], user_path(source["author"]["username"]) %></span>
+              <% end %>
+
+              <%# TODO: i18n %>
+              <span><%= time_ago_in_words(Time.parse(question["created_at"])) %> ago</span>
+            </div>
+
+            <% if current_user&.admin? && @results.respond_to?(:search_mode) && @results.search_mode.present? %>
+              <div class="search-debug-scores">
+                <% if @results.search_mode == :vector %>
+                  <span class="debug-score" title="Vector similarity score">
+                    <span class="debug-label">Similarity</span>
+                    <% if hit.vector_score %>
+                      <span class="debug-similarity <%= @results.similarity_threshold && hit.vector_score >= @results.similarity_threshold ? 'above' : '' %>">
+                        <%= number_with_precision(hit.vector_score, precision: 3) %>
+                      </span>
+                    <% else %>
+                      <span class="debug-value debug-none">--</span>
+                    <% end %>
+                  </span>
+                  <span class="debug-score" title="Vector search rank">
+                    <span class="debug-label">Rank</span>
+                    <% if hit.vector_rank %>
+                      <span class="debug-value">#<%= hit.vector_rank %></span>
+                    <% else %>
+                      <span class="debug-value debug-none">--</span>
+                    <% end %>
+                  </span>
+                <% elsif @results.search_mode == :keyword %>
+                  <span class="debug-score" title="Keyword search (PostgreSQL FTS)">
+                    <span class="debug-label">FTS</span>
+                    <span class="debug-value">match</span>
+                  </span>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </li>
+      <% end %>
+    </ul>
+
+    <% if @results.total_pages > 1 %>
+      <div class="search-pagination">
+        <% if @results.page > 1 %>
+          <%= link_to "Previous", search_path(q: @query, space: @space&.slug, user: @user&.username, tags: @tags, sort: @sort, page: @results.page - 1), class: "btn btn-secondary btn-small" %>
+        <% end %>
+        <%# TODO: i18n %>
+        <span class="page-info">Page <%= @results.page %> of <%= @results.total_pages %></span>
+        <% if @results.page < @results.total_pages %>
+          <%= link_to "Next", search_path(q: @query, space: @space&.slug, user: @user&.username, tags: @tags, sort: @sort, page: @results.page + 1), class: "btn btn-secondary btn-small" %>
+        <% end %>
+      </div>
+    <% end %>
+  <% elsif @query.present? || @space.present? || @user.present? || @tags.any? %>
+    <div class="empty-state">
+      <%# TODO: i18n %>
+      <p>No results found. Try different search terms or filters.</p>
+    </div>
+  <% else %>
+    <div class="empty-state">
+      <%# TODO: i18n %>
+      <p>Enter a search term to find questions.</p>
+    </div>
+  <% end %>
+</div>

@@ -256,4 +256,46 @@ RSpec.describe Answer do
       expect(answer.space).to eq(space)
     end
   end
+
+  describe "embedding regeneration" do
+    let!(:provider) { create(:embedding_provider, :openai, :enabled) }
+    let(:space) { create(:space) }
+    let(:question) { create(:question, space: space) }
+
+    before do
+      stub_request(:post, "https://api.openai.com/v1/embeddings")
+        .to_return(
+          status: 200,
+          body: { data: [ { index: 0, embedding: Array.new(1536) { rand } } ] }.to_json
+        )
+    end
+
+    it "schedules embedding regeneration when body changes" do
+      answer = create(:answer, question: question)
+      expect {
+        answer.update!(body: "Updated body content that is long enough to pass validation")
+      }.to have_enqueued_job(GenerateQuestionEmbeddingJob).with(question, force: true)
+    end
+
+    it "schedules embedding regeneration when is_correct changes" do
+      answer = create(:answer, question: question)
+      expect {
+        answer.update!(is_correct: true)
+      }.to have_enqueued_job(GenerateQuestionEmbeddingJob).with(question, force: true)
+    end
+
+    it "schedules embedding regeneration when deleted_at changes" do
+      answer = create(:answer, question: question)
+      expect {
+        answer.soft_delete!
+      }.to have_enqueued_job(GenerateQuestionEmbeddingJob).with(question, force: true)
+    end
+
+    it "schedules embedding regeneration when answer is destroyed" do
+      answer = create(:answer, question: question)
+      expect {
+        answer.destroy!
+      }.to have_enqueued_job(GenerateQuestionEmbeddingJob).with(question, force: true)
+    end
+  end
 end

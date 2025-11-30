@@ -1,0 +1,10 @@
+<% content_for(:title) { "Edit #{@embedding_provider.name} - Embedding Providers - Admin - Brimming" } %>
+
+<div class="admin-container">
+  <div class="page-header">
+    <h1>Edit <%= @embedding_provider.name %></h1>
+    <%= link_to "Back to Provider", admin_embedding_provider_path(@embedding_provider), class: "btn btn-link" %>
+  </div>
+
+  <%= render "form" %>
+</div>

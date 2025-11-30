@@ -35,6 +35,47 @@ RSpec.describe Question do
     it { is_expected.to have_many(:answers).dependent(:destroy) }
     it { is_expected.to have_many(:comments).dependent(:destroy) }
     it { is_expected.to have_many(:question_votes).dependent(:destroy) }
+    it { is_expected.to have_many(:question_tags).dependent(:destroy) }
+    it { is_expected.to have_many(:tags).through(:question_tags) }
+  end
+
+  describe "tags" do
+    let(:space) { create(:space) }
+    let(:question) { create(:question, space: space) }
+
+    describe "validation" do
+      it "allows up to 5 tags" do
+        tags = create_list(:tag, 5, space: space)
+        question.tags = tags
+        expect(question).to be_valid
+      end
+
+      it "rejects more than 5 tags" do
+        tags = create_list(:tag, 6, space: space)
+        question.tags = tags
+        expect(question).not_to be_valid
+        expect(question.errors[:tags]).to include("cannot exceed 5")
+      end
+
+      it "requires tags to be from the same space" do
+        other_space = create(:space)
+        tag_from_other_space = create(:tag, space: other_space)
+        # Build a question with an invalid tag assignment
+        invalid_question = build(:question, space: space)
+        invalid_question.tags = [ tag_from_other_space ]
+        expect(invalid_question).not_to be_valid
+        expect(invalid_question.errors[:tags]).to include("must belong to the same space as the question")
+      end
+    end
+
+    describe "#tag_names" do
+      it "returns an array of tag names" do
+        tag1 = create(:tag, space: space, name: "ruby")
+        tag2 = create(:tag, space: space, name: "rails")
+        question.tags = [ tag1, tag2 ]
+        expect(question.tag_names).to contain_exactly("ruby", "rails")
+      end
+    end
   end
 
   describe "slug generation" do

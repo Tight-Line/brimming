@@ -14,7 +14,7 @@ A Stack Overflow-style Q&A platform built with Ruby on Rails.
 - **Voting System** - Community votes on answer quality, sorted by score
 - **Moderation** - Category moderators can mark correct answers
 - **User Profiles** - Gamification with stats for questions, answers, and best answers
-- **Search** - Full-text search powered by OpenSearch
+- **Search** - Hybrid search with PostgreSQL full-text + pgvector semantic search
 - **Email Digests** - Configurable per-post, daily, or weekly digests
 - **SSO Support** - LDAP/ActiveDirectory and social login (Google, GitHub, etc.)
 - **API** - Full REST API for programmatic access
@@ -22,9 +22,9 @@ A Stack Overflow-style Q&A platform built with Ruby on Rails.
 
 ## Tech Stack
 
-- **Backend**: Ruby on Rails 8.1, PostgreSQL 18.1
+- **Backend**: Ruby on Rails 8.1, PostgreSQL 17 (with pgvector + pg_trgm)
 - **Background Jobs**: Sidekiq with Valkey 9.0
-- **Search**: OpenSearch 3.2
+- **Search**: PostgreSQL full-text search + pgvector for semantic search
 - **Deployment**: Docker, Helm 3.x for Kubernetes
 
 ## Quick Start
@@ -226,9 +226,8 @@ flowchart TB
     end
 
     subgraph Data Layer
-        PG[(PostgreSQL)]
+        PG[(PostgreSQL<br/>+ pgvector)]
         VK[(Valkey)]
-        OS[(OpenSearch)]
     end
 
     subgraph Workers
@@ -247,10 +246,6 @@ flowchart TB
     App1 --> VK
     App2 --> VK
     App3 --> VK
-
-    App1 --> OS
-    App2 --> OS
-    App3 --> OS
 
     VK --> W1
     VK --> W2

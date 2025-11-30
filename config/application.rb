@@ -38,5 +38,8 @@ module Src
 
     # Don't generate system test files.
     config.generators.system_tests = nil
+
+    # Use SQL format for schema dump (better handles custom schemas like 'brimming')
+    config.active_record.schema_format = :sql
   end
 end

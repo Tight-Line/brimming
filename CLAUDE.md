@@ -13,19 +13,20 @@ Open-source project hosted on GitHub under the MIT License.
 ### Core Concepts
 - **Questions** belong to **Spaces** and are posted by **Users**
 - **Answers** belong to Questions and are posted by Users
+- **Articles** belong to Spaces - long-form content that can be commented on (but not answered)
 - Users **vote** on Questions, Answers, and Comments (up/down for Q&A, upvote-only for comments)
 - Answers are displayed sorted by vote score (highest first)
 - Space **moderators** can mark one Answer as **"Solved"** for a Question
 - **Best Answer** = highest-voted answer for a question (may differ from Solved)
 - **Karma** system rewards participation: +5 questions, +10 answers, +15 solved, +1 per upvote
+- **Bookmarks** allow users to save Questions, Answers, Comments, and Articles for later
 - User identity is their RFC 5322 email address; they choose a display username and optional avatar
 
 ### Tech Stack
 - Ruby 3.4.7
 - Ruby on Rails 8.1
-- PostgreSQL 18.1 (primary database)
+- PostgreSQL 17 with pgvector and pg_trgm (primary database + vector embeddings + full-text search)
 - Valkey 9.0 (Redis-compatible, for caching and Sidekiq)
-- OpenSearch 3.2 (full-text search for questions/answers)
 - Sidekiq (background jobs)
 - Docker Compose (local development)
 - Helm 3.x (Kubernetes deployment)
@@ -35,24 +36,26 @@ Open-source project hosted on GitHub under the MIT License.
 ### Architecture
 ```
 docker-compose.dev.yml (local dev)
-├── dev (Rails development container)
-├── postgres
+├── app (Rails web server)
+├── dev (Rails development container for shell/console)
+├── worker (Sidekiq background jobs)
+├── postgres (with pgvector + pg_trgm)
 ├── valkey
-└── opensearch (Phase 10)
+├── openldap (test LDAP server)
+├── phpldapadmin (LDAP admin UI)
+└── mailhog (email testing)
 
 docker-compose.yml (production-like)
 ├── app (Rails: Web UI + API + MCP server)
 ├── worker (Sidekiq)
-├── postgres
-├── valkey
-└── opensearch
+├── postgres (with pgvector + pg_trgm)
+└── valkey
 
 helm/brimming/ (Kubernetes)
 ├── app (Deployment + Service)
 ├── worker (Deployment)
-├── postgres (StatefulSet or external)
-├── valkey (StatefulSet or external)
-└── opensearch (StatefulSet or external)
+├── postgres (StatefulSet or external, with pgvector + pg_trgm)
+└── valkey (StatefulSet or external)
 ```
 
 ### Authentication
@@ -74,6 +77,89 @@ helm/brimming/ (Kubernetes)
 - **User**: Post questions, post answers, vote
 - **Moderator** (per-space): Mark correct answers, moderate content
 - **Admin**: Manage spaces, assign moderators, configure SSO, manage LDAP mappings
+
+### Search Architecture
+
+Brimming uses **hybrid search** with a **vector-first, keyword-fallback** strategy:
+
+1. If embeddings are available and configured, use **pgvector semantic search**
+2. If semantic search returns no results above the similarity threshold, fall back to **PostgreSQL full-text search**
+
+```mermaid
+flowchart TB
+    subgraph User Request
+        A[User searches for 'how to fix rails migration'] --> B{SearchController}
+    end
+
+    subgraph HybridQueryService
+        B --> C[HybridQueryService]
+        C --> D{Sort by relevance<br/>and query present?}
+        D -->|No| E[PostgreSQL FTS Only]
+        D -->|Yes| F{EmbeddingService.available?}
+        F -->|No| E
+        F -->|Yes| G[VectorQueryService]
+        G --> H{Results above<br/>similarity threshold?}
+        H -->|Yes| I[Return Vector Results]
+        H -->|No| E
+    end
+
+    subgraph PostgreSQL Full-Text Search
+        E --> E1[questions.search_vector<br/>tsvector column]
+        E1 --> E2[plainto_tsquery]
+        E2 --> E3[ts_rank ordering]
+        E3 --> E4[Weighted: A=title, B=body, C=answers]
+    end
+
+    subgraph Semantic Search Flow
+        G --> J1[EmbeddingService.client]
+        J1 --> J2[Generate query embedding<br/>via OpenAI/Cohere/Ollama]
+        J2 --> J3[pgvector nearest_neighbors<br/>cosine distance]
+        J3 --> J4[Filter by similarity_threshold]
+    end
+
+    subgraph Background Updates
+        Q[Question Created/Updated] --> R[PostgreSQL Trigger<br/>auto-updates search_vector]
+
+        S[Answer Created/Updated] --> T[Answer callback<br/>refresh_question_search_vector!]
+
+        Q --> V[GenerateQuestionEmbeddingJob]
+        V --> W[EmbeddingService.prepare_question_text<br/>title + body + best answer]
+        W --> X[Generate embedding vector]
+        X --> Y[Store in questions.embedding column]
+    end
+
+    I --> Z[Return to User]
+    E4 --> Z
+```
+
+**Key Components:**
+
+| Component | Purpose | Location |
+|-----------|---------|----------|
+| `Search::HybridQueryService` | Vector-first with keyword fallback | `app/services/search/hybrid_query_service.rb` |
+| `Search::VectorQueryService` | pgvector semantic search | `app/services/search/vector_query_service.rb` |
+| `Search::SuggestionsService` | Autocomplete via pg_trgm | `app/services/search/suggestions_service.rb` |
+| `EmbeddingService` | Embedding generation with adapter pattern | `app/services/embedding_service.rb` |
+| `GenerateQuestionEmbeddingJob` | Background embedding generation | `app/jobs/generate_question_embedding_job.rb` |
+
+**PostgreSQL Full-Text Search:**
+- `search_vector` tsvector column on questions table
+- Weighted search: A=title (highest), B=body, C=answer content
+- Auto-updated via PostgreSQL trigger on question changes
+- Answer changes trigger `refresh_search_vector!` via callback
+- GIN index for fast searching
+
+**Per-Model Similarity Thresholds:**
+Different embedding models have different score distributions. Thresholds are tuned per-model:
+- OpenAI text-embedding-3-small: 0.28
+- Ollama embeddinggemma: 0.38
+- Ollama nomic-embed-text: 0.42
+- See `EmbeddingProvider::DEFAULT_SIMILARITY_THRESHOLDS` for full list
+
+**Embedding Providers:**
+- Configured via Admin UI at `/admin/embedding_providers`
+- Supports: OpenAI, Cohere, Ollama, Azure OpenAI, AWS Bedrock, HuggingFace
+- API keys encrypted at rest using Active Record Encryption
 
 ---
 
@@ -100,7 +186,7 @@ make server     # Start Rails server at localhost:33000
 make db-create
 make db-migrate
 make db-rollback
-make db-reset   # Drop, create, migrate, seed
+make db-reset   # Drop, create, migrate, seed, and reindex
 make db-seed
 
 # Testing (100% coverage required)
@@ -231,43 +317,169 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - Admin UI to enable/configure providers
 - Account linking for existing users
 
-### Phase 10: OpenSearch Integration `[ ]`
-- Add OpenSearch to Docker Compose
-- **Update Helm chart**: Add OpenSearch StatefulSet or external config
-- **Update Helm tests** for new workload
-- Searchkick or Elasticsearch-Rails gem
-- Index Questions and Answers
-- Search API endpoint
-- Search UI with filters (space, date, votes)
+### Phase 10: Search Integration `[x]`
+- PostgreSQL full-text search with tsvector/tsquery `[x]`
+- Weighted search vectors (A=title, B=body, C=answers) `[x]`
+- pgvector extension for semantic search `[x]`
+- Hybrid search: vector-first with keyword fallback `[x]`
+- Per-model similarity thresholds for embeddings `[x]`
+- Configurable embedding providers (OpenAI, Cohere, Ollama, etc.) `[x]`
+- Search API endpoint with filters (space, tags, sort) `[x]`
+- Search UI with autocomplete suggestions (pg_trgm) `[x]`
+- Sidekiq worker container for background embedding generation `[x]`
+- Sidekiq Web UI at `/admin/sidekiq` (admin-only) `[x]`
+- Admin UI for embedding provider configuration `[x]`
 
-### Phase 11: Background Workers & Email `[ ]`
-- Sidekiq configuration
+### Phase 11: Background Workers & Email `[~]`
+- Sidekiq configuration `[x]`
+- Sidekiq Web UI (admin-only at `/admin/sidekiq`) `[x]`
 - User email preferences (per-post, daily digest, weekly digest, none)
-- SpaceSubscription model
+- SpaceSubscription model `[x]` (exists, used for space membership)
 - DigestMailer
 - Scheduled jobs for daily/weekly digests
 
-### Phase 12: REST API `[ ]`
+### ~~Phase 2: Helm Chart Foundation~~ `[skipped]`
+*Moved to Phase 17 - will implement after core features are complete.*
+
+### ~~Phase 9: SSO - Social Providers~~ `[skipped]`
+*Moved to Phase 18 - lower priority than other features.*
+
+### Phase 12: Articles `[ ]`
+- **Article model** (title, body, user_id, space_id, slug, published_at, vote_score, views_count, edited_at)
+- Articles belong to Spaces and are posted by Users (moderators/admins only, or configurable per-space)
+- **Key differences from Questions:**
+  - No answers - articles are one-way content
+  - Comments allowed (same nested comment system as Questions)
+  - Voting allowed (same as Questions)
+  - Typically longer-form, authoritative content
+- **Search integration:**
+  - Included in hybrid search results alongside Questions
+  - Own `search_vector` tsvector column (weighted: A=title, B=body)
+  - Own `embedding` column for semantic search
+  - Search results distinguish between Questions and Articles in UI
+- **RAG integration:**
+  - Articles included in embedding generation and retrieval
+  - Useful as authoritative source material for AI-generated answers
+- **Article CRUD** with publishing workflow (draft/published states)
+- **ArticlePolicy** for authorization (who can create/edit/publish)
+
+### Phase 13: Bookmarks `[ ]`
+- **Bookmark model** (user_id, bookmarkable_type, bookmarkable_id, created_at, notes)
+  - Polymorphic association to Question, Answer, Comment, Article
+- Users can bookmark any content for later reference
+- **UI features:**
+  - Bookmark button on Questions, Answers, Comments, Articles
+  - "My Bookmarks" page with filtering by type
+  - Optional notes field for personal annotations
+  - Sort by date bookmarked or content date
+- **Turbo Stream updates** for instant bookmark/unbookmark feedback
+- **BookmarkPolicy** - users can only manage their own bookmarks
+
+### Phase 14: Chunking & RAG Queries `[ ]`
+- **Content chunking** for long-form content (Articles, long Questions/Answers)
+  - Break content into overlapping chunks for better retrieval precision
+  - Chunk model (chunkable_type, chunkable_id, chunk_index, content, embedding)
+  - Configurable chunk size and overlap
+- **Improved embedding strategy:**
+  - Embed chunks instead of (or in addition to) full documents
+  - Store chunk embeddings in pgvector
+  - Retrieval returns relevant chunks with source context
+- **RAG query pipeline:**
+  - Query → embedding → chunk retrieval → context assembly → response
+  - Configurable number of chunks to retrieve
+  - Re-ranking options (cross-encoder, reciprocal rank fusion)
+- **Citation support:**
+  - Track which chunks contributed to a response
+  - Link citations back to source content (Article, Question, Answer)
+- **Admin configuration:**
+  - Chunk size, overlap, max chunks per query
+  - Re-indexing tools for chunk regeneration
+
+### Phase 15: Q&A Wizard `[ ]`
+- **Admin/moderator tool to populate spaces with pre-approved FAQ content**
+- **Use cases:**
+  - Bootstrap new spaces with authoritative Q&A before users arrive
+  - Get ahead of common questions before they're asked (possibly poorly) by users
+  - Convert long-form documentation (Articles) into searchable, bite-sized Q&A
+- **Wizard workflow:**
+  1. Admin/moderator selects a space and optionally source material (Articles, external docs)
+  2. System uses AI to analyze content and suggest question/answer pairs
+  3. Moderator reviews, edits, and approves suggested Q&A
+  4. Approved Q&A posted as real questions with answers pre-marked as "Solved"
+- **Content sources:**
+  - Generate from Articles in the space (extract FAQs from documentation)
+  - Generate from uploaded documents (PDF, Markdown, text)
+  - Manual entry with AI-assisted answer generation
+  - Import from external FAQ sources
+- **AI integration:**
+  - Uses configured LLM provider to generate suggestions
+  - RAG-enhanced: pulls relevant context from existing space content
+  - Generates natural-sounding questions users might actually ask
+- **Metadata:**
+  - Questions/Answers marked as "AI-generated" or "Official FAQ"
+  - Track source material (which Article/document spawned this Q&A)
+  - Special styling/badge for official FAQ content in UI
+- **Batch operations:**
+  - Generate multiple Q&A pairs at once
+  - Bulk approve/reject suggestions
+  - Re-generate individual suggestions
+
+### Phase 16: REST API & Swagger `[ ]`
 - API namespace with versioning (api/v1)
 - Token authentication (Devise tokens or JWT)
 - Full CRUD endpoints for all resources
-- API documentation (Swagger/OpenAPI or Rswag)
+- API documentation via Swagger/OpenAPI (Rswag gem)
+- Interactive API explorer at `/api/docs`
 
-### Phase 13: MCP Server `[ ]`
-- MCP protocol integration
-- Tool: list_spaces
-- Tool: search_questions(query, spaces[])
-- Tool: get_answers(question_id, limit, best_only)
-- Admin-configurable answer limit
+### Phase 17: MCP Server `[ ]`
+- MCP protocol integration - Brimming as a **knowledge base backend for AI assistants**
+- **Primary tools:**
+  - `retrieve(query, space_slugs[]?, limit?)` - **Retrieval only** (primitive RAG)
+    - Uses hybrid search (vector + keyword) to find relevant content
+    - Returns ranked chunks/blocks (questions, answers, comments) with context and similarity scores
+    - AI agent incorporates these into its own generation workflow
+    - Most flexible - agent controls synthesis, can combine with other sources
+  - `ask(question, space_slugs[]?)` - **Full RAG** (retrieval + generation)
+    - Retrieves relevant content, then synthesizes an answer using configured LLM
+    - Returns generated response with citations/sources from the knowledge base
+    - Simpler integration - Brimming handles the full RAG pipeline
+- **Supporting tools:**
+  - `list_spaces()` - List available knowledge domains with descriptions
+- **Configuration:**
+  - Admin-configurable LLM provider for `ask` synthesis (OpenAI, Anthropic, Ollama, etc.)
+  - Configurable context window size, max sources, similarity threshold
+  - Rate limiting per client
+- **Authentication:** API token or OAuth for MCP clients
 - **Update Helm chart** if MCP requires separate service/port
 - **Update Helm tests** if architecture changes
+
+### Phase 18: Helm Chart Foundation `[ ]`
+- Create `helm/brimming/` chart structure
+- Chart.yaml with proper metadata
+- values.yaml with sensible defaults
+- Templates for initial workloads:
+  - app Deployment + Service + Ingress
+  - worker Deployment
+  - ConfigMap for Rails config
+  - Secret template for credentials
+- PostgreSQL and Valkey as optional subcharts or external
+- Helm chart tests using helm-unittest
+- CI step to lint and test Helm chart
+- **NOTE**: Update Helm chart tests whenever adding new workloads
+
+### Phase 19: SSO - Social Providers `[ ]`
+- OmniAuth strategies: Google, Facebook, LinkedIn, GitHub, GitLab
+- SsoProvider model (provider, enabled, client_id, client_secret)
+- Admin UI to enable/configure providers
+- Account linking for existing users
 
 ---
 
 ## Current Status
 
-**Completed Phases**: 1, 3, 4, 5, 6, 7, 8
-**Not Started**: 2 (Helm), 9-13
+**Completed Phases**: 1, 3, 4, 5, 6, 7, 8, 10
+**In Progress**: 11 (Background Workers & Email)
+**Not Started**: 12, 13, 14, 15, 16, 17, 18, 19
 
 ### What's Working
 - Full data model with Users, Spaces, Questions, Answers, Comments, Votes
@@ -286,11 +498,19 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - **LDAP/ActiveDirectory SSO** with multiple server support
 - **LDAP group-to-space mapping** with auto-registration at login
 - **User opt-out UI** for LDAP-assigned spaces
-- 100% test coverage (812 tests)
+- **Hybrid search** combining PostgreSQL full-text search + pgvector semantic search
+- **Vector-first, keyword-fallback** search strategy
+- **Automatic search vector updates** via PostgreSQL triggers
+- **Embedding generation** for questions (title + body + best answer) via configurable providers
+- **Admin-configurable embedding providers** (OpenAI, Cohere, Ollama, etc.) with encrypted API keys
+- **Sidekiq Web UI** at `/admin/sidekiq` (admin-only)
+- Tags for questions (per-space, up to 5 per question)
+- 100% test coverage
 
 ### Next Actions
-1. **Phase 2 (Helm)**: Create Kubernetes deployment charts
-2. **Phase 9 (Social SSO)**: Add OAuth providers (Google, GitHub, etc.)
+1. **Phase 11 (Email)**: Add email digests and notifications
+2. **Phase 2 (Helm)**: Create Kubernetes deployment charts
+3. **Phase 9 (Social SSO)**: Add OAuth providers (Google, GitHub, etc.)
 
 ---
 
@@ -303,6 +523,19 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - Background jobs in `app/jobs/`
 - Use `frozen_string_literal: true` in all Ruby files
 - Prefer `let` and `let!` in RSpec over instance variables
+
+### Case Statements and Unreachable Code
+
+**Never add `else` branches to case statements for impossible cases.** If a case cannot be reached based on the data model constraints (e.g., a polymorphic association that only allows specific types), do not add defensive `else` branches. This avoids:
+1. Untestable code that hurts coverage metrics
+2. The temptation to use `:nocov:` directives
+3. Misleading code that suggests invalid states are possible
+
+If requirements change and new cases become possible, add the `else` branch at that time with proper tests.
+
+### Test Helpers for Configuration Values
+
+**Never hardcode environment-specific values in tests.** Values like URLs or configuration strings should be derived from the same source the application uses (constants, Rails config, or test helpers).
 
 ### Definition of Done
 
@@ -324,9 +557,8 @@ Always verify both before considering any task complete.
   3. Test in `tests/`
 - CI runs: `helm lint`, `helm template | kubeval`, `helm unittest`
 - Support both bundled (subchart) and external modes for:
-  - PostgreSQL
+  - PostgreSQL (with pgvector + pg_trgm extensions)
   - Valkey
-  - OpenSearch
 
 ---
 
@@ -346,12 +578,25 @@ Always verify both before considering any task complete.
 │       ├── templates/
 │       └── tests/
 ├── app/
+│   ├── models/concerns/      # Model mixins
+│   │   └── searchable.rb     # Auto-indexing callbacks for search
 │   ├── policies/             # Pundit authorization policies
 │   │   ├── application_policy.rb
 │   │   ├── space_policy.rb
 │   │   ├── question_policy.rb
 │   │   ├── answer_policy.rb
 │   │   └── comment_policy.rb
+│   ├── services/search/      # Search integration
+│   │   ├── hybrid_query_service.rb  # Vector-first with keyword fallback
+│   │   ├── vector_query_service.rb  # pgvector semantic search
+│   │   └── suggestions_service.rb   # Autocomplete via pg_trgm
+│   ├── services/embedding_service.rb        # Embedding generation module
+│   ├── services/embedding_service/
+│   │   ├── client.rb         # Embedding client with provider selection
+│   │   └── adapters/         # Provider adapters (OpenAI, Cohere, Ollama, etc.)
+│   ├── jobs/
+│   │   ├── generate_question_embedding_job.rb  # Single question embedding
+│   │   └── regenerate_all_embeddings_job.rb    # Batch embedding regeneration
 │   └── ...
 ├── spec/
 │   ├── factories/            # FactoryBot factories

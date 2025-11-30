@@ -40,6 +40,9 @@ Rails.application.configure do
   # Set host to be used by links generated in mailer templates.
   config.action_mailer.default_url_options = { host: "example.com" }
 
+  # Use inline (test) adapter for jobs - executes immediately without Sidekiq
+  config.active_job.queue_adapter = :test
+
   # Custom deprecation behavior that filters out known Devise warnings
   # (Devise 4.9.x hasn't yet updated for Rails 8.x / Rack 3.x)
   config.active_support.deprecation = :notify

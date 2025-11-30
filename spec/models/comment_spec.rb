@@ -274,4 +274,34 @@ RSpec.describe Comment do
       expect(comment.space).to eq(space)
     end
   end
+
+  describe "#root_question" do
+    it "returns the question for a comment on a question" do
+      question = create(:question)
+      comment = create(:comment, commentable: question)
+      expect(comment.root_question).to eq(question)
+    end
+
+    it "returns the question for a comment on an answer" do
+      question = create(:question)
+      answer = create(:answer, question: question)
+      comment = create(:comment, commentable: answer)
+      expect(comment.root_question).to eq(question)
+    end
+  end
+
+  describe "#root_question_id" do
+    it "returns the question id for a comment on a question" do
+      question = create(:question)
+      comment = create(:comment, commentable: question)
+      expect(comment.root_question_id).to eq(question.id)
+    end
+
+    it "returns the question id for a comment on an answer" do
+      question = create(:question)
+      answer = create(:answer, question: question)
+      comment = create(:comment, commentable: answer)
+      expect(comment.root_question_id).to eq(question.id)
+    end
+  end
 end

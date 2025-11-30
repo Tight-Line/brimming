@@ -1,6 +1,23 @@
 # Production-like local environment
 # For actual Kubernetes deployment, use the Helm chart in helm/brimming/
 
+x-rails-env: &rails-env
+  RAILS_ENV: production
+  DB_HOST: postgres
+  DB_PORT: 5432
+  DB_USER: brimming
+  DB_PASS: ${DB_PASS:-brimming_prod}
+  DB_NAME: brimming
+  REDIS_URL: redis://valkey:6379/0
+  SECRET_KEY_BASE: ${SECRET_KEY_BASE:-changeme_in_production}
+  RAILS_LOG_TO_STDOUT: "true"
+
+x-rails-depends: &rails-depends
+  postgres:
+    condition: service_healthy
+  valkey:
+    condition: service_started
+
 services:
   app:
     build:
@@ -9,20 +26,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      RAILS_ENV: production
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: brimming
-      DB_PASS: ${DB_PASS:-brimming_prod}
-      DB_NAME: brimming
-      REDIS_URL: redis://valkey:6379/0
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-changeme_in_production}
-      RAILS_LOG_TO_STDOUT: "true"
+      <<: *rails-env
     depends_on:
-      postgres:
-        condition: service_healthy
-      valkey:
-        condition: service_started
+      <<: *rails-depends
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3000/up || exit 1"]
       interval: 30s
@@ -35,22 +41,12 @@ services:
       dockerfile: Dockerfile
     command: bundle exec sidekiq
     environment:
-      RAILS_ENV: production
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: brimming
-      DB_PASS: ${DB_PASS:-brimming_prod}
-      DB_NAME: brimming
-      REDIS_URL: redis://valkey:6379/0
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-changeme_in_production}
+      <<: *rails-env
     depends_on:
-      postgres:
-        condition: service_healthy
-      valkey:
-        condition: service_started
+      <<: *rails-depends
 
   postgres:
-    image: postgres:18.1-bookworm
+    image: pgvector/pgvector:pg17
     environment:
       POSTGRES_USER: brimming
       POSTGRES_PASSWORD: ${DB_PASS:-brimming_prod}

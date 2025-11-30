@@ -58,11 +58,11 @@
             <% @mapped_spaces.each do |space| %>
               <tr>
                 <td><%= link_to space.name, space_path(space) %></td>
-                <td>
-                  <%= button_to "Remove",
-                                remove_space_admin_ldap_server_ldap_group_mapping_path(@ldap_server, @ldap_group_mapping, space_id: space.id),
+                <td class="actions-cell">
+                  <%= button_to "✕", remove_space_admin_ldap_server_ldap_group_mapping_path(@ldap_server, @ldap_group_mapping, space_id: space.id),
                                 method: :delete,
-                                class: "btn btn-sm btn-danger",
+                                class: "action-icon action-delete",
+                                title: "Remove",
                                 data: { turbo_confirm: "Remove #{space.name} from this mapping?" } %>
                 </td>
               </tr>

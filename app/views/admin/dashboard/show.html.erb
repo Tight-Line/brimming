@@ -1,0 +1,153 @@
+<% content_for(:title) { "Dashboard - Admin - Brimming" } %>
+
+<div class="admin-dashboard">
+  <h1>Admin Dashboard</h1>
+
+  <section class="dashboard-stats">
+    <h2>Platform Statistics</h2>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number"><%= @stats[:users][:total] %></div>
+        <div class="stat-label">Total Users</div>
+        <div class="stat-detail">
+          +<%= @stats[:users][:this_week] %> this week,
+          +<%= @stats[:users][:this_month] %> this month
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-number"><%= @stats[:questions][:total] %></div>
+        <div class="stat-label">Questions</div>
+        <div class="stat-detail">
+          +<%= @stats[:questions][:this_week] %> this week,
+          +<%= @stats[:questions][:this_month] %> this month
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-number"><%= @stats[:answers][:total] %></div>
+        <div class="stat-label">Answers</div>
+        <div class="stat-detail">
+          +<%= @stats[:answers][:this_week] %> this week,
+          <%= @stats[:answers][:solved] %> solved
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-number"><%= @stats[:comments][:total] %></div>
+        <div class="stat-label">Comments</div>
+        <div class="stat-detail">
+          +<%= @stats[:comments][:this_week] %> this week
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-number"><%= @stats[:spaces][:total] %></div>
+        <div class="stat-label">Spaces</div>
+        <div class="stat-detail">
+          <%= @stats[:spaces][:with_content] %> with content
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dashboard-health">
+    <h2>System Health</h2>
+    <div class="health-grid">
+      <div class="health-card health-<%= @system_health[:sidekiq][:status] %>">
+        <h3>Sidekiq</h3>
+        <% if @system_health[:sidekiq][:status] == :error %>
+          <div class="health-status">Error: <%= @system_health[:sidekiq][:message] %></div>
+        <% else %>
+          <div class="health-status">
+            <span class="status-indicator"></span>
+            <%= @system_health[:sidekiq][:processes] %> <%= "process".pluralize(@system_health[:sidekiq][:processes]) %>
+          </div>
+          <div class="health-details">
+            <div>Busy: <%= @system_health[:sidekiq][:busy] %></div>
+            <div>Processed: <%= number_with_delimiter(@system_health[:sidekiq][:processed]) %></div>
+            <div>Failed: <%= @system_health[:sidekiq][:failed] %></div>
+            <div>Enqueued: <%= @system_health[:sidekiq][:enqueued] %></div>
+          </div>
+          <% if @system_health[:sidekiq][:queues].present? %>
+            <div class="health-queues">
+              <% @system_health[:sidekiq][:queues].each do |queue| %>
+                <span class="queue-badge"><%= queue[:name] %>: <%= queue[:size] %></span>
+              <% end %>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+
+      <div class="health-card health-<%= @system_health[:embeddings][:status] %>">
+        <h3>Embeddings</h3>
+        <% case @system_health[:embeddings][:status] %>
+        <% when :not_configured %>
+          <div class="health-status">Not Configured</div>
+          <div class="health-details">
+            <%= link_to "Configure embedding provider", admin_embedding_providers_path %>
+          </div>
+        <% when :error %>
+          <div class="health-status">Error: <%= @system_health[:embeddings][:message] %></div>
+        <% else %>
+          <div class="health-status">
+            <span class="status-indicator"></span>
+            <%= @system_health[:embeddings][:provider] %>
+          </div>
+          <div class="health-details">
+            <div>Coverage: <%= @system_health[:embeddings][:coverage] %>%</div>
+            <div><%= @system_health[:embeddings][:embedded] %> / <%= @system_health[:embeddings][:total] %> questions embedded</div>
+          </div>
+          <% if @system_health[:embeddings][:coverage] < 100 %>
+            <div class="health-progress">
+              <div class="progress-bar" style="width: <%= @system_health[:embeddings][:coverage] %>%"></div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </section>
+
+  <section class="dashboard-activity">
+    <h2>Recent Activity</h2>
+    <div class="activity-grid">
+      <div class="activity-card">
+        <h3>Recent Questions</h3>
+        <% if @recent_activity[:questions].any? %>
+          <ul class="activity-list">
+            <% @recent_activity[:questions].each do |question| %>
+              <li>
+                <%= link_to truncate(question.title, length: 50), question_path(question) %>
+                <span class="activity-meta">
+                  by <%= question.user.username %> in <%= question.space.name %>
+                  <time><%= time_ago_in_words(question.created_at) %> ago</time>
+                </span>
+              </li>
+            <% end %>
+          </ul>
+        <% else %>
+          <p class="empty-state">No recent questions</p>
+        <% end %>
+      </div>
+
+      <div class="activity-card">
+        <h3>Recent Answers</h3>
+        <% if @recent_activity[:answers].any? %>
+          <ul class="activity-list">
+            <% @recent_activity[:answers].each do |answer| %>
+              <li>
+                <%= link_to truncate(answer.question.title, length: 50), question_path(answer.question) %>
+                <span class="activity-meta">
+                  answered by <%= answer.user.username %>
+                  <time><%= time_ago_in_words(answer.created_at) %> ago</time>
+                </span>
+              </li>
+            <% end %>
+          </ul>
+        <% else %>
+          <p class="empty-state">No recent answers</p>
+        <% end %>
+      </div>
+    </div>
+  </section>
+</div>

@@ -11,6 +11,7 @@ class AnswersController < ApplicationController
     authorize @answer
 
     if @answer.save
+      # TODO: i18n
       redirect_to question_path(@question, anchor: "answer-#{@answer.id}"),
                   notice: "Answer posted successfully.", status: :see_other
     else
@@ -30,6 +31,7 @@ class AnswersController < ApplicationController
     authorize @answer
     if @answer.update(answer_params)
       @answer.record_edit!(current_user)
+      # TODO: i18n
       redirect_to question_path(@answer.question, anchor: "answer-#{@answer.id}"),
                   notice: "Answer updated successfully.", status: :see_other
     else
@@ -41,6 +43,7 @@ class AnswersController < ApplicationController
   def destroy
     authorize @answer
     @answer.soft_delete!
+    # TODO: i18n
     redirect_to question_path(@answer.question, anchor: "answer-#{@answer.id}"),
                 notice: "Answer deleted.", status: :see_other
   end
@@ -49,6 +52,7 @@ class AnswersController < ApplicationController
     authorize @answer
     question = @answer.question
     @answer.destroy!
+    # TODO: i18n
     redirect_to question_path(question),
                 notice: "Answer permanently deleted.", status: :see_other
   end

@@ -1,0 +1,105 @@
+<% content_for(:title) { "Embedding Providers - Admin - Brimming" } %>
+
+<div class="admin-container">
+  <div class="page-header">
+    <h1>Embedding Providers</h1>
+    <div class="dropdown">
+      <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+        Add Provider
+      </button>
+      <div class="dropdown-menu">
+        <% EmbeddingProvider::PROVIDER_TYPES.each do |provider_type| %>
+          <%= link_to EmbeddingProvider.new(provider_type: provider_type).display_provider_type,
+                      new_admin_embedding_provider_path(provider_type: provider_type),
+                      class: "dropdown-item" %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert alert-info">
+    <strong>About Embedding Providers:</strong>
+    Embedding providers generate vector representations of questions and answers for semantic search.
+    Only one provider can be active at a time. <strong>Switching providers will re-embed all content.</strong>
+  </div>
+
+  <% if @embedding_providers.any? %>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Provider</th>
+          <th>Model</th>
+          <th>Dimensions</th>
+          <th>Max Input</th>
+          <th>Active</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @embedding_providers.each do |provider| %>
+          <tr>
+            <td><%= link_to provider.name, admin_embedding_provider_path(provider) %></td>
+            <td><%= provider.display_provider_type %></td>
+            <td><code><%= provider.embedding_model %></code></td>
+            <td><%= provider.dimensions %></td>
+            <td><%= format_tokens(provider.max_input_tokens) %> tokens</td>
+            <td>
+              <% if provider.enabled? %>
+                <% total_questions = Question.not_deleted.count %>
+                <% embedded_count = Question.where(embedding_provider_id: provider.id).where.not(embedding: nil).count %>
+                <div class="provider-status">
+                  <span class="badge badge-success">Active</span>
+                  <% if embedded_count < total_questions %>
+                    <span class="embedding-progress"><%= embedded_count %>/<%= total_questions %></span>
+                  <% end %>
+                </div>
+              <% else %>
+                <% existing_embeddings = Question.where.not(embedding: nil).count %>
+                <% if existing_embeddings > 0 %>
+                  <%= button_to "Activate",
+                                activate_admin_embedding_provider_path(provider),
+                                method: :post,
+                                class: "btn btn-sm btn-outline-primary",
+                                data: { turbo_confirm: "Activate #{provider.name}?\n\nThis will invalidate #{existing_embeddings} existing embeddings and re-embed all questions in the background. This may take a while and incur API costs." } %>
+                <% else %>
+                  <%= button_to "Activate",
+                                activate_admin_embedding_provider_path(provider),
+                                method: :post,
+                                class: "btn btn-sm btn-outline-primary",
+                                data: { turbo_confirm: "Activate #{provider.name}? All questions will be embedded in the background." } %>
+                <% end %>
+              <% end %>
+            </td>
+            <td class="actions-cell">
+              <% if provider.enabled? %>
+                <% total_questions = Question.not_deleted.count %>
+                <%= button_to "↻", reindex_admin_embedding_provider_path(provider),
+                              method: :post,
+                              class: "action-icon action-reindex",
+                              title: "Reindex all embeddings",
+                              data: { turbo_confirm: "Reindex all #{total_questions} questions?\n\nThis will clear all pending embedding jobs and re-embed everything from scratch." } %>
+              <% end %>
+              <%= link_to "✎", edit_admin_embedding_provider_path(provider), class: "action-icon action-edit", title: "Edit" %>
+              <% if provider.can_delete? %>
+                <%= button_to "✕", admin_embedding_provider_path(provider),
+                              method: :delete,
+                              class: "action-icon action-delete",
+                              title: "Delete",
+                              data: { turbo_confirm: "Are you sure you want to delete this embedding provider?" } %>
+              <% else %>
+                <span class="action-icon action-disabled" title="Cannot delete active provider">✕</span>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <div class="empty-state">
+      <p>No embedding providers configured yet.</p>
+      <p>Embedding providers enable semantic search by generating vector representations of your Q&A content.</p>
+      <p><strong>Recommended:</strong> Start with OpenAI's text-embedding-3-small for best results.</p>
+    </div>
+  <% end %>
+</div>
