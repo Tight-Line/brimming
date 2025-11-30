@@ -211,19 +211,19 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - Gamification: karma system, solved answers count, best answers count `[x]`
 - User badge component showing karma, solved count, best answer count `[x]`
 
-### Phase 8: SSO - LDAP/ActiveDirectory `[ ]`
-- OmniAuth LDAP strategy
-- LdapServer model (name, host, port, encryption, bind_dn, bind_password, user_search_base, group_search_base)
-- Support for multiple LDAP servers
-- Admin UI to add/edit/remove LDAP servers
-- LdapGroupMapping model (ldap_server_id, group_pattern, pattern_type: exact|prefix|suffix|contains)
-- LdapGroupMappingSpace join (ldap_group_mapping_id, space_id)
-- SpaceOptOut model (user_id, space_id, ldap_group_mapping_id)
-- Auto-registration service that runs at login:
+### Phase 8: SSO - LDAP/ActiveDirectory `[x]`
+- OmniAuth LDAP strategy `[x]`
+- LdapServer model (name, host, port, encryption, bind_dn, bind_password, user_search_base, group_search_base) `[x]`
+- Support for multiple LDAP servers `[x]`
+- Admin UI to add/edit/remove LDAP servers `[x]`
+- LdapGroupMapping model (ldap_server_id, group_pattern, pattern_type: exact|prefix|suffix|contains) `[x]`
+- LdapGroupMappingSpace join (ldap_group_mapping_id, space_id) `[x]`
+- SpaceOptOut model (user_id, space_id, ldap_group_mapping_id) `[x]`
+- Auto-registration service that runs at login: `[x]`
   1. Fetch user's LDAP groups
   2. Match against configured patterns
   3. Subscribe user to mapped Spaces (skip if opted-out)
-- User UI to view and opt-out of LDAP-assigned Spaces
+- User UI to view and opt-out of LDAP-assigned Spaces `[x]`
 
 ### Phase 9: SSO - Social Providers `[ ]`
 - OmniAuth strategies: Google, Facebook, LinkedIn, GitHub, GitLab
@@ -266,8 +266,8 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 
 ## Current Status
 
-**Completed Phases**: 1, 3, 4, 5, 6, 7
-**Not Started**: 2 (Helm), 8-13
+**Completed Phases**: 1, 3, 4, 5, 6, 7, 8
+**Not Started**: 2 (Helm), 9-13
 
 ### What's Working
 - Full data model with Users, Spaces, Questions, Answers, Comments, Votes
@@ -283,11 +283,14 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - Sign-in modal for unauthenticated users attempting protected actions
 - **Pundit authorization** for all resources (Questions, Answers, Comments, Spaces)
 - **Moderator management UI** with type-ahead user search (admins and space moderators)
-- 100% test coverage (635 tests)
+- **LDAP/ActiveDirectory SSO** with multiple server support
+- **LDAP group-to-space mapping** with auto-registration at login
+- **User opt-out UI** for LDAP-assigned spaces
+- 100% test coverage (812 tests)
 
 ### Next Actions
 1. **Phase 2 (Helm)**: Create Kubernetes deployment charts
-2. **Phase 8 (LDAP SSO)**: Add LDAP/ActiveDirectory authentication
+2. **Phase 9 (Social SSO)**: Add OAuth providers (Google, GitHub, etc.)
 
 ---
 
