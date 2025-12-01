@@ -6,8 +6,12 @@ class Space < ApplicationRecord
   has_many :tags, dependent: :destroy
   has_many :space_moderators, dependent: :destroy
   has_many :moderators, through: :space_moderators, source: :user
+  has_many :space_publishers, dependent: :destroy
+  has_many :publishers, through: :space_publishers, source: :user
   has_many :space_subscriptions, dependent: :destroy
   has_many :subscribers, through: :space_subscriptions, source: :user
+  has_many :article_spaces, dependent: :destroy
+  has_many :articles, through: :article_spaces
 
   # Validations
   validates :name, presence: true,
@@ -45,6 +49,18 @@ class Space < ApplicationRecord
 
   def moderator?(user)
     moderators.include?(user)
+  end
+
+  def add_publisher(user)
+    publishers << user unless publishers.include?(user)
+  end
+
+  def remove_publisher(user)
+    publishers.delete(user)
+  end
+
+  def publisher?(user)
+    publishers.include?(user)
   end
 
   private

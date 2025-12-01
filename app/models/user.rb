@@ -31,7 +31,10 @@ class User < ApplicationRecord
   has_many :subscribed_spaces, through: :space_subscriptions, source: :space
   has_many :space_moderators, dependent: :destroy
   has_many :moderated_spaces, through: :space_moderators, source: :space
+  has_many :space_publishers, dependent: :destroy
+  has_many :published_spaces, through: :space_publishers, source: :space
   has_many :space_opt_outs, dependent: :destroy
+  has_many :articles, dependent: :destroy
 
   # Validations (email handled by Devise's :validatable module)
   validates :username, presence: true,
@@ -65,6 +68,23 @@ class User < ApplicationRecord
 
   def can_moderate?(space)
     admin? || space.moderators.include?(self)
+  end
+
+  # Returns true if the user is a publisher of any space
+  def publisher?
+    space_publishers.exists?
+  end
+
+  def can_publish?(space)
+    admin? || space.moderators.include?(self) || space.publishers.include?(self)
+  end
+
+  # Returns all spaces the user can publish articles to
+  def publishable_spaces
+    return Space.all if admin?
+
+    Space.where(id: moderated_spaces.select(:id))
+         .or(Space.where(id: published_spaces.select(:id)))
   end
 
   # Stats for gamification

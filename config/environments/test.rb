@@ -43,6 +43,12 @@ Rails.application.configure do
   # Use inline (test) adapter for jobs - executes immediately without Sidekiq
   config.active_job.queue_adapter = :test
 
+  # Set Sidekiq log level to warn in tests (suppress INFO messages)
+  require "sidekiq"
+  Sidekiq.configure_client do |config|
+    config.logger.level = Logger::WARN
+  end
+
   # Custom deprecation behavior that filters out known Devise warnings
   # (Devise 4.9.x hasn't yet updated for Rails 8.x / Rack 3.x)
   config.active_support.deprecation = :notify

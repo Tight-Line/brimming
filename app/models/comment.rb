@@ -79,22 +79,40 @@ class Comment < ApplicationRecord
     update!(deleted_at: Time.current)
   end
 
-  # Returns the space this comment belongs to (through question or answer)
+  # Returns the space this comment belongs to (through question, answer, or article)
+  # For articles, returns the first space (if any) - may return nil for orphaned articles
   def space
-    commentable.is_a?(Question) ? commentable.space : commentable.question.space
+    case commentable_type
+    when "Question" then commentable.space
+    when "Answer" then commentable.question.space
+    when "Article" then commentable.spaces.first
+    else
+      raise "Unknown commentable_type: #{commentable_type}"
+    end
   end
 
   # Returns the root question ID this comment belongs to (for search indexing)
+  # Returns nil for article comments
   def root_question_id
-    return commentable_id if commentable_type == "Question"
-
-    commentable.question_id
+    case commentable_type
+    when "Question" then commentable_id
+    when "Answer" then commentable.question_id
+    else nil
+    end
   end
 
   # Returns the root question this comment belongs to
+  # Returns nil for article comments
   def root_question
-    return commentable if commentable_type == "Question"
+    case commentable_type
+    when "Question" then commentable
+    when "Answer" then commentable.question
+    else nil
+    end
+  end
 
-    commentable.question
+  # Returns the article if this is an article comment
+  def article
+    commentable if commentable_type == "Article"
   end
 end

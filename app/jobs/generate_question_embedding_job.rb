@@ -2,8 +2,10 @@
 
 # Generates vector embeddings for questions using the configured embedding provider.
 #
-# This job prepares text content (question title + body + best answer) and
-# generates a vector embedding that enables semantic search.
+# This job uses QuestionEmbeddingService to:
+# 1. Prepare text content (question title + body + best answer)
+# 2. Chunk the content for RAG
+# 3. Generate embeddings for each chunk
 #
 # Usage:
 #   GenerateQuestionEmbeddingJob.perform_later(question)
@@ -12,43 +14,27 @@
 class GenerateQuestionEmbeddingJob < ApplicationJob
   queue_as :embeddings
 
-  # Retry with exponential backoff for API errors
-  retry_on EmbeddingService::Adapters::Base::RateLimitError, wait: :polynomially_longer, attempts: 5
-  retry_on EmbeddingService::Adapters::Base::ApiError, wait: 5.seconds, attempts: 3
-
-  # Don't retry if no provider is configured
-  discard_on EmbeddingService::Client::NoProviderError
-
   def perform(question, force: false)
     # Skip if no embedding provider is configured
     provider = EmbeddingService.current_provider
     return unless provider
 
-    # Skip if already embedded by the current provider and not forcing regeneration
-    return if question.embedded_at.present? &&
-              question.embedding_provider_id == provider.id &&
-              !force
+    # Skip if already has chunks from the current provider and not forcing regeneration
+    unless force
+      has_chunks = question.chunks.where(embedding_provider_id: provider.id).exists?
+      return if has_chunks
+    end
 
     # Skip deleted questions
     return if question.deleted_at.present?
 
-    # Prepare text for embedding
-    text = EmbeddingService.prepare_question_text(question)
+    # Use QuestionEmbeddingService to create chunks and embeddings
+    result = QuestionEmbeddingService.embed(question, provider: provider)
 
-    # Generate embedding
-    service = EmbeddingService.client(provider)
-    embedding = service.embed_one(text)
-
-    # Save embedding to the question with provider reference
-    question.update_columns(
-      embedding: embedding,
-      embedding_provider_id: provider.id,
-      embedded_at: Time.current
-    )
-
-    Rails.logger.info("[GenerateQuestionEmbeddingJob] Generated embedding for Question##{question.id} using #{provider.name}")
-  rescue EmbeddingService::Adapters::Base::ConfigurationError => e
-    Rails.logger.error("[GenerateQuestionEmbeddingJob] Configuration error: #{e.message}")
-    # Don't retry configuration errors
+    if result[:success]
+      Rails.logger.info("[GenerateQuestionEmbeddingJob] Generated #{result[:chunks]} chunks for Question##{question.id} using #{provider.name}")
+    else
+      Rails.logger.error("[GenerateQuestionEmbeddingJob] Failed to embed Question##{question.id}: #{result[:error]}")
+    end
   end
 end

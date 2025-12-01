@@ -1,0 +1,99 @@
+<%= form_with model: article, class: "article-form", data: { controller: "article-form" } do |f| %>
+  <% if article.errors.any? %>
+    <div class="form-errors">
+      <h3><%= pluralize(article.errors.count, "error") %> prevented this article from being saved:</h3>
+      <ul>
+        <% article.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <%= f.label :title %>
+    <%= f.text_field :title, class: "form-control", required: true,
+        placeholder: "Article title",
+        maxlength: 200 %>
+    <small class="form-hint">3-200 characters</small>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :space_ids, "Publish to Spaces" %>
+    <div class="space-checkboxes">
+      <% spaces.each do |space| %>
+        <label class="space-checkbox">
+          <%= check_box_tag "article[space_ids][]", space.id,
+              article.spaces.include?(space),
+              id: "article_space_ids_#{space.id}" %>
+          <span class="space-checkbox-label"><%= space.name %></span>
+        </label>
+      <% end %>
+    </div>
+    <small class="form-hint">Select one or more spaces where this article will appear</small>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :input_mode, "Content Source" %>
+    <div class="input-mode-toggle" data-article-form-target="modeToggle">
+      <label class="input-mode-option">
+        <%= f.radio_button :input_mode, "text", checked: !article.original_file.attached?, data: { action: "article-form#toggleMode" } %>
+        <span class="input-mode-label">
+          <strong>Write</strong>
+          <small>Create content using the editor</small>
+        </span>
+      </label>
+      <label class="input-mode-option">
+        <%= f.radio_button :input_mode, "file", checked: article.original_file.attached?, data: { action: "article-form#toggleMode" } %>
+        <span class="input-mode-label">
+          <strong>Upload</strong>
+          <small>Import from PDF, Word, Excel, or HTML</small>
+        </span>
+      </label>
+    </div>
+  </div>
+
+  <div class="form-group text-content-field" data-article-form-target="textField" data-controller="editor" data-editor-preview-path-value="/markdown/preview">
+    <%= f.label :body, "Content" %>
+
+    <div class="editor-toolbar" data-editor-target="modeButtons">
+      <button type="button" data-mode="markdown" data-action="editor#setModeMarkdown" class="editor-mode-btn active">
+        Edit
+      </button>
+      <button type="button" data-mode="preview" data-action="editor#setModePreview" class="editor-mode-btn">
+        Preview
+      </button>
+    </div>
+
+    <%= f.text_area :body, class: "form-control editor-textarea",
+        rows: 20,
+        placeholder: "Write your article content here using Markdown...",
+        data: { editor_target: "textarea" } %>
+
+    <div class="editor-preview markdown-body" data-editor-target="preview" style="display: none;"></div>
+
+    <small class="form-hint">
+      Supports Markdown: **bold**, *italic*, `code`, ```language for code blocks, and more.
+    </small>
+  </div>
+
+  <div class="form-group binary-content-field" data-article-form-target="fileField" style="display: none;">
+    <%= f.label :original_file, "Upload File" %>
+    <%= f.file_field :original_file, class: "form-control",
+        accept: ".pdf,.doc,.docx,.xls,.xlsx,.html,.htm" %>
+    <% if article.original_file.attached? %>
+      <div class="current-file">
+        Current file: <strong><%= article.original_file.filename %></strong>
+        (<%= number_to_human_size(article.original_file.byte_size) %>)
+      </div>
+    <% end %>
+    <small class="form-hint">
+      Supported formats: PDF, Word (.doc, .docx), Excel (.xls, .xlsx), HTML
+    </small>
+  </div>
+
+  <div class="form-actions">
+    <%= f.submit article.persisted? ? "Update Article" : "Create Article", class: "btn btn-primary" %>
+    <%= link_to "Cancel", article.persisted? ? article_path(article) : articles_path, class: "btn btn-secondary" %>
+  </div>
+<% end %>

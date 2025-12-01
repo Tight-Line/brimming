@@ -96,6 +96,105 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+-- Name: active_storage_attachments; Type: TABLE; Schema: brimming; Owner: -
+--
+
+CREATE TABLE brimming.active_storage_attachments (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    record_type character varying NOT NULL,
+    record_id bigint NOT NULL,
+    blob_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: active_storage_attachments_id_seq; Type: SEQUENCE; Schema: brimming; Owner: -
+--
+
+CREATE SEQUENCE brimming.active_storage_attachments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: active_storage_attachments_id_seq; Type: SEQUENCE OWNED BY; Schema: brimming; Owner: -
+--
+
+ALTER SEQUENCE brimming.active_storage_attachments_id_seq OWNED BY brimming.active_storage_attachments.id;
+
+
+--
+-- Name: active_storage_blobs; Type: TABLE; Schema: brimming; Owner: -
+--
+
+CREATE TABLE brimming.active_storage_blobs (
+    id bigint NOT NULL,
+    key character varying NOT NULL,
+    filename character varying NOT NULL,
+    content_type character varying,
+    metadata text,
+    service_name character varying NOT NULL,
+    byte_size bigint NOT NULL,
+    checksum character varying,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: active_storage_blobs_id_seq; Type: SEQUENCE; Schema: brimming; Owner: -
+--
+
+CREATE SEQUENCE brimming.active_storage_blobs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: active_storage_blobs_id_seq; Type: SEQUENCE OWNED BY; Schema: brimming; Owner: -
+--
+
+ALTER SEQUENCE brimming.active_storage_blobs_id_seq OWNED BY brimming.active_storage_blobs.id;
+
+
+--
+-- Name: active_storage_variant_records; Type: TABLE; Schema: brimming; Owner: -
+--
+
+CREATE TABLE brimming.active_storage_variant_records (
+    id bigint NOT NULL,
+    blob_id bigint NOT NULL,
+    variation_digest character varying NOT NULL
+);
+
+
+--
+-- Name: active_storage_variant_records_id_seq; Type: SEQUENCE; Schema: brimming; Owner: -
+--
+
+CREATE SEQUENCE brimming.active_storage_variant_records_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: active_storage_variant_records_id_seq; Type: SEQUENCE OWNED BY; Schema: brimming; Owner: -
+--
+
+ALTER SEQUENCE brimming.active_storage_variant_records_id_seq OWNED BY brimming.active_storage_variant_records.id;
+
+
+--
 -- Name: answers; Type: TABLE; Schema: brimming; Owner: -
 --
 
@@ -143,6 +242,152 @@ CREATE TABLE brimming.ar_internal_metadata (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
+
+
+--
+-- Name: article_spaces; Type: TABLE; Schema: brimming; Owner: -
+--
+
+CREATE TABLE brimming.article_spaces (
+    id bigint NOT NULL,
+    article_id bigint NOT NULL,
+    space_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: article_spaces_id_seq; Type: SEQUENCE; Schema: brimming; Owner: -
+--
+
+CREATE SEQUENCE brimming.article_spaces_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: article_spaces_id_seq; Type: SEQUENCE OWNED BY; Schema: brimming; Owner: -
+--
+
+ALTER SEQUENCE brimming.article_spaces_id_seq OWNED BY brimming.article_spaces.id;
+
+
+--
+-- Name: article_votes; Type: TABLE; Schema: brimming; Owner: -
+--
+
+CREATE TABLE brimming.article_votes (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    article_id bigint NOT NULL,
+    value integer NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: article_votes_id_seq; Type: SEQUENCE; Schema: brimming; Owner: -
+--
+
+CREATE SEQUENCE brimming.article_votes_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: article_votes_id_seq; Type: SEQUENCE OWNED BY; Schema: brimming; Owner: -
+--
+
+ALTER SEQUENCE brimming.article_votes_id_seq OWNED BY brimming.article_votes.id;
+
+
+--
+-- Name: articles; Type: TABLE; Schema: brimming; Owner: -
+--
+
+CREATE TABLE brimming.articles (
+    id bigint NOT NULL,
+    title character varying NOT NULL,
+    body text,
+    content_type character varying DEFAULT 'markdown'::character varying NOT NULL,
+    context text,
+    user_id bigint NOT NULL,
+    last_editor_id bigint,
+    edited_at timestamp(6) without time zone,
+    slug character varying NOT NULL,
+    deleted_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    embedded_at timestamp(6) without time zone,
+    vote_score integer DEFAULT 0 NOT NULL,
+    views_count integer DEFAULT 0 NOT NULL
+);
+
+
+--
+-- Name: articles_id_seq; Type: SEQUENCE; Schema: brimming; Owner: -
+--
+
+CREATE SEQUENCE brimming.articles_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: articles_id_seq; Type: SEQUENCE OWNED BY; Schema: brimming; Owner: -
+--
+
+ALTER SEQUENCE brimming.articles_id_seq OWNED BY brimming.articles.id;
+
+
+--
+-- Name: chunks; Type: TABLE; Schema: brimming; Owner: -
+--
+
+CREATE TABLE brimming.chunks (
+    id bigint NOT NULL,
+    chunkable_type character varying NOT NULL,
+    chunkable_id bigint NOT NULL,
+    chunk_index integer DEFAULT 0 NOT NULL,
+    content text NOT NULL,
+    token_count integer,
+    embedding public.vector,
+    embedded_at timestamp(6) without time zone,
+    embedding_provider_id bigint,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: chunks_id_seq; Type: SEQUENCE; Schema: brimming; Owner: -
+--
+
+CREATE SEQUENCE brimming.chunks_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: chunks_id_seq; Type: SEQUENCE OWNED BY; Schema: brimming; Owner: -
+--
+
+ALTER SEQUENCE brimming.chunks_id_seq OWNED BY brimming.chunks.id;
 
 
 --
@@ -446,9 +691,7 @@ CREATE TABLE brimming.questions (
     vote_score integer DEFAULT 0 NOT NULL,
     deleted_at timestamp(6) without time zone,
     slug character varying,
-    embedding public.vector,
     embedded_at timestamp(6) without time zone,
-    embedding_provider_id bigint,
     search_vector tsvector
 );
 
@@ -544,6 +787,38 @@ CREATE SEQUENCE brimming.space_opt_outs_id_seq
 --
 
 ALTER SEQUENCE brimming.space_opt_outs_id_seq OWNED BY brimming.space_opt_outs.id;
+
+
+--
+-- Name: space_publishers; Type: TABLE; Schema: brimming; Owner: -
+--
+
+CREATE TABLE brimming.space_publishers (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    space_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: space_publishers_id_seq; Type: SEQUENCE; Schema: brimming; Owner: -
+--
+
+CREATE SEQUENCE brimming.space_publishers_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: space_publishers_id_seq; Type: SEQUENCE OWNED BY; Schema: brimming; Owner: -
+--
+
+ALTER SEQUENCE brimming.space_publishers_id_seq OWNED BY brimming.space_publishers.id;
 
 
 --
@@ -722,10 +997,59 @@ ALTER SEQUENCE brimming.votes_id_seq OWNED BY brimming.votes.id;
 
 
 --
+-- Name: active_storage_attachments id; Type: DEFAULT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.active_storage_attachments ALTER COLUMN id SET DEFAULT nextval('brimming.active_storage_attachments_id_seq'::regclass);
+
+
+--
+-- Name: active_storage_blobs id; Type: DEFAULT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.active_storage_blobs ALTER COLUMN id SET DEFAULT nextval('brimming.active_storage_blobs_id_seq'::regclass);
+
+
+--
+-- Name: active_storage_variant_records id; Type: DEFAULT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.active_storage_variant_records ALTER COLUMN id SET DEFAULT nextval('brimming.active_storage_variant_records_id_seq'::regclass);
+
+
+--
 -- Name: answers id; Type: DEFAULT; Schema: brimming; Owner: -
 --
 
 ALTER TABLE ONLY brimming.answers ALTER COLUMN id SET DEFAULT nextval('brimming.answers_id_seq'::regclass);
+
+
+--
+-- Name: article_spaces id; Type: DEFAULT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.article_spaces ALTER COLUMN id SET DEFAULT nextval('brimming.article_spaces_id_seq'::regclass);
+
+
+--
+-- Name: article_votes id; Type: DEFAULT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.article_votes ALTER COLUMN id SET DEFAULT nextval('brimming.article_votes_id_seq'::regclass);
+
+
+--
+-- Name: articles id; Type: DEFAULT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.articles ALTER COLUMN id SET DEFAULT nextval('brimming.articles_id_seq'::regclass);
+
+
+--
+-- Name: chunks id; Type: DEFAULT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.chunks ALTER COLUMN id SET DEFAULT nextval('brimming.chunks_id_seq'::regclass);
 
 
 --
@@ -806,6 +1130,13 @@ ALTER TABLE ONLY brimming.space_opt_outs ALTER COLUMN id SET DEFAULT nextval('br
 
 
 --
+-- Name: space_publishers id; Type: DEFAULT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.space_publishers ALTER COLUMN id SET DEFAULT nextval('brimming.space_publishers_id_seq'::regclass);
+
+
+--
 -- Name: space_subscriptions id; Type: DEFAULT; Schema: brimming; Owner: -
 --
 
@@ -841,6 +1172,30 @@ ALTER TABLE ONLY brimming.votes ALTER COLUMN id SET DEFAULT nextval('brimming.vo
 
 
 --
+-- Name: active_storage_attachments active_storage_attachments_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.active_storage_attachments
+    ADD CONSTRAINT active_storage_attachments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: active_storage_blobs active_storage_blobs_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.active_storage_blobs
+    ADD CONSTRAINT active_storage_blobs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: active_storage_variant_records active_storage_variant_records_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.active_storage_variant_records
+    ADD CONSTRAINT active_storage_variant_records_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: answers answers_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
 --
 
@@ -854,6 +1209,38 @@ ALTER TABLE ONLY brimming.answers
 
 ALTER TABLE ONLY brimming.ar_internal_metadata
     ADD CONSTRAINT ar_internal_metadata_pkey PRIMARY KEY (key);
+
+
+--
+-- Name: article_spaces article_spaces_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.article_spaces
+    ADD CONSTRAINT article_spaces_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: article_votes article_votes_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.article_votes
+    ADD CONSTRAINT article_votes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: articles articles_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.articles
+    ADD CONSTRAINT articles_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: chunks chunks_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.chunks
+    ADD CONSTRAINT chunks_pkey PRIMARY KEY (id);
 
 
 --
@@ -953,6 +1340,14 @@ ALTER TABLE ONLY brimming.space_opt_outs
 
 
 --
+-- Name: space_publishers space_publishers_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.space_publishers
+    ADD CONSTRAINT space_publishers_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: space_subscriptions space_subscriptions_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
 --
 
@@ -1007,6 +1402,34 @@ CREATE UNIQUE INDEX idx_space_opt_outs_unique ON brimming.space_opt_outs USING b
 
 
 --
+-- Name: index_active_storage_attachments_on_blob_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_active_storage_attachments_on_blob_id ON brimming.active_storage_attachments USING btree (blob_id);
+
+
+--
+-- Name: index_active_storage_attachments_uniqueness; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_attachments_uniqueness ON brimming.active_storage_attachments USING btree (record_type, record_id, name, blob_id);
+
+
+--
+-- Name: index_active_storage_blobs_on_key; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_blobs_on_key ON brimming.active_storage_blobs USING btree (key);
+
+
+--
+-- Name: index_active_storage_variant_records_uniqueness; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_variant_records_uniqueness ON brimming.active_storage_variant_records USING btree (blob_id, variation_digest);
+
+
+--
 -- Name: index_answers_on_last_editor_id; Type: INDEX; Schema: brimming; Owner: -
 --
 
@@ -1046,6 +1469,132 @@ CREATE INDEX index_answers_on_user_id ON brimming.answers USING btree (user_id);
 --
 
 CREATE INDEX index_answers_on_vote_score ON brimming.answers USING btree (vote_score);
+
+
+--
+-- Name: index_article_spaces_on_article_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_article_spaces_on_article_id ON brimming.article_spaces USING btree (article_id);
+
+
+--
+-- Name: index_article_spaces_on_article_id_and_space_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE UNIQUE INDEX index_article_spaces_on_article_id_and_space_id ON brimming.article_spaces USING btree (article_id, space_id);
+
+
+--
+-- Name: index_article_spaces_on_space_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_article_spaces_on_space_id ON brimming.article_spaces USING btree (space_id);
+
+
+--
+-- Name: index_article_votes_on_article_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_article_votes_on_article_id ON brimming.article_votes USING btree (article_id);
+
+
+--
+-- Name: index_article_votes_on_user_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_article_votes_on_user_id ON brimming.article_votes USING btree (user_id);
+
+
+--
+-- Name: index_article_votes_on_user_id_and_article_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE UNIQUE INDEX index_article_votes_on_user_id_and_article_id ON brimming.article_votes USING btree (user_id, article_id);
+
+
+--
+-- Name: index_articles_on_content_type; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_articles_on_content_type ON brimming.articles USING btree (content_type);
+
+
+--
+-- Name: index_articles_on_deleted_at; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_articles_on_deleted_at ON brimming.articles USING btree (deleted_at);
+
+
+--
+-- Name: index_articles_on_embedded_at; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_articles_on_embedded_at ON brimming.articles USING btree (embedded_at);
+
+
+--
+-- Name: index_articles_on_last_editor_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_articles_on_last_editor_id ON brimming.articles USING btree (last_editor_id);
+
+
+--
+-- Name: index_articles_on_slug; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE UNIQUE INDEX index_articles_on_slug ON brimming.articles USING btree (slug);
+
+
+--
+-- Name: index_articles_on_user_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_articles_on_user_id ON brimming.articles USING btree (user_id);
+
+
+--
+-- Name: index_articles_on_views_count; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_articles_on_views_count ON brimming.articles USING btree (views_count);
+
+
+--
+-- Name: index_articles_on_vote_score; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_articles_on_vote_score ON brimming.articles USING btree (vote_score);
+
+
+--
+-- Name: index_chunks_on_chunkable; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_chunks_on_chunkable ON brimming.chunks USING btree (chunkable_type, chunkable_id);
+
+
+--
+-- Name: index_chunks_on_chunkable_and_index; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_chunks_on_chunkable_and_index ON brimming.chunks USING btree (chunkable_type, chunkable_id, chunk_index);
+
+
+--
+-- Name: index_chunks_on_embedding_provider_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_chunks_on_embedding_provider_id ON brimming.chunks USING btree (embedding_provider_id);
+
+
+--
+-- Name: index_chunks_on_unembedded; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_chunks_on_unembedded ON brimming.chunks USING btree (embedded_at) WHERE (embedded_at IS NULL);
 
 
 --
@@ -1210,13 +1759,6 @@ CREATE INDEX index_questions_on_created_at ON brimming.questions USING btree (cr
 
 
 --
--- Name: index_questions_on_embedding_provider_id; Type: INDEX; Schema: brimming; Owner: -
---
-
-CREATE INDEX index_questions_on_embedding_provider_id ON brimming.questions USING btree (embedding_provider_id);
-
-
---
 -- Name: index_questions_on_last_editor_id; Type: INDEX; Schema: brimming; Owner: -
 --
 
@@ -1319,6 +1861,27 @@ CREATE INDEX index_space_opt_outs_on_space_id ON brimming.space_opt_outs USING b
 --
 
 CREATE INDEX index_space_opt_outs_on_user_id ON brimming.space_opt_outs USING btree (user_id);
+
+
+--
+-- Name: index_space_publishers_on_space_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_space_publishers_on_space_id ON brimming.space_publishers USING btree (space_id);
+
+
+--
+-- Name: index_space_publishers_on_user_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_space_publishers_on_user_id ON brimming.space_publishers USING btree (user_id);
+
+
+--
+-- Name: index_space_publishers_on_user_id_and_space_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE UNIQUE INDEX index_space_publishers_on_user_id_and_space_id ON brimming.space_publishers USING btree (user_id, space_id);
 
 
 --
@@ -1472,11 +2035,27 @@ ALTER TABLE ONLY brimming.questions
 
 
 --
+-- Name: chunks fk_rails_0764725055; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.chunks
+    ADD CONSTRAINT fk_rails_0764725055 FOREIGN KEY (embedding_provider_id) REFERENCES brimming.embedding_providers(id);
+
+
+--
 -- Name: comment_votes fk_rails_0873e64a40; Type: FK CONSTRAINT; Schema: brimming; Owner: -
 --
 
 ALTER TABLE ONLY brimming.comment_votes
     ADD CONSTRAINT fk_rails_0873e64a40 FOREIGN KEY (user_id) REFERENCES brimming.users(id);
+
+
+--
+-- Name: space_publishers fk_rails_0c8fda2cff; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.space_publishers
+    ADD CONSTRAINT fk_rails_0c8fda2cff FOREIGN KEY (user_id) REFERENCES brimming.users(id);
 
 
 --
@@ -1496,19 +2075,19 @@ ALTER TABLE ONLY brimming.tags
 
 
 --
+-- Name: article_spaces fk_rails_2c1cf7a065; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.article_spaces
+    ADD CONSTRAINT fk_rails_2c1cf7a065 FOREIGN KEY (space_id) REFERENCES brimming.spaces(id);
+
+
+--
 -- Name: space_moderators fk_rails_31a1760159; Type: FK CONSTRAINT; Schema: brimming; Owner: -
 --
 
 ALTER TABLE ONLY brimming.space_moderators
     ADD CONSTRAINT fk_rails_31a1760159 FOREIGN KEY (user_id) REFERENCES brimming.users(id);
-
-
---
--- Name: questions fk_rails_31fd3ef99a; Type: FK CONSTRAINT; Schema: brimming; Owner: -
---
-
-ALTER TABLE ONLY brimming.questions
-    ADD CONSTRAINT fk_rails_31fd3ef99a FOREIGN KEY (embedding_provider_id) REFERENCES brimming.embedding_providers(id);
 
 
 --
@@ -1525,6 +2104,14 @@ ALTER TABLE ONLY brimming.comments
 
 ALTER TABLE ONLY brimming.question_tags
     ADD CONSTRAINT fk_rails_38e4cf053b FOREIGN KEY (tag_id) REFERENCES brimming.tags(id);
+
+
+--
+-- Name: articles fk_rails_3d31dad1cc; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.articles
+    ADD CONSTRAINT fk_rails_3d31dad1cc FOREIGN KEY (user_id) REFERENCES brimming.users(id);
 
 
 --
@@ -1560,6 +2147,14 @@ ALTER TABLE ONLY brimming.questions
 
 
 --
+-- Name: article_votes fk_rails_55b11fbcc1; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.article_votes
+    ADD CONSTRAINT fk_rails_55b11fbcc1 FOREIGN KEY (user_id) REFERENCES brimming.users(id);
+
+
+--
 -- Name: answers fk_rails_584be190c2; Type: FK CONSTRAINT; Schema: brimming; Owner: -
 --
 
@@ -1592,6 +2187,14 @@ ALTER TABLE ONLY brimming.space_subscriptions
 
 
 --
+-- Name: space_publishers fk_rails_7f4a5f4968; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.space_publishers
+    ADD CONSTRAINT fk_rails_7f4a5f4968 FOREIGN KEY (space_id) REFERENCES brimming.spaces(id);
+
+
+--
 -- Name: answers fk_rails_909021630a; Type: FK CONSTRAINT; Schema: brimming; Owner: -
 --
 
@@ -1605,6 +2208,22 @@ ALTER TABLE ONLY brimming.answers
 
 ALTER TABLE ONLY brimming.question_votes
     ADD CONSTRAINT fk_rails_974ab16b14 FOREIGN KEY (question_id) REFERENCES brimming.questions(id);
+
+
+--
+-- Name: active_storage_variant_records fk_rails_993965df05; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.active_storage_variant_records
+    ADD CONSTRAINT fk_rails_993965df05 FOREIGN KEY (blob_id) REFERENCES brimming.active_storage_blobs(id);
+
+
+--
+-- Name: article_spaces fk_rails_9ecf1db454; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.article_spaces
+    ADD CONSTRAINT fk_rails_9ecf1db454 FOREIGN KEY (article_id) REFERENCES brimming.articles(id);
 
 
 --
@@ -1624,11 +2243,27 @@ ALTER TABLE ONLY brimming.comment_votes
 
 
 --
+-- Name: active_storage_attachments fk_rails_c3b3935057; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.active_storage_attachments
+    ADD CONSTRAINT fk_rails_c3b3935057 FOREIGN KEY (blob_id) REFERENCES brimming.active_storage_blobs(id);
+
+
+--
 -- Name: votes fk_rails_c9b3bef597; Type: FK CONSTRAINT; Schema: brimming; Owner: -
 --
 
 ALTER TABLE ONLY brimming.votes
     ADD CONSTRAINT fk_rails_c9b3bef597 FOREIGN KEY (user_id) REFERENCES brimming.users(id);
+
+
+--
+-- Name: articles fk_rails_c9c3d9cfd2; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.articles
+    ADD CONSTRAINT fk_rails_c9c3d9cfd2 FOREIGN KEY (last_editor_id) REFERENCES brimming.users(id);
 
 
 --
@@ -1664,6 +2299,14 @@ ALTER TABLE ONLY brimming.space_subscriptions
 
 
 --
+-- Name: article_votes fk_rails_e1f0730a11; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.article_votes
+    ADD CONSTRAINT fk_rails_e1f0730a11 FOREIGN KEY (article_id) REFERENCES brimming.articles(id);
+
+
+--
 -- Name: question_tags fk_rails_e6a38f5c87; Type: FK CONSTRAINT; Schema: brimming; Owner: -
 --
 
@@ -1686,6 +2329,15 @@ ALTER TABLE ONLY brimming.ldap_group_mapping_spaces
 SET search_path TO brimming,public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20251201230632'),
+('20251201230617'),
+('20251201215307'),
+('20251201214415'),
+('20251201011229'),
+('20251201005222'),
+('20251201004914'),
+('20251201001952'),
+('20251201000652'),
 ('20251130184528'),
 ('20251130184224'),
 ('20251130163633'),

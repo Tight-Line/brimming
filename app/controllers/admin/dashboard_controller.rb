@@ -6,6 +6,7 @@ module Admin
       @stats = build_stats
       @recent_activity = build_recent_activity
       @system_health = build_system_health
+      @orphaned_articles = build_orphaned_articles
     end
 
     private
@@ -34,6 +35,11 @@ module Admin
         spaces: {
           total: Space.count,
           with_content: Space.joins(:questions).distinct.count
+        },
+        articles: {
+          total: Article.count,
+          this_week: Article.where("created_at > ?", 1.week.ago).count,
+          orphaned: Article.left_outer_joins(:article_spaces).where(article_spaces: { id: nil }).count
         }
       }
     end
@@ -75,19 +81,42 @@ module Admin
         return { status: :not_configured, message: "No embedding provider configured" }
       end
 
-      embedded_count = Question.where.not(embedding: nil).count
-      total_count = Question.count
-      coverage = total_count > 0 ? (embedded_count.to_f / total_count * 100).round(1) : 0
+      # Questions - count via chunks
+      embedded_questions = Question.not_deleted.joins(:chunks).where(chunks: { embedding_provider_id: provider.id }).distinct.count
+      total_questions = Question.not_deleted.count
+
+      # Articles - count via chunks
+      embedded_articles = Article.active.joins(:chunks).where(chunks: { embedding_provider_id: provider.id }).distinct.count
+      total_articles = Article.active.count
+
+      # Chunks
+      total_chunks = Chunk.where(embedding_provider_id: provider.id).count
+
+      # Overall coverage
+      total_items = total_questions + total_articles
+      embedded_items = embedded_questions + embedded_articles
+      coverage = total_items > 0 ? (embedded_items.to_f / total_items * 100).round(1) : 0
 
       {
         status: coverage > 90 ? :ok : (coverage > 50 ? :warning : :building),
         provider: provider.name,
-        embedded: embedded_count,
-        total: total_count,
+        questions_embedded: embedded_questions,
+        questions_total: total_questions,
+        articles_embedded: embedded_articles,
+        articles_total: total_articles,
+        chunks: total_chunks,
         coverage: coverage
       }
     rescue => e
       { status: :error, message: e.message }
+    end
+
+    def build_orphaned_articles
+      Article.left_outer_joins(:article_spaces)
+             .where(article_spaces: { id: nil })
+             .includes(:user)
+             .order(created_at: :desc)
+             .limit(10)
     end
   end
 end

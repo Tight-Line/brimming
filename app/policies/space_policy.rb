@@ -28,6 +28,11 @@ class SpacePolicy < ApplicationPolicy
     user&.admin? || record.moderator?(user)
   end
 
+  # Publisher management - admins only
+  def manage_publishers?
+    user&.admin?
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       scope.all

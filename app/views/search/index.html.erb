@@ -86,35 +86,47 @@
     <ul class="question-list">
       <% @results.hits.each do |hit| %>
         <% source = hit.source %>
-        <% question = source["question"] %>
-        <li class="question-item search-result">
+        <% is_article = source["type"] == "article" %>
+        <% item = is_article ? source["article"] : source["question"] %>
+        <li class="question-item search-result <%= 'article-result' if is_article %>">
           <div class="search-result-stats">
-            <div class="stat">
-              <span class="stat-number <%= question["vote_score"].to_i.positive? ? 'positive' : '' %><%= question["vote_score"].to_i.negative? ? 'negative' : '' %>">
-                <%= question["vote_score"] || 0 %>
-              </span>
-              <%# TODO: i18n %>
-              <span class="stat-label">votes</span>
-            </div>
-            <div class="stat <%= source["answer_count"].to_i.positive? ? 'has-answers' : '' %> <%= question["has_correct_answer"] ? 'has-correct' : '' %>">
-              <span class="stat-number"><%= source["answer_count"] || 0 %></span>
-              <%# TODO: i18n %>
-              <span class="stat-label">answers</span>
-            </div>
-            <div class="stat">
-              <span class="stat-number"><%= question["views_count"] || 0 %></span>
-              <%# TODO: i18n %>
-              <span class="stat-label">views</span>
-            </div>
+            <% if is_article %>
+              <div class="stat article-indicator">
+                <span class="stat-icon">📄</span>
+                <span class="stat-label">article</span>
+              </div>
+            <% else %>
+              <div class="stat">
+                <span class="stat-number <%= item["vote_score"].to_i.positive? ? 'positive' : '' %><%= item["vote_score"].to_i.negative? ? 'negative' : '' %>">
+                  <%= item["vote_score"] || 0 %>
+                </span>
+                <%# TODO: i18n %>
+                <span class="stat-label">votes</span>
+              </div>
+              <div class="stat <%= source["answer_count"].to_i.positive? ? 'has-answers' : '' %> <%= item["has_correct_answer"] ? 'has-correct' : '' %>">
+                <span class="stat-number"><%= source["answer_count"] || 0 %></span>
+                <%# TODO: i18n %>
+                <span class="stat-label">answers</span>
+              </div>
+              <div class="stat">
+                <span class="stat-number"><%= item["views_count"] || 0 %></span>
+                <%# TODO: i18n %>
+                <span class="stat-label">views</span>
+              </div>
+            <% end %>
           </div>
 
           <div class="search-result-content">
             <div class="question-title">
-              <%= link_to question["title"], question_path(question["slug"]) %>
+              <% if is_article %>
+                <%= link_to item["title"], article_path(item["slug"]) %>
+              <% else %>
+                <%= link_to item["title"], question_path(item["slug"]) %>
+              <% end %>
             </div>
-            <% if question["body"].present? %>
+            <% if item["body"].present? %>
               <div class="search-result-excerpt">
-                <%= truncate(strip_tags(question["body"]), length: 200) %>
+                <%= truncate(strip_tags(item["body"]), length: 200) %>
               </div>
             <% end %>
 
@@ -137,7 +149,7 @@
               <% end %>
 
               <%# TODO: i18n %>
-              <span><%= time_ago_in_words(Time.parse(question["created_at"])) %> ago</span>
+              <span><%= time_ago_in_words(Time.parse(item["created_at"])) %> ago</span>
             </div>
 
             <% if current_user&.admin? && @results.respond_to?(:search_mode) && @results.search_mode.present? %>

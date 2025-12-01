@@ -57,30 +57,33 @@
       <h3>Usage Statistics</h3>
     </div>
     <div class="card-body">
-      <% if Question.column_names.include?("embedding") %>
-        <% embedded_count = Question.where.not(embedding: nil).count %>
-        <% total_count = Question.count %>
-        <% coverage = total_count > 0 ? (embedded_count.to_f / total_count * 100).round(1) : 0 %>
+      <% question_count = Question.not_deleted.count %>
+      <% embedded_question_count = Question.not_deleted.where.not(embedded_at: nil).count %>
+      <% article_count = Article.active.count %>
+      <% embedded_article_count = Article.active.where.not(embedded_at: nil).count %>
+      <% total_chunks = Chunk.count %>
+      <% question_coverage = question_count > 0 ? (embedded_question_count.to_f / question_count * 100).round(1) : 0 %>
+      <% article_coverage = article_count > 0 ? (embedded_article_count.to_f / article_count * 100).round(1) : 0 %>
 
-        <dl class="details-list">
-          <dt>Questions with Embeddings</dt>
-          <dd><%= embedded_count %> / <%= total_count %> (<%= coverage %>%)</dd>
+      <dl class="details-list">
+        <dt>Questions with Embeddings</dt>
+        <dd><%= embedded_question_count %> / <%= question_count %> (<%= question_coverage %>%)</dd>
 
-          <dt>Vector Dimensions</dt>
-          <dd><%= @embedding_provider.dimensions %></dd>
-        </dl>
+        <dt>Articles with Embeddings</dt>
+        <dd><%= embedded_article_count %> / <%= article_count %> (<%= article_coverage %>%)</dd>
 
-        <% if coverage < 100 && @embedding_provider.enabled? %>
-          <div class="health-progress mt-3">
-            <div class="progress-bar" style="width: <%= coverage %>%"></div>
-          </div>
-          <small class="text-muted">Embeddings are generated in the background. New questions are embedded automatically.</small>
-        <% end %>
-      <% else %>
-        <div class="alert alert-warning">
-          <strong>Embedding column not yet configured.</strong>
-          <p class="mb-0">The pgvector extension and embedding column need to be added to the questions table before embeddings can be generated.</p>
+        <dt>Total Chunks</dt>
+        <dd><%= total_chunks %></dd>
+
+        <dt>Vector Dimensions</dt>
+        <dd><%= @embedding_provider.dimensions %></dd>
+      </dl>
+
+      <% if (question_coverage < 100 || article_coverage < 100) && @embedding_provider.enabled? %>
+        <div class="health-progress mt-3">
+          <div class="progress-bar" style="width: <%= [question_coverage, article_coverage].min %>%"></div>
         </div>
+        <small class="text-muted">Embeddings are generated in the background. New content is embedded automatically.</small>
       <% end %>
     </div>
   </div>

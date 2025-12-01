@@ -53,6 +53,15 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   root "home#index"
 
+  resources :articles, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
+    member do
+      post :upvote
+      delete :remove_vote
+      delete :hard_delete
+    end
+    resources :comments, only: [ :create ], shallow: true
+  end
+
   resources :questions, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
     member do
       post :upvote
@@ -91,6 +100,9 @@ Rails.application.routes.draw do
       get :moderators
       post :add_moderator
       delete :remove_moderator
+      get :publishers
+      post :add_publisher
+      delete :remove_publisher
       get :search
     end
   end

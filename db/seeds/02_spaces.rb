@@ -174,3 +174,45 @@ finance_space.add_moderator(cfo) if cfo
 office_space.add_moderator(office_manager) if office_manager
 
 puts "  Assigned moderators to spaces"
+
+# Assign space publishers (users who can write articles)
+puts "Assigning space publishers..."
+
+# Technical spaces - experts can publish articles
+rails_space.add_publisher(experts[0]) if experts[0] # mike_seniordev
+rails_space.add_publisher(moderators[2]) if moderators[2] # sarah
+
+js_space.add_publisher(moderators[1]) if moderators[1] # marcus
+js_space.add_publisher(User.find_by(email: "architect.lisa@example.com"))
+
+python_space.add_publisher(moderators[0]) if moderators[0] # elena
+python_space.add_publisher(User.find_by(email: "prof.aisha.patel@example.com"))
+
+devops_space.add_publisher(moderators[2]) if moderators[2] # sarah
+devops_space.add_publisher(User.find_by(email: "tech.lead.omar@example.com"))
+
+# Business spaces - department heads can publish
+hr_space.add_publisher(hr_director) if hr_director
+hr_space.add_publisher(User.find_by(email: "daniel.oconnor@example.com")) # Benefits manager
+
+facilities_space.add_publisher(facilities_director) if facilities_director
+facilities_space.add_publisher(office_manager) if office_manager
+
+finance_space.add_publisher(cfo) if cfo
+finance_space.add_publisher(User.find_by(email: "richard.chang@example.com")) # Controller
+
+travel_space.add_publisher(travel_manager) if travel_manager
+
+product_space.add_publisher(vp_product) if vp_product
+product_space.add_publisher(User.find_by(email: "derek.washington@example.com")) # Sr PM
+
+project_space.add_publisher(pmo_director) if pmo_director
+project_space.add_publisher(User.find_by(email: "brandon.lee@example.com")) # Sr Project Manager
+
+# Admin can publish everywhere
+admin_user = User.find_by(email: "admin@example.com")
+spaces.each do |space|
+  space.add_publisher(admin_user) if admin_user
+end
+
+puts "  Assigned publishers to spaces"

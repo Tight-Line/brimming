@@ -69,11 +69,11 @@ module Admin
       # Trigger re-embedding if switching to a different provider
       if previous_provider.nil? || previous_provider.id != @embedding_provider.id
         RegenerateAllEmbeddingsJob.perform_later(@embedding_provider.id)
-        embeddings_count = Question.where.not(embedding: nil).count
+        embedded_count = Question.where.not(embedded_at: nil).count
 
-        if embeddings_count > 0
+        if embedded_count > 0
           redirect_to admin_embedding_providers_path,
-                      notice: "#{@embedding_provider.name} is now active. Re-embedding #{embeddings_count} questions in the background."
+                      notice: "#{@embedding_provider.name} is now active. Re-embedding #{embedded_count} questions in the background."
         else
           redirect_to admin_embedding_providers_path,
                       notice: "#{@embedding_provider.name} is now active. Embedding questions in the background."
@@ -101,18 +101,15 @@ module Admin
         end
       end
 
-      # Clear all existing embeddings
-      invalidated_count = Question.where.not(embedding: nil).update_all(
-        embedding: nil,
-        embedding_provider_id: nil,
-        embedded_at: nil
-      )
+      # Clear all existing chunks and reset embedded_at
+      invalidated_count = Question.where.not(embedded_at: nil).update_all(embedded_at: nil)
+      deleted_chunks = Chunk.delete_all
 
       # Queue fresh embedding jobs for all questions
       RegenerateAllEmbeddingsJob.perform_later(@embedding_provider.id)
 
       redirect_to admin_embedding_providers_path,
-                  notice: "Reindexing started. Cleared #{cleared_count} pending jobs and #{invalidated_count} embeddings. Re-embedding all questions."
+                  notice: "Reindexing started. Cleared #{cleared_count} pending jobs, #{invalidated_count} embeddings, and #{deleted_chunks} chunks. Re-embedding all questions."
     end
 
     private

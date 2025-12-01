@@ -23,7 +23,12 @@
               <p class="text-muted text-small mb-0"><%= truncate(space.description, length: 100) %></p>
             <% end %>
           </div>
-          <span class="space-count"><%= space.questions_count %> questions</span>
+          <span class="space-count">
+            <%= space.questions_count %> questions
+            <% if space.articles_count_value.to_i > 0 %>
+              &middot; <%= space.articles_count_value %> <%= "article".pluralize(space.articles_count_value) %>
+            <% end %>
+          </span>
         </li>
       <% end %>
     </ul>

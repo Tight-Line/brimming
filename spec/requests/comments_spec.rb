@@ -425,4 +425,123 @@ RSpec.describe "Comments" do
       end
     end
   end
+
+  describe "POST /articles/:article_id/comments" do
+    let(:article) { create(:article) }
+
+    context "when signed in" do
+      before { sign_in user }
+
+      it "creates a new comment on an article" do
+        expect {
+          post article_comments_path(article), params: { comment: { body: "Great article!" } }
+        }.to change(Comment, :count).by(1)
+      end
+
+      it "redirects to the article with anchor" do
+        post article_comments_path(article), params: { comment: { body: "Great article!" } }
+        expect(response).to redirect_to(article_path(article, anchor: "comment-#{Comment.last.id}"))
+      end
+
+      it "sets the current user as author" do
+        post article_comments_path(article), params: { comment: { body: "Great article!" } }
+        expect(Comment.last.user).to eq(user)
+      end
+
+      it "does not create a comment with blank body" do
+        expect {
+          post article_comments_path(article), params: { comment: { body: "" } }
+        }.not_to change(Comment, :count)
+      end
+    end
+
+    context "when not signed in" do
+      it "redirects to sign in" do
+        post article_comments_path(article), params: { comment: { body: "Great article!" } }
+        expect(response).to redirect_to(new_user_session_path)
+      end
+    end
+  end
+
+  describe "comment on article" do
+    let(:article) { create(:article) }
+    let(:comment) { create(:comment, commentable: article, user: user) }
+
+    context "when editing" do
+      before { sign_in user }
+
+      it "redirects to the article" do
+        patch comment_path(comment), params: { comment: { body: "Updated comment" } }
+        expect(response).to redirect_to(article_path(article, anchor: "comment-#{comment.id}"))
+      end
+    end
+
+    context "when deleting" do
+      before { sign_in user }
+
+      it "redirects to the article" do
+        delete comment_path(comment)
+        expect(response).to redirect_to(article_path(article, anchor: "comment-#{comment.id}"))
+      end
+    end
+  end
+
+  describe "hard_delete comment on article" do
+    let(:article) { create(:article) }
+    let(:space) { create(:space) }
+    let!(:article_comment) { create(:comment, commentable: article) }
+
+    before { create(:article_space, article: article, space: space) }
+
+    context "when signed in as admin" do
+      let(:admin) { create(:user, role: :admin) }
+
+      before { sign_in admin }
+
+      it "permanently deletes the comment" do
+        expect {
+          delete hard_delete_comment_path(article_comment)
+        }.to change(Comment, :count).by(-1)
+      end
+
+      it "redirects to the article" do
+        delete hard_delete_comment_path(article_comment)
+        expect(response).to redirect_to(article_path(article))
+      end
+    end
+
+    context "when signed in as space moderator" do
+      let(:moderator) { create(:user) }
+
+      before do
+        space.add_moderator(moderator)
+        sign_in moderator
+      end
+
+      it "permanently deletes the comment" do
+        expect {
+          delete hard_delete_comment_path(article_comment)
+        }.to change(Comment, :count).by(-1)
+      end
+    end
+  end
+
+  describe "redirect_path_for_commentable with unknown type" do
+    let(:question) { create(:question) }
+    let!(:comment) { create(:comment, commentable: question, user: user) }
+
+    before { sign_in user }
+
+    it "raises error for unknown commentable type when updating" do
+      # Stub the specific comment instance's commentable to return an unexpected type
+      unknown_obj = Object.new
+      allow(Comment).to receive(:find).and_return(comment)
+      allow(comment).to receive(:commentable).and_return(unknown_obj)
+      allow(comment).to receive(:update).and_return(true)
+
+      expect {
+        patch comment_path(comment), params: { comment: { body: "Updated" } }
+      }.to raise_error(RuntimeError, /Unknown commentable type/)
+    end
+  end
 end

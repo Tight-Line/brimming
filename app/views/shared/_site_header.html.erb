@@ -1,0 +1,33 @@
+<header class="site-header">
+  <div class="container">
+    <%= link_to root_path, class: "site-logo" do %>
+      <img src="/icon.svg" alt="Brimming">
+      Brimming
+    <% end %>
+
+    <nav class="site-nav">
+      <%= link_to "Questions", questions_path, class: request.path.start_with?("/questions") ? "active" : "" %>
+      <%= link_to "Articles", articles_path, class: request.path.start_with?("/articles") ? "active" : "" %>
+      <%= link_to "Spaces", spaces_path, class: request.path.start_with?("/spaces") ? "active" : "" %>
+      <%= link_to "Search", search_path, class: current_page?(search_path) ? "active" : "" %>
+      <% if current_user&.admin? %>
+        <%= link_to "Admin", admin_root_path, class: request.path.start_with?("/admin") ? "active" : "" %>
+      <% end %>
+    </nav>
+
+    <div class="user-menu">
+      <% if user_signed_in? %>
+        <span class="user-greeting">
+          <%= render 'shared/user_badge', user: current_user %>
+        </span>
+        <% if current_user.ldap_user? %>
+          <%= link_to "LDAP Spaces", settings_ldap_spaces_path, class: "btn-settings" %>
+        <% end %>
+        <%= button_to "Log out", destroy_user_session_path, method: :delete, class: "btn-logout" %>
+      <% else %>
+        <%= link_to "Log in", new_user_session_path, class: "btn-login" %>
+        <%= link_to "Sign up", new_user_registration_path, class: "btn-signup" %>
+      <% end %>
+    </div>
+  </div>
+</header>

@@ -64,9 +64,11 @@ module Search
 
     def run_vector_search
       # EmbeddingService.available? is already checked before calling this method
-      vector_service = VectorQueryService.new(
+      # Use ChunkVectorQueryService to search across chunks (Questions and Articles)
+      vector_service = ChunkVectorQueryService.new(
         q: @query,
         space_id: @space_id,
+        types: %w[Question Article],
         limit: @per_page * 3
       )
 
@@ -130,10 +132,21 @@ module Search
 
       Result.new(
         hits: page_hits.map.with_index do |hit, idx|
+          # ChunkVectorQueryService returns hits with chunkable (Question or Article)
+          chunkable = hit.chunkable
+          source = case chunkable
+          when Question
+            build_source_from_question(chunkable)
+          when Article
+            build_source_from_article(chunkable)
+          else
+            { "type" => chunkable.class.name, "id" => chunkable.id }
+          end
+
           Hit.new(
             id: hit.id,
             score: hit.score,
-            source: build_source_from_question(hit.question),
+            source: source,
             keyword_rank: nil,
             vector_rank: start_idx + idx + 1,
             vector_score: hit.score
@@ -152,6 +165,7 @@ module Search
       # Build a minimal source structure from a Question record
       # This is used when a result only appears in vector search
       {
+        "type" => "question",
         "question" => {
           "id" => question.id,
           "title" => question.title,
@@ -175,6 +189,35 @@ module Search
         "tags" => question.tag_names,
         "answer_count" => question.answers_count,
         "comment_count" => question.comments.count
+      }
+    end
+
+    def build_source_from_article(article)
+      # Build a minimal source structure from an Article record
+      # This is used when a result only appears in vector search
+      spaces = article.spaces.to_a
+      primary_space = spaces.first
+
+      {
+        "type" => "article",
+        "article" => {
+          "id" => article.id,
+          "title" => article.title,
+          "body" => article.body.to_s.truncate(500),
+          "slug" => article.slug,
+          "created_at" => article.created_at.iso8601
+        },
+        "author" => article.user ? {
+          "id" => article.user.id,
+          "username" => article.user.username,
+          "display_name" => article.user.display_name
+        } : nil,
+        "space" => primary_space ? {
+          "id" => primary_space.id,
+          "name" => primary_space.name,
+          "slug" => primary_space.slug
+        } : nil,
+        "spaces" => spaces.map { |s| { "id" => s.id, "name" => s.name, "slug" => s.slug } }
       }
     end
 

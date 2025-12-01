@@ -104,6 +104,7 @@ RSpec.describe "Spaces" do
 
       expect(response.body).to include("Edit")
       expect(response.body).to include("Moderators")
+      expect(response.body).to include("Publishers")
       expect(response.body).to include("Delete")
     end
 
@@ -117,7 +118,7 @@ RSpec.describe "Spaces" do
       expect(response.body).not_to include("admin-actions")
     end
 
-    it "shows Moderators link for space moderators" do
+    it "shows Moderators link for space moderators but not Publishers" do
       user = create(:user)
       space = create(:space)
       space.add_moderator(user)
@@ -126,6 +127,7 @@ RSpec.describe "Spaces" do
       get space_path(space)
 
       expect(response.body).to include("Moderators")
+      expect(response.body).not_to include("Publishers")
       expect(response.body).not_to include("Edit")
       expect(response.body).not_to include("Delete")
     end
@@ -438,6 +440,150 @@ RSpec.describe "Spaces" do
 
       expect(response).to redirect_to(moderators_space_path(space))
       expect(space.moderator?(other_mod)).to be false
+    end
+  end
+
+  describe "GET /spaces/:id/publishers" do
+    it "requires login" do
+      space = create(:space)
+      get publishers_space_path(space)
+      expect(response).to redirect_to(new_user_session_path)
+    end
+
+    it "redirects non-admins" do
+      user = create(:user)
+      space = create(:space)
+      sign_in user
+
+      get publishers_space_path(space)
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "redirects space moderators (not allowed to manage publishers)" do
+      space = create(:space)
+      moderator = create(:user)
+      space.add_moderator(moderator)
+      sign_in moderator
+
+      get publishers_space_path(space)
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "shows publisher management page for admins" do
+      admin = create(:user, :admin)
+      space = create(:space)
+      publisher = create(:user)
+      space.add_publisher(publisher)
+      sign_in admin
+
+      get publishers_space_path(space)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Manage Publishers")
+      expect(response.body).to include(publisher.display_name)
+    end
+
+    it "shows empty state when no publishers" do
+      admin = create(:user, :admin)
+      space = create(:space)
+      sign_in admin
+
+      get publishers_space_path(space)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("No publishers assigned yet")
+    end
+  end
+
+  describe "POST /spaces/:id/add_publisher" do
+    it "requires login" do
+      space = create(:space)
+      user = create(:user)
+      post add_publisher_space_path(space), params: { user_id: user.id }
+      expect(response).to redirect_to(new_user_session_path)
+    end
+
+    it "does not allow non-admins" do
+      user = create(:user)
+      space = create(:space)
+      new_pub = create(:user)
+      sign_in user
+
+      post add_publisher_space_path(space), params: { user_id: new_pub.id }
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "does not allow space moderators" do
+      space = create(:space)
+      moderator = create(:user)
+      new_pub = create(:user)
+      space.add_moderator(moderator)
+      sign_in moderator
+
+      post add_publisher_space_path(space), params: { user_id: new_pub.id }
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "allows admins to add publishers" do
+      admin = create(:user, :admin)
+      space = create(:space)
+      new_pub = create(:user)
+      sign_in admin
+
+      expect {
+        post add_publisher_space_path(space), params: { user_id: new_pub.id }
+      }.to change { space.publishers.count }.by(1)
+
+      expect(response).to redirect_to(publishers_space_path(space))
+      expect(space.publisher?(new_pub)).to be true
+    end
+  end
+
+  describe "DELETE /spaces/:id/remove_publisher" do
+    it "requires login" do
+      space = create(:space)
+      publisher = create(:user)
+      space.add_publisher(publisher)
+      delete remove_publisher_space_path(space), params: { user_id: publisher.id }
+      expect(response).to redirect_to(new_user_session_path)
+    end
+
+    it "does not allow non-admins" do
+      user = create(:user)
+      space = create(:space)
+      publisher = create(:user)
+      space.add_publisher(publisher)
+      sign_in user
+
+      delete remove_publisher_space_path(space), params: { user_id: publisher.id }
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "does not allow space moderators" do
+      space = create(:space)
+      moderator = create(:user)
+      publisher = create(:user)
+      space.add_moderator(moderator)
+      space.add_publisher(publisher)
+      sign_in moderator
+
+      delete remove_publisher_space_path(space), params: { user_id: publisher.id }
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "allows admins to remove publishers" do
+      admin = create(:user, :admin)
+      space = create(:space)
+      publisher = create(:user)
+      space.add_publisher(publisher)
+      sign_in admin
+
+      expect {
+        delete remove_publisher_space_path(space), params: { user_id: publisher.id }
+      }.to change { space.publishers.count }.by(-1)
+
+      expect(response).to redirect_to(publishers_space_path(space))
+      expect(space.publisher?(publisher)).to be false
     end
   end
 end

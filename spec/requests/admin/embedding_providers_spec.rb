@@ -258,11 +258,8 @@ RSpec.describe "Admin::EmbeddingProviders" do
       let(:space) { create(:space) }
       let!(:question_with_embedding) do
         q = create(:question, space: space, user: admin)
-        q.update_columns(
-          embedding: Array.new(1536) { rand },
-          embedded_at: Time.current,
-          embedding_provider_id: first_provider.id
-        )
+        q.update_columns(embedded_at: Time.current)
+        create(:chunk, :embedded, chunkable: q, embedding_provider: first_provider)
         q
       end
 
@@ -292,14 +289,11 @@ RSpec.describe "Admin::EmbeddingProviders" do
 
       it "clears existing embeddings" do
         question = create(:question, space: space, user: admin)
-        question.update_columns(
-          embedding: Array.new(1536) { rand },
-          embedded_at: Time.current,
-          embedding_provider_id: active_provider.id
-        )
+        question.update_columns(embedded_at: Time.current)
+        create(:chunk, :embedded, chunkable: question, embedding_provider: active_provider)
 
         post reindex_admin_embedding_provider_path(active_provider)
-        expect(question.reload.embedding).to be_nil
+        expect(question.reload.chunks).to be_empty
         expect(question.embedded_at).to be_nil
       end
 

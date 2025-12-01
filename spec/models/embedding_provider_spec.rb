@@ -41,6 +41,98 @@ RSpec.describe EmbeddingProvider do
       expect(provider).not_to be_valid
       expect(provider.errors[:api_endpoint]).to include("is required for Azure OpenAI")
     end
+
+    describe "api_endpoint reachability" do
+      it "validates endpoint is reachable when creating with api_endpoint" do
+        stub_request(:any, "http://unreachable-host.invalid:11434/").to_raise(SocketError.new("getaddrinfo: nodename nor servname provided"))
+
+        provider = build(:embedding_provider, :ollama, api_endpoint: "http://unreachable-host.invalid:11434")
+        expect(provider).not_to be_valid
+        expect(provider.errors[:api_endpoint].first).to include("could not resolve host")
+      end
+
+      it "validates endpoint is reachable when updating api_endpoint" do
+        stub_request(:any, "http://localhost:11434/").to_return(status: 200)
+        provider = create(:embedding_provider, :ollama, api_endpoint: "http://localhost:11434")
+
+        stub_request(:any, "http://new-unreachable-host.invalid:11434/").to_raise(Errno::ECONNREFUSED)
+
+        provider.api_endpoint = "http://new-unreachable-host.invalid:11434"
+        expect(provider).not_to be_valid
+        expect(provider.errors[:api_endpoint].first).to include("connection refused")
+      end
+
+      it "skips reachability check when api_endpoint is not changed" do
+        stub_request(:any, "http://localhost:11434/").to_return(status: 200)
+        provider = create(:embedding_provider, :ollama, api_endpoint: "http://localhost:11434")
+
+        # Change something else, not the endpoint
+        provider.name = "Updated Name"
+
+        # Should not try to connect again
+        expect(provider).to be_valid
+      end
+
+      it "accepts endpoints that return error status codes" do
+        stub_request(:any, "http://localhost:11434/").to_return(status: 404)
+
+        provider = build(:embedding_provider, :ollama, api_endpoint: "http://localhost:11434")
+        # Should be valid - we only care that we can connect, not the response status
+        expect(provider).to be_valid
+      end
+
+      it "rejects URLs without host" do
+        provider = build(:embedding_provider, :ollama, api_endpoint: "not-a-valid-url")
+        expect(provider).not_to be_valid
+        expect(provider.errors[:api_endpoint].first).to include("not a valid URL")
+      end
+
+      it "rejects malformed URLs that fail to parse" do
+        provider = build(:embedding_provider, :ollama, api_endpoint: "http://host with spaces")
+        expect(provider).not_to be_valid
+        expect(provider.errors[:api_endpoint].first).to include("not a valid URL")
+      end
+
+      it "handles connection timeout" do
+        stub_request(:any, "http://slow-host.example:11434/").to_timeout
+
+        provider = build(:embedding_provider, :ollama, api_endpoint: "http://slow-host.example:11434")
+        expect(provider).not_to be_valid
+        expect(provider.errors[:api_endpoint].first).to include("timed out")
+      end
+
+      it "handles host unreachable error" do
+        stub_request(:any, "http://unreachable-host.example:11434/").to_raise(Errno::EHOSTUNREACH)
+
+        provider = build(:embedding_provider, :ollama, api_endpoint: "http://unreachable-host.example:11434")
+        expect(provider).not_to be_valid
+        expect(provider.errors[:api_endpoint].first).to include("host is unreachable")
+      end
+
+      it "handles network unreachable error" do
+        stub_request(:any, "http://no-network.example:11434/").to_raise(Errno::ENETUNREACH)
+
+        provider = build(:embedding_provider, :ollama, api_endpoint: "http://no-network.example:11434")
+        expect(provider).not_to be_valid
+        expect(provider.errors[:api_endpoint].first).to include("network is unreachable")
+      end
+
+      it "handles SSL errors" do
+        stub_request(:any, "https://bad-ssl.example:443/").to_raise(OpenSSL::SSL::SSLError.new("SSL_connect failed"))
+
+        provider = build(:embedding_provider, :ollama, api_endpoint: "https://bad-ssl.example:443")
+        expect(provider).not_to be_valid
+        expect(provider.errors[:api_endpoint].first).to include("SSL error")
+      end
+
+      it "handles generic connection errors" do
+        stub_request(:any, "http://generic-error.example:11434/").to_raise(StandardError.new("Unexpected failure"))
+
+        provider = build(:embedding_provider, :ollama, api_endpoint: "http://generic-error.example:11434")
+        expect(provider).not_to be_valid
+        expect(provider.errors[:api_endpoint].first).to include("could not connect")
+      end
+    end
   end
 
   describe "encryption" do
@@ -220,6 +312,89 @@ RSpec.describe EmbeddingProvider do
       allow(provider).to receive(:provider_type).and_return("unknown")
       allow(provider).to receive(:embedding_model).and_return("unknown-model")
       expect(provider.default_similarity_threshold).to eq(0.3)
+    end
+  end
+
+  describe "#chunk_size" do
+    it "returns the default chunk size when not set" do
+      provider = build(:embedding_provider, :openai)
+      expect(provider.chunk_size).to eq(EmbeddingProvider::DEFAULT_CHUNK_SIZE)
+    end
+
+    it "returns a custom chunk size when set in settings" do
+      provider = build(:embedding_provider, :openai)
+      provider.chunk_size = 256
+      expect(provider.chunk_size).to eq(256)
+    end
+
+    it "persists the chunk size in the settings jsonb column" do
+      provider = create(:embedding_provider, :openai)
+      provider.chunk_size = 1024
+      provider.save!
+
+      provider.reload
+      expect(provider.chunk_size).to eq(1024)
+      expect(provider.settings["chunk_size"]).to eq(1024)
+    end
+  end
+
+  describe "#chunk_overlap" do
+    it "returns the default chunk overlap when not set" do
+      provider = build(:embedding_provider, :openai)
+      expect(provider.chunk_overlap).to eq(EmbeddingProvider::DEFAULT_CHUNK_OVERLAP)
+    end
+
+    it "returns a custom chunk overlap when set in settings" do
+      provider = build(:embedding_provider, :openai)
+      provider.chunk_overlap = 20
+      expect(provider.chunk_overlap).to eq(20)
+    end
+
+    it "clamps chunk overlap to 0-50 range" do
+      provider = build(:embedding_provider, :openai)
+
+      provider.chunk_overlap = -5
+      expect(provider.chunk_overlap).to eq(0)
+
+      provider.chunk_overlap = 75
+      expect(provider.chunk_overlap).to eq(50)
+    end
+
+    it "persists the chunk overlap in the settings jsonb column" do
+      provider = create(:embedding_provider, :openai)
+      provider.chunk_overlap = 15
+      provider.save!
+
+      provider.reload
+      expect(provider.chunk_overlap).to eq(15)
+      expect(provider.settings["chunk_overlap"]).to eq(15)
+    end
+  end
+
+  describe "#chunk_overlap_tokens" do
+    it "calculates overlap in tokens based on chunk_size and chunk_overlap percentage" do
+      provider = build(:embedding_provider, :openai)
+      provider.chunk_size = 500
+      provider.chunk_overlap = 10
+
+      expect(provider.chunk_overlap_tokens).to eq(50)
+    end
+
+    it "rounds to nearest integer" do
+      provider = build(:embedding_provider, :openai)
+      provider.chunk_size = 512
+      provider.chunk_overlap = 15  # 15% of 512 = 76.8
+
+      expect(provider.chunk_overlap_tokens).to eq(77)
+    end
+  end
+
+  describe "#chunk_size_chars" do
+    it "returns chunk size in characters" do
+      provider = build(:embedding_provider, :openai)
+      provider.chunk_size = 512
+
+      expect(provider.chunk_size_chars).to eq(512 * EmbeddingProvider::CHARS_PER_TOKEN)
     end
   end
 end

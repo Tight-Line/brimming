@@ -28,8 +28,12 @@ RSpec.describe Space do
     it { is_expected.to have_many(:questions).dependent(:destroy) }
     it { is_expected.to have_many(:space_moderators).dependent(:destroy) }
     it { is_expected.to have_many(:moderators).through(:space_moderators).source(:user) }
+    it { is_expected.to have_many(:space_publishers).dependent(:destroy) }
+    it { is_expected.to have_many(:publishers).through(:space_publishers).source(:user) }
     it { is_expected.to have_many(:space_subscriptions).dependent(:destroy) }
     it { is_expected.to have_many(:subscribers).through(:space_subscriptions).source(:user) }
+    it { is_expected.to have_many(:article_spaces).dependent(:destroy) }
+    it { is_expected.to have_many(:articles).through(:article_spaces) }
   end
 
   describe "callbacks" do
@@ -119,6 +123,47 @@ RSpec.describe Space do
 
     it "returns false if user is not a moderator" do
       expect(space.moderator?(user)).to be false
+    end
+  end
+
+  describe "#add_publisher" do
+    let(:space) { create(:space) }
+    let(:user) { create(:user) }
+
+    it "adds a user as publisher" do
+      space.add_publisher(user)
+      expect(space.publishers).to include(user)
+    end
+
+    it "does not duplicate publishers" do
+      space.add_publisher(user)
+      space.add_publisher(user)
+      expect(space.publishers.count).to eq(1)
+    end
+  end
+
+  describe "#remove_publisher" do
+    let(:space) { create(:space) }
+    let(:user) { create(:user) }
+
+    it "removes a user as publisher" do
+      space.add_publisher(user)
+      space.remove_publisher(user)
+      expect(space.publishers).not_to include(user)
+    end
+  end
+
+  describe "#publisher?" do
+    let(:space) { create(:space) }
+    let(:user) { create(:user) }
+
+    it "returns true if user is a publisher" do
+      space.add_publisher(user)
+      expect(space.publisher?(user)).to be true
+    end
+
+    it "returns false if user is not a publisher" do
+      expect(space.publisher?(user)).to be false
     end
   end
 end

@@ -2,15 +2,21 @@
 
 class SpacesController < ApplicationController
   before_action :require_login, except: [ :index, :show ]
-  before_action :set_space, only: [ :show, :edit, :update, :destroy, :moderators, :add_moderator, :remove_moderator ]
+  before_action :set_space, only: [ :show, :edit, :update, :destroy, :moderators, :add_moderator, :remove_moderator,
+                                     :publishers, :add_publisher, :remove_publisher ]
 
   def index
-    @spaces = policy_scope(Space).alphabetical
+    @spaces = policy_scope(Space)
+                .alphabetical
+                .left_joins(:article_spaces)
+                .select("spaces.*, COUNT(DISTINCT article_spaces.article_id) AS articles_count_value")
+                .group("spaces.id")
   end
 
   def show
     authorize @space
     @questions = @space.questions.not_deleted.recent.includes(:user)
+    @articles = @space.articles.active.recent.includes(:user)
   end
 
   def new
@@ -71,6 +77,25 @@ class SpacesController < ApplicationController
     user = User.find(params[:user_id])
     @space.remove_moderator(user)
     redirect_to moderators_space_path(@space), notice: "#{user.display_name} is no longer a moderator.", status: :see_other
+  end
+
+  def publishers
+    authorize @space, :manage_publishers?
+    @publishers = @space.publishers
+  end
+
+  def add_publisher
+    authorize @space, :manage_publishers?
+    user = User.find(params[:user_id])
+    @space.add_publisher(user)
+    redirect_to publishers_space_path(@space), notice: "#{user.display_name} is now a publisher."
+  end
+
+  def remove_publisher
+    authorize @space, :manage_publishers?
+    user = User.find(params[:user_id])
+    @space.remove_publisher(user)
+    redirect_to publishers_space_path(@space), notice: "#{user.display_name} is no longer a publisher.", status: :see_other
   end
 
   private

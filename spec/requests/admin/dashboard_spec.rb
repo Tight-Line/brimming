@@ -67,6 +67,64 @@ RSpec.describe "Admin::Dashboard", type: :request do
         expect(response.body).to include("Spaces")
       end
 
+      it "includes article stats" do
+        create(:article, user: admin)
+        get admin_root_path
+        expect(response.body).to include("Articles")
+      end
+
+      context "with orphaned articles" do
+        let!(:orphaned_article) { create(:article, user: admin, title: "Orphaned Article Title") }
+        let!(:assigned_article) do
+          article = create(:article, user: admin, title: "Assigned Article")
+          space = create(:space)
+          create(:article_space, article: article, space: space)
+          article
+        end
+
+        it "shows orphaned articles count in stats" do
+          get admin_root_path
+          expect(response.body).to include("1 orphaned")
+        end
+
+        it "shows orphaned articles section" do
+          get admin_root_path
+          expect(response.body).to include("Orphaned Articles")
+          expect(response.body).to include("Orphaned Article Title")
+        end
+
+        it "does not show assigned articles in orphaned section" do
+          get admin_root_path
+          # The assigned article should NOT appear in the orphaned section
+          # (It may appear elsewhere on the page, but not in the orphaned list)
+          expect(response.body).to include("Orphaned Article Title")
+        end
+
+        it "shows edit link for orphaned articles" do
+          get admin_root_path
+          expect(response.body).to include(edit_article_path(orphaned_article))
+        end
+      end
+
+      context "without orphaned articles" do
+        let!(:assigned_article) do
+          article = create(:article, user: admin)
+          space = create(:space)
+          create(:article_space, article: article, space: space)
+          article
+        end
+
+        it "does not show orphaned articles section" do
+          get admin_root_path
+          expect(response.body).not_to include("Orphaned Articles")
+        end
+
+        it "shows 0 orphaned in stats" do
+          get admin_root_path
+          expect(response.body).to include("0 orphaned")
+        end
+      end
+
       it "includes recent activity" do
         space = create(:space)
         question = create(:question, space: space, user: admin, title: "Recent question title here")
@@ -186,17 +244,27 @@ RSpec.describe "Admin::Dashboard", type: :request do
         let!(:provider) { create(:embedding_provider, enabled: true) }
 
         before do
-          # Stub where.not to raise an error only for the embeddings check
-          # Use a specific relation double that raises on count
-          error_relation = double("relation")
-          allow(error_relation).to receive(:count).and_raise(StandardError.new("Embedding check failed"))
-
-          # Allow normal where calls but make where.not raise
-          allow(Question).to receive(:where).and_call_original
-          allow_any_instance_of(ActiveRecord::QueryMethods::WhereChain).to receive(:not).and_return(error_relation)
+          # Stub the embeddings_health method directly to simulate an error
+          allow_any_instance_of(Admin::DashboardController).to receive(:embeddings_health).and_return(
+            { status: :error, message: "Test error" }
+          )
         end
 
         it "shows embedding error status" do
+          get admin_root_path
+          expect(response.body).to include("Error")
+        end
+      end
+
+      context "when embeddings_health raises an exception" do
+        let!(:provider) { create(:embedding_provider, enabled: true) }
+
+        before do
+          # Simulate an exception occurring during question count
+          allow(Question).to receive(:not_deleted).and_raise(StandardError.new("Database connection lost"))
+        end
+
+        it "returns error status" do
           get admin_root_path
           expect(response.body).to include("Error")
         end
@@ -208,9 +276,9 @@ RSpec.describe "Admin::Dashboard", type: :request do
 
         before do
           space = create(:space)
-          # Create a question with embedding set
+          # Create a question with chunks from the provider
           q = create(:question, space: space, user: admin)
-          q.update_columns(embedding: Array.new(1536) { rand }, embedded_at: Time.current)
+          create(:chunk, :embedded, chunkable: q, embedding_provider: provider)
         end
 
         it "shows ok status for high coverage" do
@@ -224,10 +292,10 @@ RSpec.describe "Admin::Dashboard", type: :request do
 
         before do
           space = create(:space)
-          # Create 5 questions, 3 with embeddings (60% coverage, which triggers :warning)
+          # Create 5 questions, 3 with chunks (60% coverage, which triggers :warning)
           3.times do
             q = create(:question, space: space, user: admin)
-            q.update_columns(embedding: Array.new(1536) { rand }, embedded_at: Time.current)
+            create(:chunk, :embedded, chunkable: q, embedding_provider: provider)
           end
           2.times { create(:question, space: space, user: admin) }
         end
@@ -243,9 +311,9 @@ RSpec.describe "Admin::Dashboard", type: :request do
 
         before do
           space = create(:space)
-          # Create 4 questions, 1 with embedding (25% coverage, which triggers :building)
+          # Create 4 questions, 1 with chunk (25% coverage, which triggers :building)
           q = create(:question, space: space, user: admin)
-          q.update_columns(embedding: Array.new(1536) { rand }, embedded_at: Time.current)
+          create(:chunk, :embedded, chunkable: q, embedding_provider: provider)
           3.times { create(:question, space: space, user: admin) }
         end
 

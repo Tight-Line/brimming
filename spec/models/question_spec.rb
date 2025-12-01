@@ -37,6 +37,7 @@ RSpec.describe Question do
     it { is_expected.to have_many(:question_votes).dependent(:destroy) }
     it { is_expected.to have_many(:question_tags).dependent(:destroy) }
     it { is_expected.to have_many(:tags).through(:question_tags) }
+    it { is_expected.to have_many(:chunks).dependent(:destroy) }
   end
 
   describe "tags" do

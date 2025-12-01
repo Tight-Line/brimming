@@ -22,8 +22,13 @@ class CommentPolicy < ApplicationPolicy
   end
 
   # Only moderators/admins can hard-delete
+  # For article comments on orphaned articles (no space), only admins can hard-delete
   def hard_delete?
-    user.present? && user.can_moderate?(record.space)
+    return false unless user.present?
+    return true if user.admin?
+
+    space = record.space
+    space.present? && user.can_moderate?(space)
   end
 
   # Logged-in users can vote on comments
