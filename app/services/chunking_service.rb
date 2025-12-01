@@ -113,18 +113,35 @@ class ChunkingService
 
     search_region = text[search_start...end_pos]
 
-    # Find all sentence endings in the search region
-    sentence_matches = search_region.enum_for(:scan, SENTENCE_ENDINGS).map { Regexp.last_match.begin(0) }
+    # Find the last sentence ending in the search region using reverse search
+    # This is more efficient than collecting all matches when we only need the last one
+    last_match_pos = find_last_sentence_ending(search_region)
 
-    if sentence_matches.any?
-      # Use the last sentence boundary found (closest to target)
-      # Since search_start is near end_pos (last 20% of chunk), any sentence
-      # found will be well past the midpoint, so we use it directly
-      return search_start + sentence_matches.last + 1
+    if last_match_pos
+      # Return position after the sentence ending (skip the whitespace)
+      return search_start + last_match_pos + 1
     end
 
     # Fall back to word boundary
     find_word_boundary(text, end_pos)
+  end
+
+  # Find the position of the last sentence ending in the text
+  # Returns the position after the punctuation (at the whitespace), or nil if not found
+  def find_last_sentence_ending(text)
+    # Search backwards through the text for sentence endings
+    # We look for punctuation followed by whitespace
+    pos = text.length - 1
+
+    while pos > 0
+      # Check if we're at whitespace preceded by sentence-ending punctuation
+      if text[pos] =~ /\s/ && pos > 0 && text[pos - 1] =~ /[.!?]/
+        return pos
+      end
+      pos -= 1
+    end
+
+    nil
   end
 
   def find_word_boundary(text, pos)

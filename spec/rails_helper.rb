@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
-require "spec_helper"
-
 # CRITICAL: Abort if trying to run specs without RAILS_ENV=test
 # The dev container sets RAILS_ENV=development by default, so we must
 # explicitly set RAILS_ENV=test when running specs, otherwise the
 # development database will be wiped by database_cleaner.
+#
+# This check MUST come before any other requires to prevent accidental
+# database destruction if tests run in the wrong environment.
 #
 # Use: RAILS_ENV=test bundle exec rspec
 # Or:  make test
@@ -26,6 +27,8 @@ if ENV["RAILS_ENV"] && ENV["RAILS_ENV"] != "test"
 end
 
 ENV["RAILS_ENV"] = "test"
+
+require "spec_helper"
 require_relative "../config/environment"
 abort("The Rails environment is running in production mode!") if Rails.env.production?
 require "rspec/rails"
