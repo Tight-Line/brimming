@@ -9,7 +9,7 @@
       <%= link_to "Questions", questions_path, class: request.path.start_with?("/questions") ? "active" : "" %>
       <%= link_to "Articles", articles_path, class: request.path.start_with?("/articles") ? "active" : "" %>
       <%= link_to "Spaces", spaces_path, class: request.path.start_with?("/spaces") ? "active" : "" %>
-      <%= link_to "Search", search_path, class: current_page?(search_path) ? "active" : "" %>
+      <%= link_to "Search", search_path, class: request.path.start_with?("/search") ? "active" : "" %>
       <% if current_user&.admin? %>
         <%= link_to "Admin", admin_root_path, class: request.path.start_with?("/admin") ? "active" : "" %>
       <% end %>
