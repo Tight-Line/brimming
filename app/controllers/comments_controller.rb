@@ -75,6 +75,8 @@ class CommentsController < ApplicationController
   def set_commentable
     if params[:answer_id].present?
       @commentable = Answer.find(params[:answer_id])
+    elsif params[:article_id].present?
+      @commentable = Article.find_by!(slug: params[:article_id])
     elsif params[:comment_id].present?
       # For replies to comments
       parent = Comment.find(params[:comment_id])
@@ -90,18 +92,19 @@ class CommentsController < ApplicationController
   end
 
   def redirect_path_for_comment
-    question = @commentable.is_a?(Question) ? @commentable : @commentable.question
-    question_path(question, anchor: "comment-#{@comment.id}")
+    redirect_path_for_commentable(@commentable, @comment)
   end
 
   def redirect_path_for_existing_comment
-    commentable = @comment.commentable
-    question = commentable.is_a?(Question) ? commentable : commentable.question
-    question_path(question, anchor: "comment-#{@comment.id}")
+    redirect_path_for_commentable(@comment.commentable, @comment)
   end
 
   def redirect_path_for_hard_delete
     commentable = @comment.commentable
+    if commentable.is_a?(Article)
+      return article_path(commentable)
+    end
+
     question = commentable.is_a?(Question) ? commentable : commentable.question
     # For hard delete, redirect to parent comment if it's a reply, or to the commentable
     if @comment.parent_comment
@@ -110,6 +113,19 @@ class CommentsController < ApplicationController
       question_path(question, anchor: "answer-#{commentable.id}")
     else
       question_path(question)
+    end
+  end
+
+  def redirect_path_for_commentable(commentable, comment)
+    case commentable
+    when Article
+      article_path(commentable, anchor: "comment-#{comment.id}")
+    when Question
+      question_path(commentable, anchor: "comment-#{comment.id}")
+    when Answer
+      question_path(commentable.question, anchor: "comment-#{comment.id}")
+    else
+      raise "Unknown commentable type: #{commentable.class.name}"
     end
   end
 

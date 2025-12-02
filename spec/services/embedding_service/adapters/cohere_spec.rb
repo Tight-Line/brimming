@@ -193,6 +193,9 @@ RSpec.describe EmbeddingService::Adapters::Cohere do
     end
 
     before do
+      # Stub the endpoint reachability check
+      stub_request(:head, "https://custom.cohere.com/v1")
+        .to_return(status: 200)
       stub_request(:post, "https://custom.cohere.com/v1/embed")
         .to_return(status: 200, body: mock_response)
     end

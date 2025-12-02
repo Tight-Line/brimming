@@ -256,6 +256,12 @@ RSpec.describe Comment do
       comment = create(:comment, commentable: answer)
       expect(comment.commentable).to eq(answer)
     end
+
+    it "can belong to an article" do
+      article = create(:article)
+      comment = create(:comment, commentable: article)
+      expect(comment.commentable).to eq(article)
+    end
   end
 
   describe "#space" do
@@ -273,6 +279,26 @@ RSpec.describe Comment do
       comment = create(:comment, commentable: answer)
       expect(comment.space).to eq(space)
     end
+
+    it "returns the first space for a comment on an article with spaces" do
+      space = create(:space)
+      article = create(:article)
+      create(:article_space, article: article, space: space)
+      comment = create(:comment, commentable: article)
+      expect(comment.space).to eq(space)
+    end
+
+    it "returns nil for a comment on an orphaned article" do
+      article = create(:article)
+      comment = create(:comment, commentable: article)
+      expect(comment.space).to be_nil
+    end
+
+    it "raises error for unknown commentable type" do
+      comment = create(:comment)
+      comment.commentable_type = "Unknown"
+      expect { comment.space }.to raise_error(RuntimeError, /Unknown commentable_type/)
+    end
   end
 
   describe "#root_question" do
@@ -288,6 +314,12 @@ RSpec.describe Comment do
       comment = create(:comment, commentable: answer)
       expect(comment.root_question).to eq(question)
     end
+
+    it "returns nil for a comment on an article" do
+      article = create(:article)
+      comment = create(:comment, commentable: article)
+      expect(comment.root_question).to be_nil
+    end
   end
 
   describe "#root_question_id" do
@@ -302,6 +334,32 @@ RSpec.describe Comment do
       answer = create(:answer, question: question)
       comment = create(:comment, commentable: answer)
       expect(comment.root_question_id).to eq(question.id)
+    end
+
+    it "returns nil for a comment on an article" do
+      article = create(:article)
+      comment = create(:comment, commentable: article)
+      expect(comment.root_question_id).to be_nil
+    end
+  end
+
+  describe "#article" do
+    it "returns the article for a comment on an article" do
+      article = create(:article)
+      comment = create(:comment, commentable: article)
+      expect(comment.article).to eq(article)
+    end
+
+    it "returns nil for a comment on a question" do
+      question = create(:question)
+      comment = create(:comment, commentable: question)
+      expect(comment.article).to be_nil
+    end
+
+    it "returns nil for a comment on an answer" do
+      answer = create(:answer)
+      comment = create(:comment, commentable: answer)
+      expect(comment.article).to be_nil
     end
   end
 end

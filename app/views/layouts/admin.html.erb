@@ -20,28 +20,7 @@
   </head>
 
   <body class="admin-body">
-    <header class="site-header">
-      <div class="container">
-        <%= link_to root_path, class: "site-logo" do %>
-          <img src="/icon.svg" alt="Brimming">
-          Brimming
-        <% end %>
-
-        <nav class="site-nav">
-          <%= link_to "Questions", questions_path %>
-          <%= link_to "Spaces", spaces_path %>
-          <%= link_to "Search", search_path %>
-          <%= link_to "Admin", admin_root_path, class: "active" %>
-        </nav>
-
-        <div class="user-menu">
-          <span class="user-greeting">
-            <%= render 'shared/user_badge', user: current_user %>
-          </span>
-          <%= button_to "Log out", destroy_user_session_path, method: :delete, class: "btn-logout" %>
-        </div>
-      </div>
-    </header>
+    <%= render "shared/site_header" %>
 
     <div class="admin-layout">
       <aside class="admin-sidebar">
@@ -56,6 +35,12 @@
           <%= link_to admin_ldap_servers_path, class: "admin-nav-item #{'active' if request.path.start_with?('/admin/ldap')}" do %>
             <span class="admin-nav-icon">&#9656;</span>
             LDAP Servers
+          <% end %>
+
+          <h4>Content</h4>
+          <%= link_to articles_path, class: "admin-nav-item #{'active' if request.path.start_with?('/articles')}" do %>
+            <span class="admin-nav-icon">&#9656;</span>
+            Articles
           <% end %>
 
           <h4>AI & Search</h4>

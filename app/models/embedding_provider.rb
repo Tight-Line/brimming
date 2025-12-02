@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "net/http"
+
 class EmbeddingProvider < ApplicationRecord
   PROVIDER_TYPES = %w[openai cohere ollama azure_openai bedrock huggingface].freeze
 
@@ -120,6 +122,11 @@ class EmbeddingProvider < ApplicationRecord
   # Average characters per token (conservative estimate)
   CHARS_PER_TOKEN = 3
 
+  # Default chunking configuration
+  # Chunk size is in tokens, overlap is a percentage of chunk size
+  DEFAULT_CHUNK_SIZE = 512     # tokens
+  DEFAULT_CHUNK_OVERLAP = 10   # percent
+
   # Default API endpoints for providers that require them
   DEFAULT_ENDPOINTS = {
     "ollama" => "http://localhost:11434",
@@ -133,11 +140,50 @@ class EmbeddingProvider < ApplicationRecord
   validates :embedding_model, presence: true
   validates :dimensions, presence: true, numericality: { greater_than: 0, less_than_or_equal_to: 4096 }
   validate :api_endpoint_required_for_provider
+  validate :api_endpoint_reachable, if: :should_validate_endpoint_reachability?
 
   def api_endpoint_required_for_provider
     if requires_api_endpoint? && api_endpoint.blank?
       errors.add(:api_endpoint, "is required for #{display_provider_type}")
     end
+  end
+
+  def api_endpoint_reachable
+    # This validation is only called when should_validate_endpoint_reachability? is true,
+    # which already checks api_endpoint.present?, so no guard needed here.
+    uri = URI.parse(api_endpoint)
+    unless uri.host.present?
+      errors.add(:api_endpoint, "is not a valid URL")
+      return
+    end
+
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = (uri.scheme == "https")
+    http.open_timeout = 5
+    http.read_timeout = 5
+
+    # Make a HEAD request to check connectivity - WebMock can intercept this
+    http.request(Net::HTTP::Head.new(uri.path.presence || "/"))
+  rescue URI::InvalidURIError
+    errors.add(:api_endpoint, "is not a valid URL")
+  rescue Errno::ECONNREFUSED
+    errors.add(:api_endpoint, "connection refused - is the service running?")
+  rescue Errno::EHOSTUNREACH
+    errors.add(:api_endpoint, "host is unreachable")
+  rescue Errno::ENETUNREACH
+    errors.add(:api_endpoint, "network is unreachable")
+  rescue SocketError => e
+    errors.add(:api_endpoint, "could not resolve host: #{e.message}")
+  rescue Net::OpenTimeout, Timeout::Error
+    errors.add(:api_endpoint, "connection timed out")
+  rescue OpenSSL::SSL::SSLError => e
+    errors.add(:api_endpoint, "SSL error: #{e.message}")
+  rescue StandardError => e
+    errors.add(:api_endpoint, "could not connect: #{e.message}")
+  end
+
+  private def should_validate_endpoint_reachability?
+    api_endpoint.present? && api_endpoint_changed?
   end
 
   before_validation :set_dimensions_from_model
@@ -179,6 +225,37 @@ class EmbeddingProvider < ApplicationRecord
 
   def similarity_threshold=(value)
     self.settings = settings.merge("similarity_threshold" => value.to_f)
+  end
+
+  # Chunk size in tokens for breaking up content
+  # Stored in settings jsonb column, falls back to default
+  def chunk_size
+    settings["chunk_size"]&.to_i || DEFAULT_CHUNK_SIZE
+  end
+
+  def chunk_size=(value)
+    self.settings = settings.merge("chunk_size" => value.to_i)
+  end
+
+  # Chunk overlap as a percentage (0-50)
+  # Stored in settings jsonb column, falls back to default
+  def chunk_overlap
+    settings["chunk_overlap"]&.to_i || DEFAULT_CHUNK_OVERLAP
+  end
+
+  def chunk_overlap=(value)
+    val = value.to_i.clamp(0, 50)
+    self.settings = settings.merge("chunk_overlap" => val)
+  end
+
+  # Calculate overlap in tokens based on chunk_size and chunk_overlap percentage
+  def chunk_overlap_tokens
+    (chunk_size * chunk_overlap / 100.0).round
+  end
+
+  # Calculate chunk size in characters (approximate)
+  def chunk_size_chars
+    chunk_size * CHARS_PER_TOKEN
   end
 
   def default_similarity_threshold
@@ -242,5 +319,6 @@ class EmbeddingProvider < ApplicationRecord
     return if EmbeddingProvider.count > 1
 
     update_column(:enabled, true)
+    RegenerateAllEmbeddingsJob.perform_later(id)
   end
 end

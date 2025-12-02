@@ -1,0 +1,106 @@
+<% content_for(:title) { "#{@article.title} - Brimming" } %>
+
+<article class="article-detail">
+  <div class="article-content-wrapper">
+    <%= render 'votes/article_vote_button', article: @article %>
+
+    <div class="article-content card">
+      <div class="article-header">
+        <div class="article-title-row">
+          <h1 class="article-title"><%= @article.title %></h1>
+          <span class="content-type-badge"><%= @article.display_content_type %></span>
+          <% if @article.original_file.attached? %>
+            <%= link_to "Download", rails_blob_path(@article.original_file, disposition: "attachment"), class: "btn btn-small btn-secondary" %>
+          <% end %>
+        </div>
+
+        <div class="article-meta">
+          <span>By <%= render 'shared/user_badge', user: @article.user %></span>
+          <span class="meta-separator">·</span>
+          <span><%= time_ago_in_words(@article.created_at) %> ago</span>
+          <% if @article.edited_at %>
+            <span class="meta-separator">·</span>
+            <span>edited <%= time_ago_in_words(@article.edited_at) %> ago<% if @article.last_editor %> by <%= @article.last_editor.display_name %><% end %></span>
+          <% end %>
+          <% if @article.spaces.any? %>
+            <span class="meta-separator">·</span>
+            <span>in
+              <% @article.spaces.each_with_index do |space, i| %>
+                <%= link_to space.name, space_path(space), class: "space-link" %><%= ", " unless i == @article.spaces.size - 1 %>
+              <% end %>
+            </span>
+          <% else %>
+            <span class="meta-separator">·</span>
+            <span class="orphaned-badge">Orphaned</span>
+          <% end %>
+          <% if @article.views_count > 0 %>
+            <span class="meta-separator">·</span>
+            <span><%= @article.views_count %> <%= "view".pluralize(@article.views_count) %></span>
+          <% end %>
+        </div>
+
+        <% if user_signed_in? && (policy(@article).update? || policy(@article).destroy?) %>
+          <div class="article-actions">
+            <% if policy(@article).update? %>
+              <%= link_to "Edit", edit_article_path(@article), class: "btn btn-small btn-secondary" %>
+            <% end %>
+            <% if policy(@article).destroy? %>
+              <%= button_to "Delete", article_path(@article), method: :delete,
+                  class: "btn btn-small btn-danger",
+                  form: { data: { turbo: false }, onsubmit: "return confirm('Are you sure you want to delete this article?')" } %>
+            <% end %>
+            <% if policy(@article).hard_delete? %>
+              <%= button_to "Permanently Delete", hard_delete_article_path(@article), method: :delete,
+                  class: "btn btn-small btn-danger",
+                  form: { data: { turbo: false }, onsubmit: "return confirm('Are you sure you want to PERMANENTLY delete this article? This cannot be undone.')" } %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="article-body markdown-body">
+    <% if @article.text_content? %>
+      <%= markdown(@article.body) %>
+    <% elsif @article.original_file.attached? %>
+      <% case @article.content_type %>
+      <% when "pdf" %>
+        <div class="pdf-viewer">
+          <iframe src="<%= rails_blob_path(@article.original_file, disposition: "inline") %>"
+                  class="pdf-embed"
+                  title="<%= @article.title %>"></iframe>
+        </div>
+        <div class="file-download">
+          <%= link_to "Download PDF", rails_blob_path(@article.original_file, disposition: "attachment"), class: "btn btn-secondary" %>
+        </div>
+      <% when "html" %>
+        <div class="html-viewer">
+          <iframe srcdoc="<%= @article.original_file.download.force_encoding('UTF-8') %>"
+                  class="html-embed"
+                  sandbox="allow-same-origin"
+                  title="<%= @article.title %>"></iframe>
+        </div>
+        <div class="file-download">
+          <%= link_to "Download HTML", rails_blob_path(@article.original_file, disposition: "attachment"), class: "btn btn-secondary" %>
+        </div>
+      <% else %>
+        <%# Word docs and Excel - download only %>
+        <div class="binary-file-notice">
+          <div class="file-icon">
+            <% if @article.content_type == "docx" %>📄<% elsif @article.content_type == "xlsx" %>📊<% else %>📁<% end %>
+          </div>
+          <p><strong><%= @article.original_file.filename %></strong></p>
+          <p class="file-size"><%= number_to_human_size(@article.original_file.byte_size) %></p>
+          <%= link_to "Download #{@article.display_content_type}", rails_blob_path(@article.original_file, disposition: "attachment"), class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="empty-state">
+        <p>No content available.</p>
+      </div>
+    <% end %>
+      </div>
+
+      <%= render 'comments/comments_section', comments: @article_comments, commentable: @article %>
+    </div>
+  </div>
+</article>

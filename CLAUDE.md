@@ -329,24 +329,36 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 ### ~~Phase 9: SSO - Social Providers~~ `[skipped]`
 *Moved to Phase 18 - lower priority than other features.*
 
-### Phase 12: Articles `[ ]`
-- **Article model** (title, body, user_id, space_id, slug, published_at, vote_score, views_count, edited_at)
-- Articles belong to Spaces and are posted by Users (moderators/admins only, or configurable per-space)
+### Phase 12: Articles `[x]`
+- **Article model** (title, body, user_id, slug, vote_score, views_count, edited_at, context) `[x]`
+- **ArticleSpace join model** - Articles can belong to multiple Spaces `[x]`
+- **ArticleVote model** - Upvote-only voting (no downvotes on articles) `[x]`
+- Articles posted by publishers/moderators/admins (configurable per-space via SpacePublisher) `[x]`
 - **Key differences from Questions:**
-  - No answers - articles are one-way content
-  - Comments allowed (same nested comment system as Questions)
-  - Voting allowed (same as Questions)
+  - No answers - articles are one-way content `[x]`
+  - Comments allowed (same nested comment system as Questions) `[x]`
+  - Upvoting only (no downvotes) `[x]`
+  - Views tracking `[x]`
+  - Support for file uploads: PDF, DOCX, XLSX with content extraction `[x]`
   - Typically longer-form, authoritative content
+- **Content types supported:**
+  - Markdown (text body, rendered with markdown helper) `[x]`
+  - HTML (text body or uploaded .html file) `[x]`
+  - PDF (uploaded, displayed inline with iframe) `[x]`
+  - Word Document (uploaded .docx, download only) `[x]`
+  - Excel Spreadsheet (uploaded .xlsx, download only) `[x]`
+  - Plain Text (text body) `[x]`
+- **Content extraction service** for indexing binary files `[x]`
 - **Search integration:**
-  - Included in hybrid search results alongside Questions
-  - Own `search_vector` tsvector column (weighted: A=title, B=body)
-  - Own `embedding` column for semantic search
-  - Search results distinguish between Questions and Articles in UI
+  - Included in hybrid search results alongside Questions `[x]`
+  - Chunked for better retrieval precision `[x]`
+  - Embedded using configured embedding provider `[x]`
 - **RAG integration:**
-  - Articles included in embedding generation and retrieval
+  - Articles included in embedding generation and retrieval `[x]`
   - Useful as authoritative source material for AI-generated answers
-- **Article CRUD** with publishing workflow (draft/published states)
-- **ArticlePolicy** for authorization (who can create/edit/publish)
+- **Article CRUD** `[x]`
+- **ArticlePolicy** for authorization (publishers/moderators/admins can create/edit) `[x]`
+- **Skipped:** Draft/published workflow (not implemented)
 
 ### Phase 13: Bookmarks `[ ]`
 - **Bookmark model** (user_id, bookmarkable_type, bookmarkable_id, created_at, notes)
@@ -360,25 +372,27 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - **Turbo Stream updates** for instant bookmark/unbookmark feedback
 - **BookmarkPolicy** - users can only manage their own bookmarks
 
-### Phase 14: Chunking & RAG Queries `[ ]`
+### Phase 14: Chunking & RAG Queries `[~]`
 - **Content chunking** for long-form content (Articles, long Questions/Answers)
-  - Break content into overlapping chunks for better retrieval precision
-  - Chunk model (chunkable_type, chunkable_id, chunk_index, content, embedding)
-  - Configurable chunk size and overlap
+  - Break content into overlapping chunks for better retrieval precision `[x]`
+  - Chunk model (chunkable_type, chunkable_id, chunk_index, content, embedding) `[x]`
+  - Configurable chunk size and overlap (via EmbeddingProvider) `[x]`
+  - ChunkingService with sentence-boundary-aware splitting `[x]`
 - **Improved embedding strategy:**
-  - Embed chunks instead of (or in addition to) full documents
-  - Store chunk embeddings in pgvector
-  - Retrieval returns relevant chunks with source context
+  - Embed chunks instead of (or in addition to) full documents `[x]`
+  - Store chunk embeddings in pgvector `[x]`
+  - Retrieval returns relevant chunks with source context `[x]`
+  - ChunkVectorQueryService for semantic chunk search `[x]`
 - **RAG query pipeline:**
-  - Query → embedding → chunk retrieval → context assembly → response
-  - Configurable number of chunks to retrieve
-  - Re-ranking options (cross-encoder, reciprocal rank fusion)
+  - Query → embedding → chunk retrieval → context assembly → response `[ ]`
+  - Configurable number of chunks to retrieve `[ ]`
+  - Re-ranking options (cross-encoder, reciprocal rank fusion) `[ ]`
 - **Citation support:**
-  - Track which chunks contributed to a response
-  - Link citations back to source content (Article, Question, Answer)
+  - Track which chunks contributed to a response `[ ]`
+  - Link citations back to source content (Article, Question, Answer) `[ ]`
 - **Admin configuration:**
-  - Chunk size, overlap, max chunks per query
-  - Re-indexing tools for chunk regeneration
+  - Chunk size, overlap, max chunks per query (partially via EmbeddingProvider) `[~]`
+  - Re-indexing tools for chunk regeneration `[ ]`
 
 ### Phase 15: Q&A Wizard `[ ]`
 - **Admin/moderator tool to populate spaces with pre-approved FAQ content**

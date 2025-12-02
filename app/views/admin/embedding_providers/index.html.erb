@@ -47,15 +47,22 @@
             <td>
               <% if provider.enabled? %>
                 <% total_questions = Question.not_deleted.count %>
-                <% embedded_count = Question.where(embedding_provider_id: provider.id).where.not(embedding: nil).count %>
+                <% embedded_questions = Question.not_deleted.joins(:chunks).where(chunks: { embedding_provider_id: provider.id }).distinct.count %>
+                <% total_articles = Article.active.count %>
+                <% embedded_articles = Article.active.joins(:chunks).where(chunks: { embedding_provider_id: provider.id }).distinct.count %>
                 <div class="provider-status">
                   <span class="badge badge-success">Active</span>
-                  <% if embedded_count < total_questions %>
-                    <span class="embedding-progress"><%= embedded_count %>/<%= total_questions %></span>
+                  <% if embedded_questions < total_questions || embedded_articles < total_articles %>
+                    <span class="embedding-progress">
+                      Q: <%= embedded_questions %>/<%= total_questions %>
+                      <% if total_articles > 0 %>
+                        · A: <%= embedded_articles %>/<%= total_articles %>
+                      <% end %>
+                    </span>
                   <% end %>
                 </div>
               <% else %>
-                <% existing_embeddings = Question.where.not(embedding: nil).count %>
+                <% existing_embeddings = Question.where.not(embedded_at: nil).count + Chunk.count %>
                 <% if existing_embeddings > 0 %>
                   <%= button_to "Activate",
                                 activate_admin_embedding_provider_path(provider),

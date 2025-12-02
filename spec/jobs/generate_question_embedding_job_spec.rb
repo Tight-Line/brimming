@@ -23,51 +23,52 @@ RSpec.describe GenerateQuestionEmbeddingJob do
   end
 
   describe "#perform" do
-    it "generates and saves an embedding for the question" do
-      expect(question.embedding).to be_nil
+    it "generates chunks and updates embedded_at for the question" do
+      expect(question.chunks).to be_empty
       expect(question.embedded_at).to be_nil
-      expect(question.embedding_provider_id).to be_nil
 
       described_class.new.perform(question)
 
       question.reload
-      expect(question.embedding).to be_present
+      expect(question.chunks).to be_present
       expect(question.embedded_at).to be_present
-      expect(question.embedding_provider_id).to eq(provider.id)
     end
 
-    it "skips if question already has an embedding from the current provider" do
-      question.update_columns(
-        embedding: mock_embedding,
-        embedded_at: 1.hour.ago,
-        embedding_provider_id: provider.id
-      )
-
-      expect(EmbeddingService).not_to receive(:client)
-
-      described_class.new.perform(question)
-    end
-
-    it "re-embeds if question has embedding from a different provider" do
-      other_provider = create(:embedding_provider, :cohere)
-      question.update_columns(
-        embedding: mock_embedding,
-        embedded_at: 1.hour.ago,
-        embedding_provider_id: other_provider.id
-      )
+    it "creates chunks with embeddings for the question" do
+      expect(question.chunks).to be_empty
 
       described_class.new.perform(question)
 
       question.reload
-      expect(question.embedding_provider_id).to eq(provider.id)
+      expect(question.chunks).to be_present
+      expect(question.chunks.first.embedding).to be_present
+      expect(question.chunks.first.embedding_provider).to eq(provider)
+    end
+
+    it "skips if question already has chunks from the current provider" do
+      # Create existing chunks
+      create(:chunk, :embedded, chunkable: question, embedding_provider: provider)
+
+      expect(QuestionEmbeddingService).not_to receive(:embed)
+
+      described_class.new.perform(question)
+    end
+
+    it "re-embeds if question has chunks from a different provider" do
+      other_provider = create(:embedding_provider, :cohere)
+      create(:chunk, :embedded, chunkable: question, embedding_provider: other_provider)
+
+      described_class.new.perform(question)
+
+      question.reload
+      # Should have new chunks from current provider (old ones deleted)
+      expect(question.chunks.first.embedding_provider).to eq(provider)
     end
 
     it "regenerates embedding when force is true" do
-      question.update_columns(
-        embedding: mock_embedding,
-        embedded_at: 1.hour.ago,
-        embedding_provider_id: provider.id
-      )
+      # Create existing chunks
+      create(:chunk, :embedded, chunkable: question, embedding_provider: provider)
+      question.update!(embedded_at: 1.hour.ago)
       old_embedded_at = question.embedded_at
 
       described_class.new.perform(question, force: true)
@@ -79,7 +80,7 @@ RSpec.describe GenerateQuestionEmbeddingJob do
     it "skips deleted questions" do
       question.update!(deleted_at: Time.current)
 
-      expect(EmbeddingService).not_to receive(:client)
+      expect(QuestionEmbeddingService).not_to receive(:embed)
 
       described_class.new.perform(question)
     end
@@ -91,7 +92,21 @@ RSpec.describe GenerateQuestionEmbeddingJob do
 
       it "skips without error" do
         expect { described_class.new.perform(question) }.not_to raise_error
-        expect(question.reload.embedding).to be_nil
+        expect(question.reload.chunks).to be_empty
+      end
+    end
+
+    context "when embedding service returns error" do
+      before do
+        allow(QuestionEmbeddingService).to receive(:embed).and_return(
+          { success: false, error: "Test error" }
+        )
+      end
+
+      it "logs the error" do
+        expect(Rails.logger).to receive(:error).with(/Failed to embed.*Test error/)
+
+        described_class.new.perform(question)
       end
     end
 
@@ -101,10 +116,12 @@ RSpec.describe GenerateQuestionEmbeddingJob do
           .to_return(status: 500, body: "Internal Server Error")
       end
 
-      it "raises ApiError for retry" do
-        expect {
-          described_class.new.perform(question)
-        }.to raise_error(EmbeddingService::Adapters::Base::ApiError)
+      it "logs error message from service" do
+        expect(Rails.logger).to receive(:error).with(/Failed to embed.*server error/i)
+
+        described_class.new.perform(question)
+
+        expect(question.reload.chunks).to be_empty
       end
     end
 
@@ -115,11 +132,11 @@ RSpec.describe GenerateQuestionEmbeddingJob do
       end
 
       it "logs error and does not retry" do
-        expect(Rails.logger).to receive(:error).with(/Configuration error/)
+        expect(Rails.logger).to receive(:error).with(/Failed to embed.*Invalid.*API key/i)
 
         described_class.new.perform(question)
 
-        expect(question.reload.embedding).to be_nil
+        expect(question.reload.chunks).to be_empty
       end
     end
   end

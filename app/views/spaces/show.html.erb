@@ -3,13 +3,16 @@
 <div class="space-header">
   <div class="space-title-row">
     <h1><%= @space.name %></h1>
-    <% if policy(@space).update? || policy(@space).manage_moderators? %>
+    <% if policy(@space).update? || policy(@space).manage_moderators? || policy(@space).manage_publishers? %>
       <div class="admin-actions">
         <% if policy(@space).update? %>
           <%= link_to "Edit", edit_space_path(@space), class: "btn btn-small btn-secondary" %>
         <% end %>
         <% if policy(@space).manage_moderators? %>
           <%= link_to "Moderators", moderators_space_path(@space), class: "btn btn-small btn-secondary" %>
+        <% end %>
+        <% if policy(@space).manage_publishers? %>
+          <%= link_to "Publishers", publishers_space_path(@space), class: "btn btn-small btn-secondary" %>
         <% end %>
         <% if policy(@space).destroy? %>
           <%= button_to "Delete", space_path(@space), method: :delete,
@@ -27,31 +30,69 @@
   <% end %>
 </div>
 
-<div class="card">
-  <div class="card-header">
-    <h2>Questions (<%= @questions.count %>)</h2>
-  </div>
+<% has_articles = @articles.any? %>
+<% has_questions = @questions.any? %>
+<% show_side_by_side = has_articles && has_questions %>
 
-  <% if @questions.any? %>
-    <ul class="question-list">
-      <% @questions.each do |question| %>
-        <li class="question-item">
-          <div class="question-title">
-            <%= link_to question.title, question_path(question) %>
+<div class="space-content-grid<%= ' side-by-side' if show_side_by_side %>">
+  <% if has_articles %>
+  <div class="card">
+    <div class="card-header">
+      <h2>Articles (<%= @articles.size %>)</h2>
+    </div>
+
+    <ul class="article-list">
+      <% @articles.limit(10).each do |article| %>
+        <li class="article-item">
+          <div class="article-title">
+            <%= link_to article.title, article_path(article) %>
           </div>
-          <div class="question-meta">
-            <span>by <%= render 'shared/user_badge', user: question.author %></span>
-            <span><%= question.answers_count %> answers</span>
-            <% if question.has_correct_answer? %>
-              <span class="badge badge-success">Solved</span>
-            <% end %>
+          <div class="article-meta">
+            <span>by <%= render 'shared/user_badge', user: article.user %></span>
+            <span><%= time_ago_in_words(article.created_at) %> ago</span>
           </div>
         </li>
       <% end %>
     </ul>
-  <% else %>
-    <div class="empty-state">
-      <p>No questions in this space yet.</p>
-    </div>
+    <% if @articles.size > 10 %>
+      <div class="card-footer">
+        <%= link_to "View all #{@articles.size} articles", articles_path(space: @space.slug), class: "btn btn-small btn-secondary" %>
+      </div>
+    <% end %>
+  </div>
   <% end %>
+
+  <div class="card">
+    <div class="card-header">
+      <h2>Questions (<%= @questions.size %>)</h2>
+    </div>
+
+    <% if has_questions %>
+      <ul class="question-list">
+        <% @questions.limit(10).each do |question| %>
+          <li class="question-item">
+            <div class="question-title">
+              <%= link_to question.title, question_path(question) %>
+            </div>
+            <div class="question-meta">
+              <span>by <%= render 'shared/user_badge', user: question.author %></span>
+              <span><%= question.answers_count %> answers</span>
+              <% if question.has_correct_answer? %>
+                <span class="badge badge-success">Solved</span>
+              <% end %>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+      <% if @questions.size > 10 %>
+        <div class="card-footer">
+          <%= link_to "View all #{@questions.size} questions", questions_path(space: @space.slug), class: "btn btn-small btn-secondary" %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="empty-state">
+        <p>No questions in this space yet.</p>
+      </div>
+    <% end %>
+  </div>
 </div>

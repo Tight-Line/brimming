@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
 class Question < ApplicationRecord
-  # Vector embedding for semantic search (via neighbor gem)
-  has_neighbors :embedding
-
   # Constants
   MAX_TAGS = 5
 
@@ -11,12 +8,12 @@ class Question < ApplicationRecord
   belongs_to :user
   belongs_to :space
   belongs_to :last_editor, class_name: "User", optional: true
-  belongs_to :embedding_provider, optional: true
   has_many :answers, dependent: :destroy
   has_many :comments, as: :commentable, dependent: :destroy
   has_many :question_votes, dependent: :destroy
   has_many :question_tags, dependent: :destroy
   has_many :tags, through: :question_tags
+  has_many :chunks, as: :chunkable, dependent: :destroy
 
   # Validations
   validates :title, presence: true, length: { minimum: 10, maximum: 200 }
@@ -149,10 +146,10 @@ class Question < ApplicationRecord
   def embedding_generation_needed?
     return false unless EmbeddingService.available?
 
-    # Generate embedding if:
-    # - No embedding yet, OR
+    # Generate chunks/embeddings if:
+    # - No chunks yet, OR
     # - Title or body changed since last embedding
-    embedding.nil? || (embedded_at.present? && (saved_change_to_title? || saved_change_to_body?))
+    chunks.empty? || (embedded_at.present? && (saved_change_to_title? || saved_change_to_body?))
   end
 
   # TODO: i18n

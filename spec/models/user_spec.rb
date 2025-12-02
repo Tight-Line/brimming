@@ -32,6 +32,9 @@ RSpec.describe User do
     it { is_expected.to have_many(:subscribed_spaces).through(:space_subscriptions).source(:space) }
     it { is_expected.to have_many(:space_moderators).dependent(:destroy) }
     it { is_expected.to have_many(:moderated_spaces).through(:space_moderators).source(:space) }
+    it { is_expected.to have_many(:space_publishers).dependent(:destroy) }
+    it { is_expected.to have_many(:published_spaces).through(:space_publishers).source(:space) }
+    it { is_expected.to have_many(:articles).dependent(:destroy) }
   end
 
   describe "enums" do
@@ -183,6 +186,44 @@ RSpec.describe User do
 
     it "returns false for regular users" do
       expect(user.can_moderate?(space)).to be false
+    end
+  end
+
+  describe "#publisher?" do
+    it "returns true for users who publish in at least one space" do
+      user = create(:user)
+      space = create(:space)
+      create(:space_publisher, user: user, space: space)
+      expect(user.publisher?).to be true
+    end
+
+    it "returns false for users who publish in no spaces" do
+      user = create(:user)
+      expect(user.publisher?).to be false
+    end
+  end
+
+  describe "#can_publish?" do
+    let(:space) { create(:space) }
+    let(:user) { create(:user) }
+
+    it "returns true for admin users" do
+      admin = create(:user, :admin)
+      expect(admin.can_publish?(space)).to be true
+    end
+
+    it "returns true for space moderators" do
+      create(:space_moderator, space: space, user: user)
+      expect(user.can_publish?(space)).to be true
+    end
+
+    it "returns true for space publishers" do
+      create(:space_publisher, space: space, user: user)
+      expect(user.can_publish?(space)).to be true
+    end
+
+    it "returns false for regular users" do
+      expect(user.can_publish?(space)).to be false
     end
   end
 
@@ -460,6 +501,47 @@ RSpec.describe User do
       create(:user, username: "popular_1")
       create(:user, username: "popular_2")
       expect(User.generate_unique_username("popular")).to eq("popular_3")
+    end
+  end
+
+  describe "#publishable_spaces" do
+    let!(:space1) { create(:space) }
+    let!(:space2) { create(:space) }
+    let!(:space3) { create(:space) }
+
+    context "when user is admin" do
+      let(:admin) { create(:user, :admin) }
+
+      it "returns all spaces" do
+        result = admin.publishable_spaces
+        expect(result).to include(space1, space2, space3)
+      end
+    end
+
+    context "when user is moderator of spaces" do
+      let(:user) { create(:user) }
+
+      before do
+        space1.add_moderator(user)
+      end
+
+      it "returns moderated spaces" do
+        expect(user.publishable_spaces).to include(space1)
+        expect(user.publishable_spaces).not_to include(space2, space3)
+      end
+    end
+
+    context "when user is publisher in spaces" do
+      let(:user) { create(:user) }
+
+      before do
+        create(:space_publisher, user: user, space: space2)
+      end
+
+      it "returns published spaces" do
+        expect(user.publishable_spaces).to include(space2)
+        expect(user.publishable_spaces).not_to include(space1, space3)
+      end
     end
   end
 end

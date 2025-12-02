@@ -48,6 +48,19 @@
           <%= @stats[:spaces][:with_content] %> with content
         </div>
       </div>
+
+      <div class="stat-card">
+        <div class="stat-number"><%= @stats[:articles][:total] %></div>
+        <div class="stat-label">Articles</div>
+        <div class="stat-detail">
+          +<%= @stats[:articles][:this_week] %> this week,
+          <% if @stats[:articles][:orphaned] > 0 %>
+            <span class="warning-text"><%= @stats[:articles][:orphaned] %> orphaned</span>
+          <% else %>
+            0 orphaned
+          <% end %>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -96,7 +109,9 @@
           </div>
           <div class="health-details">
             <div>Coverage: <%= @system_health[:embeddings][:coverage] %>%</div>
-            <div><%= @system_health[:embeddings][:embedded] %> / <%= @system_health[:embeddings][:total] %> questions embedded</div>
+            <div>Questions: <%= @system_health[:embeddings][:questions_embedded] %> / <%= @system_health[:embeddings][:questions_total] %></div>
+            <div>Articles: <%= @system_health[:embeddings][:articles_embedded] %> / <%= @system_health[:embeddings][:articles_total] %></div>
+            <div>Chunks: <%= number_with_delimiter(@system_health[:embeddings][:chunks]) %></div>
           </div>
           <% if @system_health[:embeddings][:coverage] < 100 %>
             <div class="health-progress">
@@ -150,4 +165,38 @@
       </div>
     </div>
   </section>
+
+  <% if @orphaned_articles.any? %>
+    <section class="dashboard-orphaned">
+      <h2>Orphaned Articles <span class="badge badge-warning"><%= @stats[:articles][:orphaned] %></span></h2>
+      <p class="section-description">Articles that are not assigned to any space. Assign them to spaces or delete if no longer needed.</p>
+
+      <div class="orphaned-articles-list">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Author</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @orphaned_articles.each do |article| %>
+              <tr>
+                <td>
+                  <%= link_to truncate(article.title, length: 60), article_path(article) %>
+                </td>
+                <td><%= article.user&.display_name || "Unknown" %></td>
+                <td><%= time_ago_in_words(article.created_at) %> ago</td>
+                <td class="actions">
+                  <%= link_to "Edit", edit_article_path(article), class: "btn btn-small btn-primary" %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  <% end %>
 </div>

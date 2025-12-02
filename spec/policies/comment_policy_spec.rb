@@ -159,6 +159,62 @@ RSpec.describe CommentPolicy do
     end
   end
 
+  describe "comment on article with spaces" do
+    let(:article) { create(:article) }
+    let(:article_comment) { create(:comment, user: owner, commentable: article) }
+
+    before { create(:article_space, article: article, space: space) }
+
+    def article_policy(user)
+      described_class.new(user, article_comment)
+    end
+
+    describe "for space moderators" do
+      let(:moderator) { create(:user) }
+
+      before { space.add_moderator(moderator) }
+
+      it "allows hard_delete through the article's space" do
+        expect(article_policy(moderator).hard_delete?).to be true
+      end
+    end
+  end
+
+  describe "comment on orphaned article" do
+    let(:orphan_article) { create(:article) }
+    let(:orphan_comment) { create(:comment, user: owner, commentable: orphan_article) }
+
+    def orphan_policy(user)
+      described_class.new(user, orphan_comment)
+    end
+
+    describe "for regular users" do
+      let(:user) { create(:user) }
+
+      it "denies hard_delete (no space, not admin)" do
+        expect(orphan_policy(user).hard_delete?).to be false
+      end
+    end
+
+    describe "for moderator of unrelated space" do
+      let(:moderator) { create(:user) }
+
+      before { space.add_moderator(moderator) }
+
+      it "denies hard_delete (space is nil)" do
+        expect(orphan_policy(moderator).hard_delete?).to be false
+      end
+    end
+
+    describe "for admins" do
+      let(:admin) { create(:user, :admin) }
+
+      it "allows hard_delete" do
+        expect(orphan_policy(admin).hard_delete?).to be true
+      end
+    end
+  end
+
   describe "Scope" do
     let(:user) { create(:user) }
     let!(:visible_comment) { create(:comment, commentable: question) }

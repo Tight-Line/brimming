@@ -82,14 +82,42 @@ RSpec.describe Search::HybridQueryService do
     context "with valid query and embeddings available" do
       let!(:question1) do
         create(:question, space: space, user: user, title: "Ruby authentication best practices").tap do |q|
-          q.update_columns(embedding: mock_embedding, embedded_at: 1.hour.ago)
+          q.update_columns(embedded_at: 1.hour.ago)
+          create(:chunk, :embedded, chunkable: q, embedding_provider: provider)
         end
       end
 
       let!(:question2) do
         create(:question, space: space, user: user, title: "Rails security guide").tap do |q|
-          q.update_columns(embedding: mock_embedding, embedded_at: 1.hour.ago)
+          q.update_columns(embedded_at: 1.hour.ago)
+          create(:chunk, :embedded, chunkable: q, embedding_provider: provider)
         end
+      end
+
+      before do
+        # Mock ChunkVectorQueryService to return vector search results
+        mock_hits = [
+          Search::ChunkVectorQueryService::Hit.new(
+            id: question1.id,
+            score: 0.85,
+            type: "Question",
+            chunkable: question1,
+            best_chunk: nil
+          ),
+          Search::ChunkVectorQueryService::Hit.new(
+            id: question2.id,
+            score: 0.75,
+            type: "Question",
+            chunkable: question2,
+            best_chunk: nil
+          )
+        ]
+        mock_result = Search::ChunkVectorQueryService::Result.new(
+          hits: mock_hits,
+          total: 2,
+          similarity_threshold: 0.3
+        )
+        allow_any_instance_of(Search::ChunkVectorQueryService).to receive(:call).and_return(mock_result)
       end
 
       it "uses vector search mode when results found" do
@@ -114,6 +142,127 @@ RSpec.describe Search::HybridQueryService do
           expect(hit.source).to be_present
           expect(hit.source["question"]).to be_present
         end
+      end
+    end
+
+    context "with article vector search results" do
+      let!(:article) do
+        create(:article, user: user, title: "Ruby security article", body: "Content about security").tap do |a|
+          create(:chunk, :embedded, chunkable: a, embedding_provider: provider)
+          create(:article_space, article: a, space: space)
+        end
+      end
+
+      let!(:article_without_space) do
+        create(:article, user: user, title: "Orphaned article", body: "No space assigned")
+      end
+
+      before do
+        # Mock ChunkVectorQueryService to return article results
+        mock_hits = [
+          Search::ChunkVectorQueryService::Hit.new(
+            id: article.id,
+            score: 0.80,
+            type: "Article",
+            chunkable: article,
+            best_chunk: nil
+          )
+        ]
+        mock_result = Search::ChunkVectorQueryService::Result.new(
+          hits: mock_hits,
+          total: 1,
+          similarity_threshold: 0.3
+        )
+        allow_any_instance_of(Search::ChunkVectorQueryService).to receive(:call).and_return(mock_result)
+      end
+
+      it "includes article source data in vector results" do
+        result = described_class.new(q: "security").call
+
+        expect(result.search_mode).to eq(:vector)
+        expect(result.hits.first.source["type"]).to eq("article")
+        expect(result.hits.first.source["article"]["title"]).to eq("Ruby security article")
+        expect(result.hits.first.source["author"]["display_name"]).to eq(user.display_name)
+        expect(result.hits.first.source["space"]["name"]).to eq(space.name)
+        expect(result.hits.first.source["spaces"]).to be_an(Array)
+      end
+
+      it "handles articles without spaces" do
+        # Mock to return article without space
+        mock_hits = [
+          Search::ChunkVectorQueryService::Hit.new(
+            id: article_without_space.id,
+            score: 0.75,
+            type: "Article",
+            chunkable: article_without_space,
+            best_chunk: nil
+          )
+        ]
+        mock_result = Search::ChunkVectorQueryService::Result.new(
+          hits: mock_hits,
+          total: 1,
+          similarity_threshold: 0.3
+        )
+        allow_any_instance_of(Search::ChunkVectorQueryService).to receive(:call).and_return(mock_result)
+
+        result = described_class.new(q: "orphaned").call
+
+        expect(result.hits.first.source["type"]).to eq("article")
+        expect(result.hits.first.source["space"]).to be_nil
+        expect(result.hits.first.source["spaces"]).to eq([])
+      end
+
+      it "handles articles without user" do
+        # Create an article without a user (user was deleted)
+        article_no_user = create(:article, user: user, title: "No user article")
+        # Simulate user being nil (as if user was deleted but article still exists)
+        allow(article_no_user).to receive(:user).and_return(nil)
+
+        mock_hits = [
+          Search::ChunkVectorQueryService::Hit.new(
+            id: article_no_user.id,
+            score: 0.72,
+            type: "Article",
+            chunkable: article_no_user,
+            best_chunk: nil
+          )
+        ]
+        mock_result = Search::ChunkVectorQueryService::Result.new(
+          hits: mock_hits,
+          total: 1,
+          similarity_threshold: 0.3
+        )
+        allow_any_instance_of(Search::ChunkVectorQueryService).to receive(:call).and_return(mock_result)
+
+        result = described_class.new(q: "test").call
+
+        expect(result.hits.first.source["type"]).to eq("article")
+        expect(result.hits.first.source["author"]).to be_nil
+      end
+
+      it "handles unknown chunkable types gracefully" do
+        # Create a mock for an unknown type
+        unknown_chunkable = double("Unknown", class: double(name: "Unknown"), id: 999)
+        mock_hits = [
+          Search::ChunkVectorQueryService::Hit.new(
+            id: 999,
+            score: 0.70,
+            type: "Unknown",
+            chunkable: unknown_chunkable,
+            best_chunk: nil
+          )
+        ]
+        mock_result = Search::ChunkVectorQueryService::Result.new(
+          hits: mock_hits,
+          total: 1,
+          similarity_threshold: 0.3
+        )
+        allow_any_instance_of(Search::ChunkVectorQueryService).to receive(:call).and_return(mock_result)
+
+        result = described_class.new(q: "test").call
+
+        expect(result.hits.first.source["type"]).to eq("Unknown")
+        expect(result.hits.first.source["id"]).to eq(999)
       end
     end
 
@@ -261,12 +410,13 @@ RSpec.describe Search::HybridQueryService do
     context "when vector search fails" do
       let!(:question) do
         create(:question, space: space, title: "Test question for vector").tap do |q|
-          q.update_columns(embedding: mock_embedding, embedded_at: 1.hour.ago)
+          q.update_columns(embedded_at: 1.hour.ago)
+          create(:chunk, :embedded, chunkable: q, embedding_provider: provider)
         end
       end
 
       before do
-        allow_any_instance_of(Search::VectorQueryService).to receive(:call).and_raise(StandardError.new("Vector error"))
+        allow_any_instance_of(Search::ChunkVectorQueryService).to receive(:call).and_raise(StandardError.new("Vector error"))
       end
 
       it "falls back to keyword search" do

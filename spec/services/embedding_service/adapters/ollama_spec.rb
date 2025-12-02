@@ -3,6 +3,14 @@
 require "rails_helper"
 
 RSpec.describe EmbeddingService::Adapters::Ollama do
+  # Stub the endpoint reachability check for all Ollama tests
+  before do
+    stub_request(:head, "http://localhost:11434/")
+      .to_return(status: 200)
+    stub_request(:head, "http://custom:8080/")
+      .to_return(status: 200)
+  end
+
   let(:provider) do
     create(:embedding_provider, :ollama,
            embedding_model: "nomic-embed-text",
