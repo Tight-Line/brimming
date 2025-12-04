@@ -311,7 +311,7 @@ module Spaces
         Chunk.joins("INNER JOIN articles ON chunks.chunkable_type = 'Article' AND chunks.chunkable_id = articles.id")
              .joins("INNER JOIN article_spaces ON articles.id = article_spaces.article_id")
              .where(article_spaces: { space_id: @space.id })
-             .where("chunks.content ILIKE ?", "%#{query}%")
+             .where("chunks.content ILIKE ?", "%#{ActiveRecord::Base.sanitize_sql_like(query)}%")
              .limit(limit)
       end
     end
