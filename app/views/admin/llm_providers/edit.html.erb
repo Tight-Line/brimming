@@ -1,0 +1,9 @@
+<% content_for(:title) { "Edit #{@llm_provider.name} - Admin - Brimming" } %>
+
+<div class="admin-container">
+  <div class="page-header">
+    <h1>Edit <%= @llm_provider.name %></h1>
+  </div>
+
+  <%= render "form" %>
+</div>

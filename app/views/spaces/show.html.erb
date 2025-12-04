@@ -14,6 +14,9 @@
         <% if policy(@space).manage_publishers? %>
           <%= link_to "Publishers", publishers_space_path(@space), class: "btn btn-small btn-secondary" %>
         <% end %>
+        <% if current_user&.can_moderate?(@space) && LlmService.available? %>
+          <%= link_to "Q&A Wizard", space_qa_wizard_path(@space), class: "btn btn-small btn-primary" %>
+        <% end %>
         <% if policy(@space).destroy? %>
           <%= button_to "Delete", space_path(@space), method: :delete,
               class: "btn btn-small btn-danger",

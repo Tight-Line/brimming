@@ -394,34 +394,36 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
   - Chunk size, overlap, max chunks per query (partially via EmbeddingProvider) `[~]`
   - Re-indexing tools for chunk regeneration `[ ]`
 
-### Phase 15: Q&A Wizard `[ ]`
+### Phase 15: Q&A Wizard `[~]`
 - **Admin/moderator tool to populate spaces with pre-approved FAQ content**
 - **Use cases:**
   - Bootstrap new spaces with authoritative Q&A before users arrive
   - Get ahead of common questions before they're asked (possibly poorly) by users
   - Convert long-form documentation (Articles) into searchable, bite-sized Q&A
-- **Wizard workflow:**
+- **Wizard workflow:** `[x]`
   1. Admin/moderator selects a space and optionally source material (Articles, external docs)
   2. System uses AI to analyze content and suggest question/answer pairs
   3. Moderator reviews, edits, and approves suggested Q&A
   4. Approved Q&A posted as real questions with answers pre-marked as "Solved"
-- **Content sources:**
-  - Generate from Articles in the space (extract FAQs from documentation)
-  - Generate from uploaded documents (PDF, Markdown, text)
-  - Manual entry with AI-assisted answer generation
-  - Import from external FAQ sources
-- **AI integration:**
-  - Uses configured LLM provider to generate suggestions
-  - RAG-enhanced: pulls relevant context from existing space content
-  - Generates natural-sounding questions users might actually ask
-- **Metadata:**
-  - Questions/Answers marked as "AI-generated" or "Official FAQ"
-  - Track source material (which Article/document spawned this Q&A)
-  - Special styling/badge for official FAQ content in UI
-- **Batch operations:**
-  - Generate multiple Q&A pairs at once
-  - Bulk approve/reject suggestions
-  - Re-generate individual suggestions
+- **Content sources:** `[x]`
+  - Generate from Articles in the space (extract FAQs from documentation) `[x]`
+  - Generate from topic description (free-form text) `[x]`
+  - Generate from knowledge base (RAG-enhanced retrieval) `[x]`
+  - Generate from uploaded documents (PDF, Markdown, text) `[ ]`
+  - Import from external FAQ sources `[ ]`
+- **AI integration:** `[x]`
+  - Uses configured LLM provider to generate suggestions `[x]`
+  - RAG-enhanced: pulls relevant context from existing space content `[x]`
+  - Generates natural-sounding questions users might actually ask `[x]`
+- **Metadata:** `[~]`
+  - Questions/Answers posted by "Helpful Robot" system user `[x]`
+  - Human sponsor tracked via `sponsored_by` field `[x]`
+  - Track source material (which Article/document spawned this Q&A) `[ ]`
+  - Special styling/badge for official FAQ content in UI `[ ]`
+- **Batch operations:** `[ ]`
+  - Generate multiple Q&A pairs at once `[ ]`
+  - Bulk approve/reject suggestions `[ ]`
+  - Re-generate individual suggestions `[ ]`
 
 ### Phase 16: REST API & Swagger `[ ]`
 - API namespace with versioning (api/v1)
@@ -476,9 +478,9 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 
 ## Current Status
 
-**Completed Phases**: 1, 3, 4, 5, 6, 7, 8, 10
-**In Progress**: 11 (Background Workers & Email)
-**Not Started**: 12, 13, 14, 15, 16, 17, 18, 19
+**Completed Phases**: 1, 3, 4, 5, 6, 7, 8, 10, 12
+**In Progress**: 11 (Email), 14 (RAG pipeline), 15 (Q&A Wizard - core workflow complete, batch ops pending)
+**Not Started**: 13, 16, 17, 18, 19
 
 ### What's Working
 - Full data model with Users, Spaces, Questions, Answers, Comments, Votes
@@ -492,7 +494,7 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - "Solved" designation for moderator-approved answers
 - "Best" designation for highest-voted answers per question
 - Sign-in modal for unauthenticated users attempting protected actions
-- **Pundit authorization** for all resources (Questions, Answers, Comments, Spaces)
+- **Pundit authorization** for all resources (Questions, Answers, Comments, Spaces, Articles)
 - **Moderator management UI** with type-ahead user search (admins and space moderators)
 - **LDAP/ActiveDirectory SSO** with multiple server support
 - **LDAP group-to-space mapping** with auto-registration at login
@@ -500,16 +502,21 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - **Hybrid search** combining PostgreSQL full-text search + pgvector semantic search
 - **Vector-first, keyword-fallback** search strategy
 - **Automatic search vector updates** via PostgreSQL triggers
-- **Embedding generation** for questions (title + body + best answer) via configurable providers
+- **Embedding generation** for questions and articles via configurable providers
+- **Content chunking** for articles with automatic embedding generation
 - **Admin-configurable embedding providers** (OpenAI, Cohere, Ollama, etc.) with encrypted API keys
+- **Admin-configurable LLM providers** (OpenAI, Anthropic, Ollama, Azure OpenAI, Bedrock, Cohere) for AI features
 - **Sidekiq Web UI** at `/admin/sidekiq` (admin-only)
 - Tags for questions (per-space, up to 5 per question)
-- 100% test coverage
+- **Articles** with multiple content types (Markdown, HTML, PDF, DOCX, XLSX)
+- **Q&A Wizard** for moderators to generate FAQ content from articles, topics, or knowledge base
+- **"Helpful Robot"** system user for AI-generated content with human sponsorship tracking
+- 100% test coverage (line and branch)
 
 ### Next Actions
 1. **Phase 11 (Email)**: Add email digests and notifications
-2. **Phase 12 (Articles)**: Add long-form content support
-3. **Phase 13 (Bookmarks)**: Add user bookmarking
+2. **Phase 13 (Bookmarks)**: Add user bookmarking
+3. **Phase 14 (RAG)**: Complete RAG query pipeline with citations
 
 ### Technical Debt
 

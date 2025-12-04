@@ -55,6 +55,34 @@ RSpec.describe Answer do
     end
   end
 
+  describe "#system_generated?" do
+    it "returns true when user is a system user" do
+      system_user = create(:user, :system)
+      answer = create(:answer, user: system_user)
+      expect(answer.system_generated?).to be true
+    end
+
+    it "returns false when user is not a system user" do
+      answer = create(:answer)
+      expect(answer.system_generated?).to be false
+    end
+  end
+
+  describe "#display_author" do
+    it "returns the user for non-system-generated answers" do
+      user = create(:user)
+      answer = create(:answer, user: user)
+      expect(answer.display_author).to eq(user)
+    end
+
+    it "returns the sponsor for system-generated answers" do
+      system_user = create(:user, :system)
+      sponsor = create(:user)
+      answer = create(:answer, user: system_user, sponsored_by: sponsor)
+      expect(answer.display_author).to eq(sponsor)
+    end
+  end
+
   describe "#mark_as_correct!" do
     let(:question) { create(:question) }
     let(:answer) { create(:answer, question: question) }

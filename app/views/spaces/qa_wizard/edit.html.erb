@@ -1,0 +1,390 @@
+<% content_for(:title) { "Edit Question - Q&A Wizard - #{@space.name} - Brimming" } %>
+
+<!-- Loading overlay for magic animation -->
+<div id="wizard-loading" class="wizard-loading" style="display: none;">
+  <div class="wizard-loading-content">
+    <div class="magic-wand">
+      <div class="wand"></div>
+      <div class="sparkles">
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+    <p class="loading-text">Publishing your FAQ entry...</p>
+    <div class="magic-stars">
+      <span class="star">&#10022;</span>
+      <span class="star">&#10022;</span>
+      <span class="star">&#10022;</span>
+    </div>
+  </div>
+</div>
+
+<div class="qa-wizard-container">
+  <div class="page-header">
+    <div class="breadcrumb">
+      <%= link_to @space.name, space_path(@space) %> &rsaquo;
+      <%= link_to "Q&A Wizard", space_qa_wizard_path(@space) %> &rsaquo;
+      Edit Question
+    </div>
+    <h1>Edit FAQ Entry</h1>
+    <p class="subtitle">Review and edit the question and answer before publishing</p>
+  </div>
+
+  <div class="wizard-step">
+    <%= form_with url: submit_space_qa_wizard_path(@space), method: :post, class: "qa-form", id: "qa-wizard-form" do |f| %>
+      <%= hidden_field_tag :source_type, @source_type %>
+      <%= hidden_field_tag :source_data, @source_data %>
+
+      <div class="form-group">
+        <%= f.label :question_title, "Question Title" %>
+        <%= f.text_field :question_title, value: @question_title, class: "form-control", required: true %>
+        <small class="form-text text-muted">A concise question that users might search for</small>
+      </div>
+
+      <div class="form-group">
+        <%= f.label :question_body, "Question Details" %>
+        <div class="editor-tabs">
+          <button type="button" class="tab-btn active" data-tab="question_body_edit">Edit</button>
+          <button type="button" class="tab-btn" data-tab="question_body_preview">Preview</button>
+        </div>
+        <div class="tab-content" id="question_body_edit">
+          <%= f.text_area :question_body, value: @question_body, class: "form-control", rows: 4, required: true, id: "question_body_textarea" %>
+        </div>
+        <div class="tab-content" id="question_body_preview" style="display: none;">
+          <div class="markdown-preview" id="question_body_preview_content"></div>
+        </div>
+        <small class="form-text text-muted">Provide context and specifics about what the user is asking. Supports markdown.</small>
+      </div>
+
+      <div class="form-group">
+        <%= f.label :answer, "Answer" %>
+        <div class="editor-tabs">
+          <button type="button" class="tab-btn active" data-tab="answer_edit">Edit</button>
+          <button type="button" class="tab-btn" data-tab="answer_preview">Preview</button>
+        </div>
+        <div class="tab-content" id="answer_edit">
+          <%= f.text_area :answer, value: @answer, class: "form-control", rows: 10, required: true, id: "answer_textarea" %>
+        </div>
+        <div class="tab-content" id="answer_preview" style="display: none;">
+          <div class="markdown-preview" id="answer_preview_content"></div>
+        </div>
+        <small class="form-text text-muted">A comprehensive answer that addresses the question. Supports markdown.</small>
+      </div>
+
+      <div class="form-info">
+        <p>This will create a new question in <strong><%= @space.name %></strong> with the answer already marked as the official solution.</p>
+      </div>
+
+      <div class="form-actions">
+        <%= f.submit "Create FAQ Entry", class: "btn btn-primary" %>
+        <%= link_to "Back to Question Selection", space_qa_wizard_path(@space), class: "btn btn-link" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<style>
+/* Loading overlay styles */
+.wizard-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.wizard-loading-content {
+  text-align: center;
+  color: white;
+}
+
+.magic-wand {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 1.5rem;
+}
+
+.wand {
+  position: absolute;
+  width: 8px;
+  height: 60px;
+  background: linear-gradient(to bottom, #8B4513 0%, #D2691E 100%);
+  border-radius: 4px;
+  top: 50%;
+  left: 50%;
+  transform-origin: bottom center;
+  transform: translate(-50%, -100%);
+  animation: wandWave 1.5s ease-in-out infinite;
+}
+
+.wand::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 20px #FFD700, 0 0 40px #FFA500;
+}
+
+@keyframes wandWave {
+  0%, 100% { transform: translate(-50%, -100%) rotate(-15deg); }
+  50% { transform: translate(-50%, -100%) rotate(15deg); }
+}
+
+.sparkles {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.sparkles span {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #FFD700;
+  border-radius: 50%;
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+.sparkles span:nth-child(1) { top: -20px; left: -30px; animation-delay: 0s; }
+.sparkles span:nth-child(2) { top: -30px; left: 0px; animation-delay: 0.2s; }
+.sparkles span:nth-child(3) { top: -20px; left: 30px; animation-delay: 0.4s; }
+.sparkles span:nth-child(4) { top: 0px; left: -40px; animation-delay: 0.6s; }
+.sparkles span:nth-child(5) { top: 10px; left: 40px; animation-delay: 0.8s; }
+.sparkles span:nth-child(6) { top: -10px; left: 50px; animation-delay: 1s; }
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.loading-text {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+.magic-stars {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.star {
+  font-size: 1.5rem;
+  color: #FFD700;
+  animation: twinkle 1s ease-in-out infinite;
+}
+
+.star:nth-child(1) { animation-delay: 0s; }
+.star:nth-child(2) { animation-delay: 0.3s; }
+.star:nth-child(3) { animation-delay: 0.6s; }
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* Main container styles */
+.qa-wizard-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.breadcrumb {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.breadcrumb a {
+  color: var(--text-muted);
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+}
+
+.wizard-step {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.qa-form .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.qa-form label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.qa-form .form-control {
+  width: 100%;
+}
+
+.qa-form textarea.form-control {
+  font-family: inherit;
+  resize: vertical;
+}
+
+/* Editor tabs for markdown preview */
+.editor-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tab-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-bottom: none;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  font-size: 0.875rem;
+  margin-bottom: -1px;
+  border-radius: 4px 4px 0 0;
+}
+
+.tab-btn:first-child {
+  margin-left: 0;
+}
+
+.tab-btn.active {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--bg-primary);
+}
+
+.tab-btn:hover:not(.active) {
+  background: var(--bg-tertiary, #e5e7eb);
+}
+
+.tab-content {
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+}
+
+.tab-content textarea {
+  border: none;
+  border-radius: 0 0 4px 4px;
+}
+
+.markdown-preview {
+  padding: 1rem;
+  min-height: 100px;
+  background: var(--bg-primary);
+  border-radius: 0 0 4px 4px;
+}
+
+.markdown-preview:empty::before {
+  content: 'Nothing to preview';
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.form-info {
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  margin: 1.5rem 0;
+}
+
+.form-info p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('qa-wizard-form');
+  const loadingOverlay = document.getElementById('wizard-loading');
+
+  // Show loading on form submit
+  if (form) {
+    form.addEventListener('submit', function() {
+      if (loadingOverlay) {
+        loadingOverlay.style.display = 'flex';
+      }
+    });
+  }
+
+  // Markdown preview tabs
+  document.querySelectorAll('.tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      const tabId = this.dataset.tab;
+      const formGroup = this.closest('.form-group');
+
+      // Update active tab button
+      formGroup.querySelectorAll('.tab-btn').forEach(function(b) {
+        b.classList.remove('active');
+      });
+      this.classList.add('active');
+
+      // Show/hide tab content
+      formGroup.querySelectorAll('.tab-content').forEach(function(content) {
+        content.style.display = content.id === tabId ? 'block' : 'none';
+      });
+
+      // If switching to preview, render markdown
+      if (tabId.endsWith('_preview')) {
+        const textareaId = tabId.replace('_preview', '_textarea');
+        const textarea = document.getElementById(textareaId);
+        const previewContent = document.getElementById(tabId + '_content');
+
+        if (textarea && previewContent) {
+          // Fetch markdown preview from server
+          fetch('/markdown/preview', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ text: textarea.value })
+          })
+          .then(function(response) { return response.json(); })
+          .then(function(data) {
+            previewContent.innerHTML = data.html || '';
+          })
+          .catch(function() {
+            previewContent.innerHTML = '<em>Failed to load preview</em>';
+          });
+        }
+      }
+    });
+  });
+});
+</script>

@@ -8,7 +8,15 @@
       <div class="question-header">
         <h1 class="question-title"><%= @question.title %></h1>
         <div class="question-meta">
-          <span>Asked by <%= render 'shared/user_badge', user: @question.author %></span>
+          <% if @question.system_generated? %>
+            <span class="badge badge-info">Official FAQ</span>
+            <span>by <%= render 'shared/user_badge', user: @question.author %></span>
+            <% if @question.sponsored_by.present? %>
+              <span class="sponsored-by">(sponsored by <%= render 'shared/user_badge', user: @question.sponsored_by %>)</span>
+            <% end %>
+          <% else %>
+            <span>Asked by <%= render 'shared/user_badge', user: @question.author %></span>
+          <% end %>
           <span><%= time_ago_in_words(@question.created_at) %> ago</span>
           <% if @question.edited? %>
             <span>(edited <%= time_ago_in_words(@question.edited_at) %> ago)</span>
@@ -77,7 +85,15 @@
                 <%= markdown(answer.body) %>
               </div>
               <div class="answer-meta">
-                <span>by <%= render 'shared/user_badge', user: answer.author %></span>
+                <% if answer.system_generated? %>
+                  <span class="badge badge-info">Official Answer</span>
+                  <span>by <%= render 'shared/user_badge', user: answer.author %></span>
+                  <% if answer.sponsored_by.present? %>
+                    <span class="sponsored-by">(sponsored by <%= render 'shared/user_badge', user: answer.sponsored_by %>)</span>
+                  <% end %>
+                <% else %>
+                  <span>by <%= render 'shared/user_badge', user: answer.author %></span>
+                <% end %>
                 <span><%= time_ago_in_words(answer.created_at) %> ago</span>
                 <% if answer.edited? %>
                   <span>(edited <%= time_ago_in_words(answer.edited_at) %> ago)</span>

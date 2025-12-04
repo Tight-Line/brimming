@@ -40,6 +40,7 @@ class Article < ApplicationRecord
   before_validation :generate_slug, if: -> { slug.blank? && title.present? }
   before_validation :detect_content_type_from_file, if: :original_file_attached_changed?
   before_validation :set_default_content_type
+  after_commit :schedule_embedding_generation, on: %i[create update], if: :embedding_generation_needed?
 
   # Scopes
   scope :active, -> { where(deleted_at: nil) }
@@ -170,5 +171,21 @@ class Article < ApplicationRecord
 
   def set_default_content_type
     self.content_type ||= "markdown"
+  end
+
+  def schedule_embedding_generation
+    GenerateArticleEmbeddingJob.perform_later(self)
+  end
+
+  def embedding_generation_needed?
+    return false unless EmbeddingService.available?
+
+    # Generate chunks/embeddings if:
+    # - No chunks yet, OR
+    # - Title or body changed since last embedding, OR
+    # - File was attached/changed (for binary content types)
+    chunks.empty? ||
+      (embedded_at.present? && (saved_change_to_title? || saved_change_to_body?)) ||
+      original_file_attached_changed?
   end
 end

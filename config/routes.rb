@@ -29,6 +29,15 @@ Rails.application.routes.draw do
         post :reindex
       end
     end
+    resources :llm_providers do
+      collection do
+        get :ollama_models
+      end
+      member do
+        post :activate
+        post :set_default
+      end
+    end
   end
 
   # User settings
@@ -104,6 +113,15 @@ Rails.application.routes.draw do
       post :add_publisher
       delete :remove_publisher
       get :search
+    end
+
+    # Q&A Wizard - space-scoped for moderators
+    resource :qa_wizard, only: [ :show, :create ], controller: "spaces/qa_wizard" do
+      post :generate_titles
+      get :select_title
+      get :edit
+      post :submit
+      get :articles
     end
   end
 

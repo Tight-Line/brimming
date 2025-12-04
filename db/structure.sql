@@ -209,7 +209,8 @@ CREATE TABLE brimming.answers (
     updated_at timestamp(6) without time zone NOT NULL,
     edited_at timestamp(6) without time zone,
     last_editor_id bigint,
-    deleted_at timestamp(6) without time zone
+    deleted_at timestamp(6) without time zone,
+    sponsored_by_id bigint
 );
 
 
@@ -500,6 +501,45 @@ ALTER SEQUENCE brimming.embedding_providers_id_seq OWNED BY brimming.embedding_p
 
 
 --
+-- Name: faq_suggestions; Type: TABLE; Schema: brimming; Owner: -
+--
+
+CREATE TABLE brimming.faq_suggestions (
+    id bigint NOT NULL,
+    space_id bigint NOT NULL,
+    created_by_id bigint NOT NULL,
+    batch_id uuid NOT NULL,
+    source_type character varying NOT NULL,
+    source_context text,
+    question_text character varying NOT NULL,
+    answer_text text NOT NULL,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    question_body text
+);
+
+
+--
+-- Name: faq_suggestions_id_seq; Type: SEQUENCE; Schema: brimming; Owner: -
+--
+
+CREATE SEQUENCE brimming.faq_suggestions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: faq_suggestions_id_seq; Type: SEQUENCE OWNED BY; Schema: brimming; Owner: -
+--
+
+ALTER SEQUENCE brimming.faq_suggestions_id_seq OWNED BY brimming.faq_suggestions.id;
+
+
+--
 -- Name: ldap_group_mapping_spaces; Type: TABLE; Schema: brimming; Owner: -
 --
 
@@ -609,6 +649,78 @@ ALTER SEQUENCE brimming.ldap_servers_id_seq OWNED BY brimming.ldap_servers.id;
 
 
 --
+-- Name: llm_providers; Type: TABLE; Schema: brimming; Owner: -
+--
+
+CREATE TABLE brimming.llm_providers (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    provider_type character varying NOT NULL,
+    api_key character varying,
+    api_endpoint character varying,
+    llm_model character varying NOT NULL,
+    enabled boolean DEFAULT false NOT NULL,
+    is_default boolean DEFAULT false NOT NULL,
+    settings jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: llm_providers_id_seq; Type: SEQUENCE; Schema: brimming; Owner: -
+--
+
+CREATE SEQUENCE brimming.llm_providers_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: llm_providers_id_seq; Type: SEQUENCE OWNED BY; Schema: brimming; Owner: -
+--
+
+ALTER SEQUENCE brimming.llm_providers_id_seq OWNED BY brimming.llm_providers.id;
+
+
+--
+-- Name: question_sources; Type: TABLE; Schema: brimming; Owner: -
+--
+
+CREATE TABLE brimming.question_sources (
+    id bigint NOT NULL,
+    question_id bigint NOT NULL,
+    source_type character varying NOT NULL,
+    source_id bigint,
+    source_excerpt text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: question_sources_id_seq; Type: SEQUENCE; Schema: brimming; Owner: -
+--
+
+CREATE SEQUENCE brimming.question_sources_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: question_sources_id_seq; Type: SEQUENCE OWNED BY; Schema: brimming; Owner: -
+--
+
+ALTER SEQUENCE brimming.question_sources_id_seq OWNED BY brimming.question_sources.id;
+
+
+--
 -- Name: question_tags; Type: TABLE; Schema: brimming; Owner: -
 --
 
@@ -692,7 +804,8 @@ CREATE TABLE brimming.questions (
     deleted_at timestamp(6) without time zone,
     slug character varying,
     embedded_at timestamp(6) without time zone,
-    search_vector tsvector
+    search_vector tsvector,
+    sponsored_by_id bigint
 );
 
 
@@ -1074,6 +1187,13 @@ ALTER TABLE ONLY brimming.embedding_providers ALTER COLUMN id SET DEFAULT nextva
 
 
 --
+-- Name: faq_suggestions id; Type: DEFAULT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.faq_suggestions ALTER COLUMN id SET DEFAULT nextval('brimming.faq_suggestions_id_seq'::regclass);
+
+
+--
 -- Name: ldap_group_mapping_spaces id; Type: DEFAULT; Schema: brimming; Owner: -
 --
 
@@ -1092,6 +1212,20 @@ ALTER TABLE ONLY brimming.ldap_group_mappings ALTER COLUMN id SET DEFAULT nextva
 --
 
 ALTER TABLE ONLY brimming.ldap_servers ALTER COLUMN id SET DEFAULT nextval('brimming.ldap_servers_id_seq'::regclass);
+
+
+--
+-- Name: llm_providers id; Type: DEFAULT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.llm_providers ALTER COLUMN id SET DEFAULT nextval('brimming.llm_providers_id_seq'::regclass);
+
+
+--
+-- Name: question_sources id; Type: DEFAULT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.question_sources ALTER COLUMN id SET DEFAULT nextval('brimming.question_sources_id_seq'::regclass);
 
 
 --
@@ -1268,6 +1402,14 @@ ALTER TABLE ONLY brimming.embedding_providers
 
 
 --
+-- Name: faq_suggestions faq_suggestions_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.faq_suggestions
+    ADD CONSTRAINT faq_suggestions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: ldap_group_mapping_spaces ldap_group_mapping_spaces_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
 --
 
@@ -1289,6 +1431,22 @@ ALTER TABLE ONLY brimming.ldap_group_mappings
 
 ALTER TABLE ONLY brimming.ldap_servers
     ADD CONSTRAINT ldap_servers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: llm_providers llm_providers_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.llm_providers
+    ADD CONSTRAINT llm_providers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: question_sources question_sources_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.question_sources
+    ADD CONSTRAINT question_sources_pkey PRIMARY KEY (id);
 
 
 --
@@ -1455,6 +1613,13 @@ CREATE INDEX index_answers_on_question_id_and_is_correct ON brimming.answers USI
 --
 
 CREATE INDEX index_answers_on_question_id_and_vote_score ON brimming.answers USING btree (question_id, vote_score);
+
+
+--
+-- Name: index_answers_on_sponsored_by_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_answers_on_sponsored_by_id ON brimming.answers USING btree (sponsored_by_id);
 
 
 --
@@ -1668,6 +1833,48 @@ CREATE INDEX index_embedding_providers_on_provider_type ON brimming.embedding_pr
 
 
 --
+-- Name: index_faq_suggestions_on_batch_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_faq_suggestions_on_batch_id ON brimming.faq_suggestions USING btree (batch_id);
+
+
+--
+-- Name: index_faq_suggestions_on_created_at; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_faq_suggestions_on_created_at ON brimming.faq_suggestions USING btree (created_at);
+
+
+--
+-- Name: index_faq_suggestions_on_created_by_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_faq_suggestions_on_created_by_id ON brimming.faq_suggestions USING btree (created_by_id);
+
+
+--
+-- Name: index_faq_suggestions_on_space_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_faq_suggestions_on_space_id ON brimming.faq_suggestions USING btree (space_id);
+
+
+--
+-- Name: index_faq_suggestions_on_space_id_and_status; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_faq_suggestions_on_space_id_and_status ON brimming.faq_suggestions USING btree (space_id, status);
+
+
+--
+-- Name: index_faq_suggestions_on_status; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_faq_suggestions_on_status ON brimming.faq_suggestions USING btree (status);
+
+
+--
 -- Name: index_ldap_group_mapping_spaces_on_ldap_group_mapping_id; Type: INDEX; Schema: brimming; Owner: -
 --
 
@@ -1707,6 +1914,48 @@ CREATE INDEX index_ldap_servers_on_enabled ON brimming.ldap_servers USING btree 
 --
 
 CREATE UNIQUE INDEX index_ldap_servers_on_name ON brimming.ldap_servers USING btree (name);
+
+
+--
+-- Name: index_llm_providers_on_enabled; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_llm_providers_on_enabled ON brimming.llm_providers USING btree (enabled);
+
+
+--
+-- Name: index_llm_providers_on_is_default; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_llm_providers_on_is_default ON brimming.llm_providers USING btree (is_default);
+
+
+--
+-- Name: index_llm_providers_on_name; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE UNIQUE INDEX index_llm_providers_on_name ON brimming.llm_providers USING btree (name);
+
+
+--
+-- Name: index_llm_providers_on_provider_type; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_llm_providers_on_provider_type ON brimming.llm_providers USING btree (provider_type);
+
+
+--
+-- Name: index_question_sources_on_question_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_question_sources_on_question_id ON brimming.question_sources USING btree (question_id);
+
+
+--
+-- Name: index_question_sources_on_source_type_and_source_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_question_sources_on_source_type_and_source_id ON brimming.question_sources USING btree (source_type, source_id);
 
 
 --
@@ -1791,6 +2040,13 @@ CREATE INDEX index_questions_on_space_id ON brimming.questions USING btree (spac
 --
 
 CREATE INDEX index_questions_on_space_id_and_created_at ON brimming.questions USING btree (space_id, created_at);
+
+
+--
+-- Name: index_questions_on_sponsored_by_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_questions_on_sponsored_by_id ON brimming.questions USING btree (sponsored_by_id);
 
 
 --
@@ -2059,6 +2315,22 @@ ALTER TABLE ONLY brimming.space_publishers
 
 
 --
+-- Name: faq_suggestions fk_rails_0f0f091645; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.faq_suggestions
+    ADD CONSTRAINT fk_rails_0f0f091645 FOREIGN KEY (space_id) REFERENCES brimming.spaces(id);
+
+
+--
+-- Name: questions fk_rails_212c46f0cf; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.questions
+    ADD CONSTRAINT fk_rails_212c46f0cf FOREIGN KEY (sponsored_by_id) REFERENCES brimming.users(id);
+
+
+--
 -- Name: space_opt_outs fk_rails_26f203c08a; Type: FK CONSTRAINT; Schema: brimming; Owner: -
 --
 
@@ -2080,6 +2352,14 @@ ALTER TABLE ONLY brimming.tags
 
 ALTER TABLE ONLY brimming.article_spaces
     ADD CONSTRAINT fk_rails_2c1cf7a065 FOREIGN KEY (space_id) REFERENCES brimming.spaces(id);
+
+
+--
+-- Name: question_sources fk_rails_2d0496b581; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.question_sources
+    ADD CONSTRAINT fk_rails_2d0496b581 FOREIGN KEY (question_id) REFERENCES brimming.questions(id);
 
 
 --
@@ -2267,6 +2547,14 @@ ALTER TABLE ONLY brimming.articles
 
 
 --
+-- Name: answers fk_rails_cb7553b87f; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.answers
+    ADD CONSTRAINT fk_rails_cb7553b87f FOREIGN KEY (sponsored_by_id) REFERENCES brimming.users(id);
+
+
+--
 -- Name: ldap_group_mapping_spaces fk_rails_d2e1539dd0; Type: FK CONSTRAINT; Schema: brimming; Owner: -
 --
 
@@ -2280,6 +2568,14 @@ ALTER TABLE ONLY brimming.ldap_group_mapping_spaces
 
 ALTER TABLE ONLY brimming.questions
     ADD CONSTRAINT fk_rails_d2f8aeda0b FOREIGN KEY (space_id) REFERENCES brimming.spaces(id);
+
+
+--
+-- Name: faq_suggestions fk_rails_d7562f4d05; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.faq_suggestions
+    ADD CONSTRAINT fk_rails_d7562f4d05 FOREIGN KEY (created_by_id) REFERENCES brimming.users(id);
 
 
 --
@@ -2329,6 +2625,12 @@ ALTER TABLE ONLY brimming.ldap_group_mapping_spaces
 SET search_path TO brimming,public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20251203222224'),
+('20251203133555'),
+('20251203132418'),
+('20251203132417'),
+('20251203132416'),
+('20251203132415'),
 ('20251201230632'),
 ('20251201230617'),
 ('20251201215307'),

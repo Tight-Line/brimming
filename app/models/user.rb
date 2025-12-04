@@ -8,7 +8,8 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable
 
   # Enums (moderator is per-space via SpaceModerator, not a global role)
-  enum :role, { user: 0, admin: 2 }, default: :user
+  # system role is for non-human accounts (e.g., "Helpful Robot" for AI-generated content)
+  enum :role, { user: 0, admin: 2, system: 3 }, default: :user
 
   # Scopes
   scope :search, ->(query) {
@@ -59,6 +60,15 @@ class User < ApplicationRecord
 
   def admin?
     role == "admin"
+  end
+
+  def system?
+    role == "system"
+  end
+
+  # Returns the system robot user for AI-generated content
+  def self.robot
+    find_by(role: :system)
   end
 
   # Returns true if the user is a moderator of any space

@@ -185,6 +185,60 @@ RSpec.describe Article do
         expect(article.slug).to be_nil
       end
     end
+
+    describe "embedding generation" do
+      context "when embedding provider is available" do
+        before do
+          create(:embedding_provider, enabled: true)
+        end
+
+        it "enqueues embedding job on create" do
+          expect {
+            create(:article, body: "Test content for embedding")
+          }.to have_enqueued_job(GenerateArticleEmbeddingJob)
+        end
+
+        it "enqueues embedding job when body changes" do
+          article = create(:article, body: "Original content")
+          article.chunks.create!(content: "test", chunk_index: 0)
+          article.update!(embedded_at: Time.current)
+
+          expect {
+            article.update!(body: "Updated content")
+          }.to have_enqueued_job(GenerateArticleEmbeddingJob)
+        end
+
+        it "enqueues embedding job when title changes" do
+          article = create(:article, title: "Original Title")
+          article.chunks.create!(content: "test", chunk_index: 0)
+          article.update!(embedded_at: Time.current)
+
+          expect {
+            article.update!(title: "Updated Title")
+          }.to have_enqueued_job(GenerateArticleEmbeddingJob)
+        end
+
+        it "does not enqueue embedding job when other fields change" do
+          article = create(:article)
+          article.chunks.create!(content: "test", chunk_index: 0)
+          article.update!(embedded_at: Time.current)
+
+          expect {
+            article.update!(views_count: 10)
+          }.not_to have_enqueued_job(GenerateArticleEmbeddingJob)
+        end
+      end
+
+      context "when no embedding provider is available" do
+        it "does not enqueue embedding job on create" do
+          EmbeddingProvider.update_all(enabled: false)
+
+          expect {
+            create(:article, body: "Test content")
+          }.not_to have_enqueued_job(GenerateArticleEmbeddingJob)
+        end
+      end
+    end
   end
 
   describe "scopes" do

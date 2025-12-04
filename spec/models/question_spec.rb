@@ -156,6 +156,34 @@ RSpec.describe Question do
     end
   end
 
+  describe "#system_generated?" do
+    it "returns true when user is a system user" do
+      system_user = create(:user, :system)
+      question = create(:question, user: system_user)
+      expect(question.system_generated?).to be true
+    end
+
+    it "returns false when user is not a system user" do
+      question = create(:question)
+      expect(question.system_generated?).to be false
+    end
+  end
+
+  describe "#display_author" do
+    it "returns the user for non-system-generated questions" do
+      user = create(:user)
+      question = create(:question, user: user)
+      expect(question.display_author).to eq(user)
+    end
+
+    it "returns the sponsor for system-generated questions" do
+      system_user = create(:user, :system)
+      sponsor = create(:user)
+      question = create(:question, user: system_user, sponsored_by: sponsor)
+      expect(question.display_author).to eq(sponsor)
+    end
+  end
+
   describe "#answers_count" do
     it "returns the count of answers" do
       question = create(:question)
