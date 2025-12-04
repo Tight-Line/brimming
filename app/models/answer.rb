@@ -5,6 +5,7 @@ class Answer < ApplicationRecord
   belongs_to :user
   belongs_to :question
   belongs_to :last_editor, class_name: "User", optional: true
+  belongs_to :sponsored_by, class_name: "User", optional: true
   has_many :votes, dependent: :destroy
   has_many :comments, as: :commentable, dependent: :destroy
 
@@ -69,6 +70,16 @@ class Answer < ApplicationRecord
 
   def owned_by?(other_user)
     user_id == other_user&.id
+  end
+
+  def system_generated?
+    # user is required by belongs_to, so no safe navigation needed
+    user.system?
+  end
+
+  # Returns the user to display as author (sponsor if system-generated, otherwise author)
+  def display_author
+    system_generated? ? sponsored_by : user
   end
 
   def edited?

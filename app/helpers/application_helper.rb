@@ -11,4 +11,15 @@ module ApplicationHelper
       number_with_delimiter(count)
     end
   end
+
+  # Bootstrap-style badge class for FAQ suggestion status
+  def status_badge_class(status)
+    case status.to_s
+    when "pending" then "warning"
+    when "approved" then "success"
+    when "rejected" then "secondary"
+    when "created" then "primary"
+    else "secondary"
+    end
+  end
 end

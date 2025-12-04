@@ -1,0 +1,93 @@
+<% content_for(:title) { "#{@llm_provider.name} - Admin - Brimming" } %>
+
+<div class="admin-container">
+  <div class="page-header">
+    <h1><%= @llm_provider.name %></h1>
+    <div class="actions">
+      <%= link_to "Edit", edit_admin_llm_provider_path(@llm_provider), class: "btn btn-primary" %>
+      <%= link_to "Back to Providers", admin_llm_providers_path, class: "btn btn-link" %>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <dl class="detail-list">
+        <dt>Provider Type</dt>
+        <dd><%= @llm_provider.display_provider_type %></dd>
+
+        <dt>Model</dt>
+        <dd><code><%= @llm_provider.llm_model %></code></dd>
+
+        <dt>Status</dt>
+        <dd>
+          <% if @llm_provider.is_default? %>
+            <span class="badge badge-success">Default</span>
+          <% elsif @llm_provider.enabled? %>
+            <span class="badge badge-info">Enabled</span>
+          <% else %>
+            <span class="badge badge-secondary">Disabled</span>
+          <% end %>
+        </dd>
+
+        <dt>API Key</dt>
+        <dd>
+          <% if @llm_provider.api_key.present? %>
+            <span class="text-success">Configured</span>
+          <% else %>
+            <span class="text-muted">Not set</span>
+          <% end %>
+        </dd>
+
+        <% if @llm_provider.requires_api_endpoint? %>
+          <dt>API Endpoint</dt>
+          <dd><code><%= @llm_provider.api_endpoint || "Not set" %></code></dd>
+        <% end %>
+
+        <dt>Temperature</dt>
+        <dd><%= @llm_provider.temperature %></dd>
+
+        <dt>Max Tokens</dt>
+        <dd><%= number_with_delimiter(@llm_provider.max_tokens) %></dd>
+
+        <dt>Created</dt>
+        <dd><%= @llm_provider.created_at.strftime("%B %d, %Y at %H:%M") %></dd>
+
+        <dt>Updated</dt>
+        <dd><%= @llm_provider.updated_at.strftime("%B %d, %Y at %H:%M") %></dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="card mt-4">
+    <div class="card-header">
+      <h3>Actions</h3>
+    </div>
+    <div class="card-body">
+      <% unless @llm_provider.is_default? %>
+        <% if @llm_provider.enabled? %>
+          <%= button_to "Set as Default",
+                        set_default_admin_llm_provider_path(@llm_provider),
+                        method: :post,
+                        class: "btn btn-success mr-2" %>
+          <%= button_to "Disable",
+                        activate_admin_llm_provider_path(@llm_provider),
+                        method: :post,
+                        class: "btn btn-warning mr-2" %>
+        <% else %>
+          <%= button_to "Enable",
+                        activate_admin_llm_provider_path(@llm_provider),
+                        method: :post,
+                        class: "btn btn-success mr-2" %>
+        <% end %>
+      <% end %>
+
+      <% if @llm_provider.can_delete? %>
+        <%= button_to "Delete Provider",
+                      admin_llm_provider_path(@llm_provider),
+                      method: :delete,
+                      class: "btn btn-danger",
+                      data: { turbo_confirm: "Are you sure you want to delete this LLM provider?" } %>
+      <% end %>
+    </div>
+  </div>
+</div>

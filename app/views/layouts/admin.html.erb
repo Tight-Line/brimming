@@ -44,6 +44,10 @@
           <% end %>
 
           <h4>AI & Search</h4>
+          <%= link_to admin_llm_providers_path, class: "admin-nav-item #{'active' if request.path.start_with?('/admin/llm_provider')}" do %>
+            <span class="admin-nav-icon">&#9656;</span>
+            LLM Providers
+          <% end %>
           <%= link_to admin_embedding_providers_path, class: "admin-nav-item #{'active' if request.path.start_with?('/admin/embedding')}" do %>
             <span class="admin-nav-icon">&#9656;</span>
             Embedding Providers

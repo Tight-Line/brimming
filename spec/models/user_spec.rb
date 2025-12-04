@@ -39,7 +39,7 @@ RSpec.describe User do
 
   describe "enums" do
     # Note: moderator is per-space via SpaceModerator, not a global role
-    it { is_expected.to define_enum_for(:role).with_values(user: 0, admin: 2) }
+    it { is_expected.to define_enum_for(:role).with_values(user: 0, admin: 2, system: 3) }
   end
 
   describe ".search" do
@@ -153,6 +153,29 @@ RSpec.describe User do
     it "returns false for non-admin users" do
       user = build(:user)
       expect(user.admin?).to be false
+    end
+  end
+
+  describe "#system?" do
+    it "returns true for system users" do
+      user = build(:user, role: :system)
+      expect(user.system?).to be true
+    end
+
+    it "returns false for non-system users" do
+      user = build(:user)
+      expect(user.system?).to be false
+    end
+  end
+
+  describe ".robot" do
+    it "returns the system user when one exists" do
+      robot = create(:user, role: :system, username: "robot")
+      expect(described_class.robot).to eq(robot)
+    end
+
+    it "returns nil when no system user exists" do
+      expect(described_class.robot).to be_nil
     end
   end
 

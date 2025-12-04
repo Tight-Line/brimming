@@ -53,6 +53,9 @@ gem "sidekiq", "~> 8.0"
 # pgvector support for vector similarity search
 gem "neighbor", "~> 0.5"
 
+# Unified LLM client for multiple providers [https://github.com/crmne/ruby_llm]
+gem "ruby_llm", "~> 1.0"
+
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 

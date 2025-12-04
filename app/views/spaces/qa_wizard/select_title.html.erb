@@ -1,0 +1,275 @@
+<% content_for(:title) { "Select Question - Q&A Wizard - #{@space.name} - Brimming" } %>
+
+<!-- Loading overlay for magic animation -->
+<div id="wizard-loading" class="wizard-loading" style="display: none;">
+  <div class="wizard-loading-content">
+    <div class="magic-wand">
+      <div class="wand"></div>
+      <div class="sparkles">
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+    <p class="loading-text">Crafting question details and answer...</p>
+    <div class="magic-stars">
+      <span class="star">&#10022;</span>
+      <span class="star">&#10022;</span>
+      <span class="star">&#10022;</span>
+    </div>
+  </div>
+</div>
+
+<div class="qa-wizard-container">
+  <div class="page-header">
+    <div class="breadcrumb">
+      <%= link_to @space.name, space_path(@space) %> &rsaquo;
+      <%= link_to "Q&A Wizard", space_qa_wizard_path(@space) %> &rsaquo;
+      Select Question
+    </div>
+    <h1>Select a Question</h1>
+    <p class="subtitle">Choose a question to develop into a full FAQ entry</p>
+  </div>
+
+  <div class="wizard-step">
+    <% if @titles.empty? %>
+      <div class="empty-state">
+        <p>No question ideas were generated. Try a different source or topic.</p>
+        <%= link_to "Try Again", space_qa_wizard_path(@space), class: "btn btn-primary" %>
+      </div>
+    <% else %>
+      <p>Click on a question to continue editing it:</p>
+
+      <div class="title-list">
+        <% @titles.each do |title| %>
+          <%= link_to edit_space_qa_wizard_path(@space,
+                        title: title,
+                        source_type: @source_type,
+                        source_data: @source_data,
+                        generate_content: true),
+                      class: "title-option" do %>
+            <span class="title-text"><%= title %></span>
+            <span class="title-arrow">&rarr;</span>
+          <% end %>
+        <% end %>
+      </div>
+
+      <div class="form-actions">
+        <%= link_to "Back to Source Selection", space_qa_wizard_path(@space), class: "btn btn-link" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<style>
+/* Loading overlay styles */
+.wizard-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.wizard-loading-content {
+  text-align: center;
+  color: white;
+}
+
+.magic-wand {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 1.5rem;
+}
+
+.wand {
+  position: absolute;
+  width: 8px;
+  height: 60px;
+  background: linear-gradient(to bottom, #8B4513 0%, #D2691E 100%);
+  border-radius: 4px;
+  top: 50%;
+  left: 50%;
+  transform-origin: bottom center;
+  transform: translate(-50%, -100%);
+  animation: wandWave 1.5s ease-in-out infinite;
+}
+
+.wand::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 20px #FFD700, 0 0 40px #FFA500;
+}
+
+@keyframes wandWave {
+  0%, 100% { transform: translate(-50%, -100%) rotate(-15deg); }
+  50% { transform: translate(-50%, -100%) rotate(15deg); }
+}
+
+.sparkles {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.sparkles span {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #FFD700;
+  border-radius: 50%;
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+.sparkles span:nth-child(1) { top: -20px; left: -30px; animation-delay: 0s; }
+.sparkles span:nth-child(2) { top: -30px; left: 0px; animation-delay: 0.2s; }
+.sparkles span:nth-child(3) { top: -20px; left: 30px; animation-delay: 0.4s; }
+.sparkles span:nth-child(4) { top: 0px; left: -40px; animation-delay: 0.6s; }
+.sparkles span:nth-child(5) { top: 10px; left: 40px; animation-delay: 0.8s; }
+.sparkles span:nth-child(6) { top: -10px; left: 50px; animation-delay: 1s; }
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.loading-text {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+.magic-stars {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.star {
+  font-size: 1.5rem;
+  color: #FFD700;
+  animation: twinkle 1s ease-in-out infinite;
+}
+
+.star:nth-child(1) { animation-delay: 0s; }
+.star:nth-child(2) { animation-delay: 0.3s; }
+.star:nth-child(3) { animation-delay: 0.6s; }
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* Main container styles */
+.qa-wizard-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.breadcrumb {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.breadcrumb a {
+  color: var(--text-muted);
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+}
+
+.wizard-step {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.title-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 1.5rem 0;
+}
+
+.title-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.title-option:hover {
+  border-color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.05);
+}
+
+.title-text {
+  flex: 1;
+  font-size: 1rem;
+}
+
+.title-arrow {
+  color: var(--text-muted);
+  font-size: 1.25rem;
+}
+
+.title-option:hover .title-arrow {
+  color: var(--primary);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+}
+
+.form-actions {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const loadingOverlay = document.getElementById('wizard-loading');
+  const titleOptions = document.querySelectorAll('.title-option');
+
+  titleOptions.forEach(function(option) {
+    option.addEventListener('click', function() {
+      if (loadingOverlay) {
+        loadingOverlay.style.display = 'flex';
+      }
+    });
+  });
+});
+</script>

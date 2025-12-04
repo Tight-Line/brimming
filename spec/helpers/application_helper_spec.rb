@@ -19,4 +19,30 @@ RSpec.describe ApplicationHelper do
       expect(helper.format_tokens(10000)).to eq("10,000")
     end
   end
+
+  describe "#status_badge_class" do
+    it "returns warning for pending status" do
+      expect(helper.status_badge_class("pending")).to eq("warning")
+    end
+
+    it "returns success for approved status" do
+      expect(helper.status_badge_class("approved")).to eq("success")
+    end
+
+    it "returns secondary for rejected status" do
+      expect(helper.status_badge_class("rejected")).to eq("secondary")
+    end
+
+    it "returns primary for created status" do
+      expect(helper.status_badge_class("created")).to eq("primary")
+    end
+
+    it "returns secondary for unknown status" do
+      expect(helper.status_badge_class("unknown")).to eq("secondary")
+    end
+
+    it "handles symbol input" do
+      expect(helper.status_badge_class(:pending)).to eq("warning")
+    end
+  end
 end

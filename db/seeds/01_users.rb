@@ -14,6 +14,19 @@ admin = User.find_or_create_by!(email: "admin@example.com") do |u|
   u.avatar_url = "https://api.dicebear.com/7.x/identicon/svg?seed=admin"
 end
 
+# System robot user (for AI-generated content)
+robot_avatar = "https://api.dicebear.com/7.x/bottts-neutral/svg?seed=magic-helper&backgroundColor=b6e3f4&eyes=bulging&mouth=smile01"
+robot = User.find_or_create_by!(email: "robot@system.local") do |u|
+  u.username = "helpful_robot"
+  u.full_name = "Helpful Robot"
+  u.password = SecureRandom.hex(32) # Random password - robot cannot log in
+  u.role = :system
+  # Fun colorful robot with smiling face - matches Q&A Wizard magic theme
+  u.avatar_url = robot_avatar
+end
+# Always update avatar to latest design
+robot.update!(avatar_url: robot_avatar) if robot.avatar_url != robot_avatar
+
 # Moderators
 moderators = [
   { email: "sarah.chen@example.com", username: "sarahc", full_name: "Sarah Chen" },
@@ -224,8 +237,8 @@ business_employees = [
   end
 end
 
-all_users = [ admin ] + moderators + experts + intermediates + newbies +
+all_users = [ admin, robot ] + moderators + experts + intermediates + newbies +
             hr_staff + facilities_staff + finance_staff + product_staff +
             pmo_staff + travel_admin_staff + business_employees
 
-puts "  Created #{all_users.count} users"
+puts "  Created #{all_users.count} users (including system robot)"

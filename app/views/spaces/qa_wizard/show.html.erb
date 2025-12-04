@@ -1,0 +1,416 @@
+<% content_for(:title) { "Q&A Wizard - #{@space.name} - Brimming" } %>
+
+<div class="qa-wizard-container">
+  <div class="page-header">
+    <div class="breadcrumb">
+      <%= link_to @space.name, space_path(@space) %> &rsaquo; Q&A Wizard
+    </div>
+    <h1>Q&A Wizard</h1>
+  </div>
+
+  <% unless @llm_available %>
+    <div class="alert alert-warning">
+      <strong>LLM Provider Required:</strong>
+      The Q&A Wizard requires an LLM provider to generate FAQ content.
+      Please contact an administrator to configure one.
+    </div>
+  <% else %>
+    <div class="wizard-step">
+      <h2>Choose a Source</h2>
+      <p>Select where to draw question ideas from.</p>
+
+      <% # Determine default selection: topic if no articles, otherwise article %>
+      <% default_source = @articles.any? ? "article" : "topic" %>
+
+      <%= form_with url: generate_titles_space_qa_wizard_path(@space), method: :post, class: "wizard-form", id: "qa-wizard-form" do |f| %>
+        <div class="source-options">
+          <div class="source-option-wrapper <%= 'source-option-disabled' unless @articles.any? %>" id="source-article-wrapper">
+            <label class="source-option">
+              <%= radio_button_tag :source_type, "article", default_source == "article", id: "source_type_article", disabled: @articles.empty? %>
+              <div class="source-option-content">
+                <strong>From Article</strong>
+                <span>Generate questions from an existing article</span>
+              </div>
+            </label>
+            <div class="source-option-details" id="article-details">
+              <% if @articles.any? %>
+                <%= select_tag :article_id,
+                             options_from_collection_for_select(@articles, :id, :title),
+                             prompt: "Choose an article...",
+                             class: "form-control" %>
+              <% else %>
+                <p class="empty-hint">
+                  No articles in this space yet.
+                  <%= link_to "Create an article", new_article_path(space_id: @space.slug) %> to use this feature.
+                </p>
+              <% end %>
+            </div>
+          </div>
+
+          <% if @has_knowledge_base %>
+            <div class="source-option-wrapper" id="source-rag-wrapper">
+              <label class="source-option">
+                <%= radio_button_tag :source_type, "rag", false, id: "source_type_rag" %>
+                <div class="source-option-content">
+                  <strong>From Knowledge Base</strong>
+                  <span>Use semantic search to find relevant content</span>
+                </div>
+              </label>
+              <div class="source-option-details" id="rag-details" style="display: none;">
+                <%= text_field_tag :query, nil, class: "form-control", placeholder: "Search query (optional)" %>
+                <small class="form-text text-muted">Leave blank to use recent content</small>
+              </div>
+            </div>
+          <% end %>
+
+          <div class="source-option-wrapper" id="source-topic-wrapper">
+            <label class="source-option">
+              <%= radio_button_tag :source_type, "topic", default_source == "topic", id: "source_type_topic" %>
+              <div class="source-option-content">
+                <strong>From Topic</strong>
+                <span>Describe a topic and let AI generate questions</span>
+              </div>
+            </label>
+            <div class="source-option-details" id="topic-details" style="display: none;">
+              <%= text_area_tag :topic_description, nil, class: "form-control", rows: 3, placeholder: "Describe the topic you want to generate FAQ questions for..." %>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group form-group-inline">
+          <%= label_tag :count, "Questions" %>
+          <%= number_field_tag :count, 5, min: 1, max: 20, step: 1, class: "form-control form-control-narrow" %>
+        </div>
+
+        <div class="form-actions">
+          <%= submit_tag "Generate Question Ideas", class: "btn btn-primary", id: "generate-btn" %>
+          <%= link_to "Cancel", space_path(@space), class: "btn btn-link" %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+<!-- Loading overlay for magic animation -->
+<div id="wizard-loading" class="wizard-loading" style="display: none;">
+  <div class="wizard-loading-content">
+    <div class="magic-wand">
+      <div class="wand"></div>
+      <div class="sparkles">
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+    <p class="loading-text" id="loading-text">Conjuring question ideas...</p>
+    <div class="magic-stars">
+      <span class="star">&#10022;</span>
+      <span class="star">&#10022;</span>
+      <span class="star">&#10022;</span>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Loading overlay styles */
+.wizard-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.wizard-loading-content {
+  text-align: center;
+  color: white;
+}
+
+.magic-wand {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 1.5rem;
+}
+
+.wand {
+  position: absolute;
+  width: 8px;
+  height: 60px;
+  background: linear-gradient(to bottom, #8B4513 0%, #D2691E 100%);
+  border-radius: 4px;
+  top: 50%;
+  left: 50%;
+  transform-origin: bottom center;
+  transform: translate(-50%, -100%);
+  animation: wandWave 1.5s ease-in-out infinite;
+}
+
+.wand::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 20px #FFD700, 0 0 40px #FFA500;
+}
+
+@keyframes wandWave {
+  0%, 100% { transform: translate(-50%, -100%) rotate(-15deg); }
+  50% { transform: translate(-50%, -100%) rotate(15deg); }
+}
+
+.sparkles {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.sparkles span {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #FFD700;
+  border-radius: 50%;
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+.sparkles span:nth-child(1) { top: -20px; left: -30px; animation-delay: 0s; }
+.sparkles span:nth-child(2) { top: -30px; left: 0px; animation-delay: 0.2s; }
+.sparkles span:nth-child(3) { top: -20px; left: 30px; animation-delay: 0.4s; }
+.sparkles span:nth-child(4) { top: 0px; left: -40px; animation-delay: 0.6s; }
+.sparkles span:nth-child(5) { top: 10px; left: 40px; animation-delay: 0.8s; }
+.sparkles span:nth-child(6) { top: -10px; left: 50px; animation-delay: 1s; }
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.loading-text {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+.magic-stars {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.star {
+  font-size: 1.5rem;
+  color: #FFD700;
+  animation: twinkle 1s ease-in-out infinite;
+}
+
+.star:nth-child(1) { animation-delay: 0s; }
+.star:nth-child(2) { animation-delay: 0.3s; }
+.star:nth-child(3) { animation-delay: 0.6s; }
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* Main container styles */
+.qa-wizard-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.breadcrumb {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.breadcrumb a {
+  color: var(--text-muted);
+}
+
+.wizard-step {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.wizard-step h2 {
+  margin-top: 0;
+  font-size: 1.25rem;
+}
+
+.source-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.source-option-wrapper {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.source-option-wrapper:has(input:checked) {
+  border-color: var(--primary);
+}
+
+.source-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin: 0;
+}
+
+.source-option:hover {
+  background: rgba(var(--primary-rgb), 0.05);
+}
+
+.source-option-wrapper:has(input:checked) .source-option {
+  background: rgba(var(--primary-rgb), 0.1);
+}
+
+.source-option input[type="radio"] {
+  margin-top: 0.25rem;
+}
+
+.source-option-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.source-option-content strong {
+  font-size: 1rem;
+}
+
+.source-option-content span {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.source-option-details {
+  padding: 0.75rem 1rem 1rem 2.75rem;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+}
+
+.source-option-details .form-control {
+  margin-bottom: 0.25rem;
+}
+
+.source-option-details .form-text {
+  font-size: 0.8rem;
+}
+
+.source-option-disabled {
+  opacity: 0.6;
+}
+
+.source-option-disabled .source-option {
+  cursor: not-allowed;
+}
+
+.source-option-disabled .source-option:hover {
+  background: transparent;
+}
+
+.empty-hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.empty-hint a {
+  color: var(--primary);
+}
+
+.form-group-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.form-group-inline label {
+  margin-bottom: 0;
+}
+
+.form-control-narrow {
+  max-width: 80px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('qa-wizard-form');
+  if (!form) return;
+
+  const articleDetails = document.getElementById('article-details');
+  const ragDetails = document.getElementById('rag-details');
+  const topicDetails = document.getElementById('topic-details');
+  const loadingOverlay = document.getElementById('wizard-loading');
+
+  function updateSections() {
+    const selected = form.querySelector('input[name="source_type"]:checked');
+    if (!selected) return;
+
+    if (articleDetails) {
+      articleDetails.style.display = selected.value === 'article' ? 'block' : 'none';
+    }
+    if (ragDetails) {
+      ragDetails.style.display = selected.value === 'rag' ? 'block' : 'none';
+    }
+    if (topicDetails) {
+      topicDetails.style.display = selected.value === 'topic' ? 'block' : 'none';
+    }
+  }
+
+  // Initial update
+  updateSections();
+
+  // Update on change
+  form.querySelectorAll('input[name="source_type"]').forEach(function(radio) {
+    radio.addEventListener('change', updateSections);
+  });
+
+  // Show loading animation on form submit
+  form.addEventListener('submit', function() {
+    if (loadingOverlay) {
+      loadingOverlay.style.display = 'flex';
+    }
+  });
+});
+</script>

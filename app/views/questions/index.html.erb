@@ -19,7 +19,11 @@
           </div>
           <div class="question-meta">
             <span class="space"><%= link_to question.space.name, space_path(question.space) %></span>
-            <span>by <%= render 'shared/user_badge', user: question.author %></span>
+            <% if question.system_generated? %>
+              <span class="badge badge-info">Official FAQ</span>
+            <% else %>
+              <span>by <%= render 'shared/user_badge', user: question.author %></span>
+            <% end %>
             <span><%= question.answers_count %> answers</span>
             <% if question.has_correct_answer? %>
               <span class="badge badge-success">Solved</span>
