@@ -1,0 +1,32 @@
+<%
+  comment = bookmark.bookmarkable
+  # Get the parent context for linking
+  case comment.commentable_type
+  when "Question"
+    parent_title = comment.commentable.title
+    parent_link = question_path(comment.commentable, anchor: "comment-#{comment.id}")
+    parent_type = "question"
+  when "Answer"
+    parent_title = comment.commentable.question.title
+    parent_link = question_path(comment.commentable.question, anchor: "comment-#{comment.id}")
+    parent_type = "answer"
+  when "Article"
+    parent_title = comment.commentable.title
+    parent_link = article_path(comment.commentable, anchor: "comment-#{comment.id}")
+    parent_type = "article"
+  end
+%>
+<div class="bookmark-item-title">
+  Comment on <%= parent_type %>: <%= link_to parent_title, parent_link %>
+</div>
+<div class="bookmark-item-meta">
+  <span class="bookmark-item-type comment">Comment</span>
+  <span>by <%= comment.user.display_name %></span>
+  <span><%= comment.vote_score %> <%= "upvote".pluralize(comment.vote_score) %></span>
+  <span>bookmarked <%= time_ago_in_words(bookmark.created_at) %> ago</span>
+</div>
+<% if comment.body.present? %>
+  <div class="bookmark-item-preview">
+    <%= truncate(strip_tags(markdown(comment.body)), length: 200) %>
+  </div>
+<% end %>

@@ -1,0 +1,21 @@
+<%
+  answer = bookmark.bookmarkable
+  question = answer.question
+%>
+<div class="bookmark-item-title">
+  Answer to: <%= link_to question.title, question_path(question, anchor: "answer-#{answer.id}") %>
+</div>
+<div class="bookmark-item-meta">
+  <span class="bookmark-item-type answer">Answer</span>
+  <span>by <%= answer.user.display_name %></span>
+  <% if answer.is_correct? %>
+    <span class="badge badge-success">Solved</span>
+  <% end %>
+  <span><%= answer.vote_score %> votes</span>
+  <span>bookmarked <%= time_ago_in_words(bookmark.created_at) %> ago</span>
+</div>
+<% if answer.body.present? %>
+  <div class="bookmark-item-preview">
+    <%= truncate(strip_tags(markdown(answer.body)), length: 200) %>
+  </div>
+<% end %>

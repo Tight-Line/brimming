@@ -146,4 +146,6 @@ Rails.application.routes.draw do
       get :posts_search, path: "search"
     end
   end
+
+  resources :bookmarks, only: [ :index, :create, :update, :destroy ]
 end

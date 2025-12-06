@@ -1,0 +1,20 @@
+<%
+  article = bookmark.bookmarkable
+%>
+<div class="bookmark-item-title">
+  <%= link_to article.title, article_path(article) %>
+</div>
+<div class="bookmark-item-meta">
+  <span class="bookmark-item-type article">Article</span>
+  <% if article.spaces.any? %>
+    <span>in <%= article.spaces.map { |s| link_to(s.name, space_path(s)) }.join(", ").html_safe %></span>
+  <% end %>
+  <span>by <%= article.user.display_name %></span>
+  <span><%= article.display_content_type %></span>
+  <span>bookmarked <%= time_ago_in_words(bookmark.created_at) %> ago</span>
+</div>
+<% if article.text_content? && article.body.present? %>
+  <div class="bookmark-item-preview">
+    <%= truncate(strip_tags(markdown(article.body)), length: 200) %>
+  </div>
+<% end %>

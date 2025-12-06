@@ -20,6 +20,7 @@
         <span class="user-greeting">
           <%= render 'shared/user_badge', user: current_user %>
         </span>
+        <%= link_to "Bookmarks", bookmarks_path, class: "btn-settings", title: "My Bookmarks" %>
         <% if current_user.ldap_user? %>
           <%= link_to "LDAP Spaces", settings_ldap_spaces_path, class: "btn-settings" %>
         <% end %>

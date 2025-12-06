@@ -360,17 +360,17 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - **ArticlePolicy** for authorization (publishers/moderators/admins can create/edit) `[x]`
 - **Skipped:** Draft/published workflow (not implemented)
 
-### Phase 13: Bookmarks `[ ]`
-- **Bookmark model** (user_id, bookmarkable_type, bookmarkable_id, created_at, notes)
-  - Polymorphic association to Question, Answer, Comment, Article
-- Users can bookmark any content for later reference
-- **UI features:**
-  - Bookmark button on Questions, Answers, Comments, Articles
-  - "My Bookmarks" page with filtering by type
-  - Optional notes field for personal annotations
-  - Sort by date bookmarked or content date
-- **Turbo Stream updates** for instant bookmark/unbookmark feedback
-- **BookmarkPolicy** - users can only manage their own bookmarks
+### Phase 13: Bookmarks `[x]`
+- **Bookmark model** (user_id, bookmarkable_type, bookmarkable_id, created_at, notes) `[x]`
+  - Polymorphic association to Question, Answer, Comment, Article `[x]`
+- Users can bookmark any content for later reference `[x]`
+- **UI features:** `[x]`
+  - Bookmark button on Questions, Answers, Comments, Articles `[x]`
+  - "My Bookmarks" page with filtering by type `[x]`
+  - Optional notes field for personal annotations `[x]`
+  - Sort by date bookmarked or content date `[x]`
+- **Turbo Stream updates** for instant bookmark/unbookmark feedback `[x]`
+- **BookmarkPolicy** - users can only manage their own bookmarks `[x]`
 
 ### Phase 14: Chunking & RAG Queries `[~]`
 - **Content chunking** for long-form content (Articles, long Questions/Answers)
@@ -478,9 +478,9 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 
 ## Current Status
 
-**Completed Phases**: 1, 3, 4, 5, 6, 7, 8, 10, 12
+**Completed Phases**: 1, 3, 4, 5, 6, 7, 8, 10, 12, 13
 **In Progress**: 11 (Email), 14 (RAG pipeline), 15 (Q&A Wizard - core workflow complete, batch ops pending)
-**Not Started**: 13, 16, 17, 18, 19
+**Not Started**: 16, 17, 18, 19
 
 ### What's Working
 - Full data model with Users, Spaces, Questions, Answers, Comments, Votes
@@ -511,12 +511,13 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - **Articles** with multiple content types (Markdown, HTML, PDF, DOCX, XLSX)
 - **Q&A Wizard** for moderators to generate FAQ content from articles, topics, or knowledge base
 - **"Helpful Robot"** system user for AI-generated content with human sponsorship tracking
+- **Bookmarks** for users to save Questions, Answers, Comments, and Articles for later
 - 100% test coverage (line and branch)
 
 ### Next Actions
 1. **Phase 11 (Email)**: Add email digests and notifications
-2. **Phase 13 (Bookmarks)**: Add user bookmarking
-3. **Phase 14 (RAG)**: Complete RAG query pipeline with citations
+2. **Phase 14 (RAG)**: Complete RAG query pipeline with citations
+3. **Phase 15 (Q&A Wizard)**: Finish batch operations (bulk approve/reject, regenerate)
 
 ### Technical Debt
 

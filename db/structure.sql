@@ -353,6 +353,40 @@ ALTER SEQUENCE brimming.articles_id_seq OWNED BY brimming.articles.id;
 
 
 --
+-- Name: bookmarks; Type: TABLE; Schema: brimming; Owner: -
+--
+
+CREATE TABLE brimming.bookmarks (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    bookmarkable_type character varying NOT NULL,
+    bookmarkable_id bigint NOT NULL,
+    notes text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: bookmarks_id_seq; Type: SEQUENCE; Schema: brimming; Owner: -
+--
+
+CREATE SEQUENCE brimming.bookmarks_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: bookmarks_id_seq; Type: SEQUENCE OWNED BY; Schema: brimming; Owner: -
+--
+
+ALTER SEQUENCE brimming.bookmarks_id_seq OWNED BY brimming.bookmarks.id;
+
+
+--
 -- Name: chunks; Type: TABLE; Schema: brimming; Owner: -
 --
 
@@ -1159,6 +1193,13 @@ ALTER TABLE ONLY brimming.articles ALTER COLUMN id SET DEFAULT nextval('brimming
 
 
 --
+-- Name: bookmarks id; Type: DEFAULT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.bookmarks ALTER COLUMN id SET DEFAULT nextval('brimming.bookmarks_id_seq'::regclass);
+
+
+--
 -- Name: chunks id; Type: DEFAULT; Schema: brimming; Owner: -
 --
 
@@ -1367,6 +1408,14 @@ ALTER TABLE ONLY brimming.article_votes
 
 ALTER TABLE ONLY brimming.articles
     ADD CONSTRAINT articles_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: bookmarks bookmarks_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.bookmarks
+    ADD CONSTRAINT bookmarks_pkey PRIMARY KEY (id);
 
 
 --
@@ -1732,6 +1781,27 @@ CREATE INDEX index_articles_on_views_count ON brimming.articles USING btree (vie
 --
 
 CREATE INDEX index_articles_on_vote_score ON brimming.articles USING btree (vote_score);
+
+
+--
+-- Name: index_bookmarks_on_bookmarkable; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_bookmarks_on_bookmarkable ON brimming.bookmarks USING btree (bookmarkable_type, bookmarkable_id);
+
+
+--
+-- Name: index_bookmarks_on_user_and_bookmarkable; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE UNIQUE INDEX index_bookmarks_on_user_and_bookmarkable ON brimming.bookmarks USING btree (user_id, bookmarkable_type, bookmarkable_id);
+
+
+--
+-- Name: index_bookmarks_on_user_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_bookmarks_on_user_id ON brimming.bookmarks USING btree (user_id);
 
 
 --
@@ -2523,6 +2593,14 @@ ALTER TABLE ONLY brimming.comment_votes
 
 
 --
+-- Name: bookmarks fk_rails_c1ff6fa4ac; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.bookmarks
+    ADD CONSTRAINT fk_rails_c1ff6fa4ac FOREIGN KEY (user_id) REFERENCES brimming.users(id);
+
+
+--
 -- Name: active_storage_attachments fk_rails_c3b3935057; Type: FK CONSTRAINT; Schema: brimming; Owner: -
 --
 
@@ -2625,6 +2703,7 @@ ALTER TABLE ONLY brimming.ldap_group_mapping_spaces
 SET search_path TO brimming,public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20251206190846'),
 ('20251203222224'),
 ('20251203133555'),
 ('20251203132418'),

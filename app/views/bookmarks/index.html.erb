@@ -1,0 +1,40 @@
+<% content_for(:title) { "My Bookmarks - Brimming" } %>
+
+<div class="bookmarks-page">
+  <h1>My Bookmarks</h1>
+
+  <div class="bookmarks-filters">
+    <%= link_to "All", bookmarks_path, class: "filter-btn #{@filter.blank? ? 'active' : ''}" %>
+    <%= link_to "Questions", bookmarks_path(type: "Question"), class: "filter-btn #{@filter == 'Question' ? 'active' : ''}" %>
+    <%= link_to "Answers", bookmarks_path(type: "Answer"), class: "filter-btn #{@filter == 'Answer' ? 'active' : ''}" %>
+    <%= link_to "Comments", bookmarks_path(type: "Comment"), class: "filter-btn #{@filter == 'Comment' ? 'active' : ''}" %>
+    <%= link_to "Articles", bookmarks_path(type: "Article"), class: "filter-btn #{@filter == 'Article' ? 'active' : ''}" %>
+  </div>
+
+  <% if @bookmarks.any? %>
+    <% @bookmarks.each do |bookmark| %>
+      <div class="bookmark-item" id="<%= dom_id(bookmark) %>">
+        <div class="bookmark-item-header">
+          <div class="bookmark-item-content">
+            <%= render "bookmarks/bookmark_item_#{bookmark.bookmarkable_type.downcase}", bookmark: bookmark %>
+          </div>
+          <div class="bookmark-item-actions">
+            <%= button_to bookmark_path(bookmark, from_index: true), method: :delete,
+                class: "btn btn-small btn-secondary",
+                title: "Remove bookmark",
+                data: { turbo_stream: true } do %>
+              Remove
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="card">
+      <div class="empty-state">
+        <p>You haven't bookmarked anything yet.</p>
+        <p>Use the star icon on questions, answers, comments, and articles to save them for later.</p>
+      </div>
+    </div>
+  <% end %>
+</div>
