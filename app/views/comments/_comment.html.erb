@@ -21,8 +21,9 @@
       <% if comment.edited? %>
         <span class="comment-edited">(edited)</span>
       <% end %>
-      <% if user_signed_in? %>
-        <span class="comment-actions">
+      <span class="comment-actions">
+        <%= render 'bookmarks/bookmark_button', bookmarkable: comment %>
+        <% if user_signed_in? %>
           <% if comment.allows_replies? %>
             <button type="button" class="btn-link" data-action="comment-reply#toggle">Reply</button>
           <% end %>
@@ -37,8 +38,8 @@
                 class: "btn-link btn-link-danger",
                 form: { data: { turbo: false }, onsubmit: "return confirm('Are you sure you want to PERMANENTLY delete this comment and all its replies? This cannot be undone.')" } %>
           <% end %>
-        </span>
-      <% end %>
+        <% end %>
+      </span>
     </div>
     <div class="comment-reply-form" data-comment-reply-target="form" style="display: none;">
       <% if user_signed_in? %>

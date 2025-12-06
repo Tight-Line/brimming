@@ -36,6 +36,7 @@ class User < ApplicationRecord
   has_many :published_spaces, through: :space_publishers, source: :space
   has_many :space_opt_outs, dependent: :destroy
   has_many :articles, dependent: :destroy
+  has_many :bookmarks, dependent: :destroy
 
   # Validations (email handled by Devise's :validatable module)
   validates :username, presence: true,

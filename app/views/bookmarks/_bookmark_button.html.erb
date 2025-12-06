@@ -1,0 +1,33 @@
+<%# Bookmark button for any bookmarkable content %>
+<%
+  bookmark ||= user_signed_in? ? current_user.bookmarks.find_by(bookmarkable: bookmarkable) : nil
+  is_bookmarked = bookmark.present?
+  bookmarkable_type = bookmarkable.class.name.downcase
+%>
+
+<div class="bookmark-control" id="bookmark-<%= bookmarkable_type %>-<%= bookmarkable.id %>">
+  <% if user_signed_in? %>
+    <% if is_bookmarked %>
+      <%= button_to bookmark_path(bookmark),
+                   method: :delete,
+                   class: "bookmark-btn active",
+                   title: "Remove bookmark",
+                   data: { turbo_stream: true } do %>
+        <span class="bookmark-icon">&#9733;</span>
+      <% end %>
+    <% else %>
+      <%= button_to bookmarks_path,
+                   method: :post,
+                   class: "bookmark-btn",
+                   title: "Bookmark",
+                   params: { bookmark: { bookmarkable_type: bookmarkable.class.name, bookmarkable_id: bookmarkable.id } },
+                   data: { turbo_stream: true } do %>
+        <span class="bookmark-icon">&#9734;</span>
+      <% end %>
+    <% end %>
+  <% else %>
+    <button type="button" class="bookmark-btn" title="Sign in to bookmark" data-action="modal#open">
+      <span class="bookmark-icon">&#9734;</span>
+    </button>
+  <% end %>
+</div>

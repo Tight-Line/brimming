@@ -16,6 +16,7 @@ class Question < ApplicationRecord
   has_many :question_tags, dependent: :destroy
   has_many :tags, through: :question_tags
   has_many :chunks, as: :chunkable, dependent: :destroy
+  has_many :bookmarks, as: :bookmarkable, dependent: :destroy
 
   # Validations
   validates :title, presence: true, length: { minimum: 10, maximum: 200 }

@@ -25,8 +25,9 @@
           <% if @question.views_count > 0 %>
             <span><%= @question.views_count %> <%= "view".pluralize(@question.views_count) %></span>
           <% end %>
-          <% if user_signed_in? %>
-            <span class="question-actions">
+          <span class="question-actions">
+            <%= render 'bookmarks/bookmark_button', bookmarkable: @question %>
+            <% if user_signed_in? %>
               <% if @question.owned_by?(current_user) %>
                 <%= link_to "Edit", edit_question_path(@question), class: "btn-link" %>
                 <%= button_to "Delete", question_path(@question), method: :delete,
@@ -38,8 +39,8 @@
                     class: "btn-link btn-link-danger",
                     form: { data: { turbo: false }, onsubmit: "return confirm('Are you sure you want to PERMANENTLY delete this question and all its answers and comments? This cannot be undone.')" } %>
               <% end %>
-            </span>
-          <% end %>
+            <% end %>
+          </span>
         </div>
       </div>
       <div class="question-body markdown-body">
@@ -101,8 +102,9 @@
                 <% if answer.is_correct? %>
                   <span class="badge badge-success">Solved</span>
                 <% end %>
-                <% if user_signed_in? %>
-                  <span class="answer-actions">
+                <span class="answer-actions">
+                  <%= render 'bookmarks/bookmark_button', bookmarkable: answer %>
+                  <% if user_signed_in? %>
                     <% if answer.owned_by?(current_user) %>
                       <%= link_to "Edit", edit_answer_path(answer), class: "btn-link" %>
                       <%= button_to "Delete", answer_path(answer), method: :delete,
@@ -114,8 +116,8 @@
                           class: "btn-link btn-link-danger",
                           form: { data: { turbo: false }, onsubmit: "return confirm('Are you sure you want to PERMANENTLY delete this answer and all its comments? This cannot be undone.')" } %>
                     <% end %>
-                  </span>
-                <% end %>
+                  <% end %>
+                </span>
               </div>
 
               <% answer_comments = answer.comments.top_level.sort_by(&:created_at) %>

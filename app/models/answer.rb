@@ -8,6 +8,7 @@ class Answer < ApplicationRecord
   belongs_to :sponsored_by, class_name: "User", optional: true
   has_many :votes, dependent: :destroy
   has_many :comments, as: :commentable, dependent: :destroy
+  has_many :bookmarks, as: :bookmarkable, dependent: :destroy
 
   # Callbacks
   after_commit :refresh_question_search_vector, on: %i[create update destroy]

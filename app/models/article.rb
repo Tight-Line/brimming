@@ -25,6 +25,7 @@ class Article < ApplicationRecord
   has_many :comments, as: :commentable, dependent: :destroy
   has_many :chunks, as: :chunkable, dependent: :destroy
   has_many :article_votes, dependent: :destroy
+  has_many :bookmarks, as: :bookmarkable, dependent: :destroy
 
   # File attachment for non-text formats (PDF, Word, etc.)
   has_one_attached :original_file

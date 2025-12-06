@@ -11,6 +11,7 @@ class Comment < ApplicationRecord
   belongs_to :last_editor, class_name: "User", optional: true
   has_many :replies, class_name: "Comment", foreign_key: :parent_comment_id, dependent: :destroy
   has_many :comment_votes, dependent: :destroy
+  has_many :bookmarks, as: :bookmarkable, dependent: :destroy
 
   # Validations
   validates :body, presence: true, length: { minimum: 1, maximum: 2000 }

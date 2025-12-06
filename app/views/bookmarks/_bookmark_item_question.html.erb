@@ -1,0 +1,18 @@
+<%
+  question = bookmark.bookmarkable
+%>
+<div class="bookmark-item-title">
+  <%= link_to question.title, question_path(question) %>
+</div>
+<div class="bookmark-item-meta">
+  <span class="bookmark-item-type question">Question</span>
+  <span>in <%= link_to question.space.name, space_path(question.space) %></span>
+  <span>by <%= question.user.display_name %></span>
+  <span><%= question.answers_count %> <%= "answer".pluralize(question.answers_count) %></span>
+  <span>bookmarked <%= time_ago_in_words(bookmark.created_at) %> ago</span>
+</div>
+<% if question.body.present? %>
+  <div class="bookmark-item-preview">
+    <%= truncate(strip_tags(markdown(question.body)), length: 200) %>
+  </div>
+<% end %>
