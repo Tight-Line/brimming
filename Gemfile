@@ -88,7 +88,7 @@ group :development, :test do
   gem "factory_bot_rails", "~> 6.0"
 
   # Generate fake data for tests and seeds
-  gem "faker", "~> 3.0"
+  gem "faker", "~> 3.5"
 end
 
 group :test do
