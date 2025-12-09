@@ -1069,6 +1069,42 @@ ALTER SEQUENCE brimming.tags_id_seq OWNED BY brimming.tags.id;
 
 
 --
+-- Name: user_emails; Type: TABLE; Schema: brimming; Owner: -
+--
+
+CREATE TABLE brimming.user_emails (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    email character varying NOT NULL,
+    "primary" boolean DEFAULT false NOT NULL,
+    verified boolean DEFAULT false NOT NULL,
+    verified_at timestamp(6) without time zone,
+    verification_token character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: user_emails_id_seq; Type: SEQUENCE; Schema: brimming; Owner: -
+--
+
+CREATE SEQUENCE brimming.user_emails_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: user_emails_id_seq; Type: SEQUENCE OWNED BY; Schema: brimming; Owner: -
+--
+
+ALTER SEQUENCE brimming.user_emails_id_seq OWNED BY brimming.user_emails.id;
+
+
+--
 -- Name: users; Type: TABLE; Schema: brimming; Owner: -
 --
 
@@ -1087,7 +1123,8 @@ CREATE TABLE brimming.users (
     remember_created_at timestamp(6) without time zone,
     provider character varying,
     uid character varying,
-    ldap_dn character varying
+    ldap_dn character varying,
+    timezone character varying DEFAULT 'UTC'::character varying
 );
 
 
@@ -1330,6 +1367,13 @@ ALTER TABLE ONLY brimming.spaces ALTER COLUMN id SET DEFAULT nextval('brimming.s
 --
 
 ALTER TABLE ONLY brimming.tags ALTER COLUMN id SET DEFAULT nextval('brimming.tags_id_seq'::regclass);
+
+
+--
+-- Name: user_emails id; Type: DEFAULT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.user_emails ALTER COLUMN id SET DEFAULT nextval('brimming.user_emails_id_seq'::regclass);
 
 
 --
@@ -1576,6 +1620,14 @@ ALTER TABLE ONLY brimming.spaces
 
 ALTER TABLE ONLY brimming.tags
     ADD CONSTRAINT tags_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_emails user_emails_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.user_emails
+    ADD CONSTRAINT user_emails_pkey PRIMARY KEY (id);
 
 
 --
@@ -2274,6 +2326,34 @@ CREATE UNIQUE INDEX index_tags_on_space_id_and_slug ON brimming.tags USING btree
 
 
 --
+-- Name: index_user_emails_on_email; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE UNIQUE INDEX index_user_emails_on_email ON brimming.user_emails USING btree (email);
+
+
+--
+-- Name: index_user_emails_on_user_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_user_emails_on_user_id ON brimming.user_emails USING btree (user_id);
+
+
+--
+-- Name: index_user_emails_on_user_id_and_primary; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE UNIQUE INDEX index_user_emails_on_user_id_and_primary ON brimming.user_emails USING btree (user_id, "primary") WHERE ("primary" = true);
+
+
+--
+-- Name: index_user_emails_on_verification_token; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE UNIQUE INDEX index_user_emails_on_verification_token ON brimming.user_emails USING btree (verification_token) WHERE (verification_token IS NOT NULL);
+
+
+--
 -- Name: index_users_on_email; Type: INDEX; Schema: brimming; Owner: -
 --
 
@@ -2478,6 +2558,14 @@ ALTER TABLE ONLY brimming.answers
 
 ALTER TABLE ONLY brimming.votes
     ADD CONSTRAINT fk_rails_3f8d383c32 FOREIGN KEY (answer_id) REFERENCES brimming.answers(id);
+
+
+--
+-- Name: user_emails fk_rails_410ac92848; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.user_emails
+    ADD CONSTRAINT fk_rails_410ac92848 FOREIGN KEY (user_id) REFERENCES brimming.users(id);
 
 
 --
@@ -2703,6 +2791,9 @@ ALTER TABLE ONLY brimming.ldap_group_mapping_spaces
 SET search_path TO brimming,public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20251206210953'),
+('20251206210838'),
+('20251206195247'),
 ('20251206190846'),
 ('20251203222224'),
 ('20251203133555'),

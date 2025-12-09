@@ -10,6 +10,7 @@
   --primary-light: #E8F1FA;
   --success-color: #28a745;
   --success-light: #e8f5e9;
+  --error-color: #dc3545;
   --text-color: #333;
   --text-muted: #6c757d;
   --border-color: #dee2e6;
@@ -432,8 +433,40 @@ ul, ol {
   margin-bottom: 2rem;
 }
 
+.space-header-compact {
+  padding: 1.25rem 1.5rem;
+}
+
+.space-header-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.space-header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.space-header-actions {
+  flex-shrink: 0;
+}
+
 .space-header h1 {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+  font-size: 1.5rem;
+}
+
+.space-header-compact .space-description {
+  margin-bottom: 0;
+  font-size: 0.9375rem;
+}
+
+.space-header-compact .admin-actions {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
 }
 
 .space-description {
@@ -3685,4 +3718,555 @@ pre.highlight.text::before { content: ""; }
 .bookmark-item-actions {
   display: flex;
   gap: 0.5rem;
+}
+
+/* User Menu Dropdown (Hamburger Menu) */
+.user-menu-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.hamburger-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-color);
+}
+
+.hamburger-btn:hover {
+  background: var(--background-color);
+  border-color: var(--primary-color);
+}
+
+.hamburger-btn[aria-expanded="true"] {
+  background: var(--primary-light);
+  border-color: var(--primary-color);
+}
+
+.nav-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.nav-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: var(--white);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.nav-username {
+  font-size: 0.875rem;
+  font-weight: 500;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hamburger-icon {
+  font-size: 0.75rem;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+.user-menu-panel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 220px;
+  background: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.user-menu-panel.dropdown-menu-visible {
+  display: block;
+  animation: dropdown-enter 0.15s ease-out;
+}
+
+@keyframes dropdown-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.user-menu-header {
+  padding: 0.75rem 1rem;
+  background: var(--background-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.user-menu-header .user-badge {
+  font-weight: 600;
+}
+
+.user-menu-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 0;
+}
+
+.user-menu-nav {
+  padding: 0.5rem 0;
+}
+
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
+  color: var(--text-color);
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.user-menu-item:hover {
+  background: var(--background-color);
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.user-menu-icon {
+  font-size: 1rem;
+  width: 1.25rem;
+  text-align: center;
+  opacity: 0.7;
+}
+
+.user-menu-footer {
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.user-menu-logout {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.625rem 1rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+}
+
+.user-menu-logout:hover {
+  background: #fdecea;
+  color: #dc3545;
+}
+
+/* Mobile responsive - keep hamburger always visible */
+@media (max-width: 768px) {
+  .user-menu-panel {
+    min-width: 200px;
+  }
+
+  .nav-username {
+    display: none;
+  }
+}
+
+/* ===========================
+   Settings Pages
+   =========================== */
+
+.settings-page {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.settings-header {
+  margin-bottom: 2rem;
+}
+
+.settings-header h1 {
+  margin-bottom: 0.5rem;
+}
+
+.settings-description {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Settings Form */
+.settings-form {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.form-section {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
+}
+
+.form-section h2 {
+  font-size: 1.125rem;
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.375rem;
+  color: var(--text-color);
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.form-hint {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-top: 0.375rem;
+  margin-bottom: 0;
+}
+
+.form-errors {
+  background: #fdecea;
+  border: 1px solid #f5c6cb;
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-errors h3 {
+  color: #721c24;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.form-errors ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+
+.form-errors li {
+  color: #721c24;
+  font-size: 0.875rem;
+}
+
+.form-actions {
+  padding: 1.5rem;
+  background: var(--background-color);
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+/* Avatar Upload */
+.avatar-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.current-avatar {
+  width: 80px;
+  height: 80px;
+}
+
+.avatar-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+/* Email List */
+.email-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.email-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--background-color);
+  border-radius: var(--radius-sm);
+}
+
+.email-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.email-address {
+  font-family: monospace;
+}
+
+.email-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.email-badge {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+
+.email-badge-primary {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.email-badge-verified {
+  background: var(--success-light);
+  color: var(--success-color);
+}
+
+.email-badge-unverified {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.add-email-form {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.add-email-form h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.inline-form .form-group.inline {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.inline-form .form-group.inline .form-input {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.btn-small {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.btn-danger {
+  background: var(--error-color);
+  color: white;
+  border-color: var(--error-color);
+}
+
+.btn-danger:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+/* Subscriptions List */
+.subscriptions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.subscription-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.subscription-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.subscription-name {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.subscription-name a {
+  color: var(--text-color);
+}
+
+.subscription-name a:hover {
+  color: var(--primary-color);
+}
+
+.subscription-badge {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.subscription-badge-ldap {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.subscription-badge-manual {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.subscription-badge-opted-out {
+  background: #fef3c7;
+  color: #92400e;
+  margin-left: 0.25rem;
+}
+
+.subscription-actions {
+  flex-shrink: 0;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.empty-state p {
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p:last-child {
+  margin-bottom: 0;
+}
+
+/* Button Sizes */
+.btn-small {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+/* Subscribed Icon (star) */
+.subscribed-icon {
+  color: #f59e0b;
+  font-size: 0.9em;
+}
+
+/* Subscribe Button */
+.subscribe-button-container {
+  display: inline-block;
+}
+
+.subscribe-button-container form {
+  display: inline-block;
+  margin: 0;
+}
+
+.subscribe-icon {
+  margin-right: 0.25rem;
+}
+
+.space-subscribe-action {
+  margin-top: 0.75rem;
+}
+
+/* Question/Article meta subscribe button */
+.question-meta .subscribe-button-container,
+.article-meta .subscribe-button-container {
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+/* Mobile Settings */
+@media (max-width: 768px) {
+  .subscription-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .subscription-actions {
+    width: 100%;
+  }
+
+  .subscription-actions .btn {
+    width: 100%;
+  }
 }

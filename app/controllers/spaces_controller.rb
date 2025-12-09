@@ -3,7 +3,7 @@
 class SpacesController < ApplicationController
   before_action :require_login, except: [ :index, :show ]
   before_action :set_space, only: [ :show, :edit, :update, :destroy, :moderators, :add_moderator, :remove_moderator,
-                                     :publishers, :add_publisher, :remove_publisher ]
+                                     :publishers, :add_publisher, :remove_publisher, :subscribe, :unsubscribe ]
 
   def index
     @spaces = policy_scope(Space)
@@ -96,6 +96,27 @@ class SpacesController < ApplicationController
     user = User.find(params[:user_id])
     @space.remove_publisher(user)
     redirect_to publishers_space_path(@space), notice: "#{user.display_name} is no longer a publisher.", status: :see_other
+  end
+
+  def subscribe
+    authorize @space, :subscribe?
+    SpaceSubscription.find_or_create_by!(user: current_user, space: @space)
+
+    respond_to do |format|
+      format.html { redirect_back fallback_location: @space, notice: "You are now subscribed to #{@space.name}." }
+      format.turbo_stream
+    end
+  end
+
+  def unsubscribe
+    authorize @space, :unsubscribe?
+    subscription = current_user.space_subscriptions.find_by(space: @space)
+    subscription&.destroy
+
+    respond_to do |format|
+      format.html { redirect_back fallback_location: @space, notice: "You have unsubscribed from #{@space.name}." }
+      format.turbo_stream
+    end
   end
 
   private

@@ -29,7 +29,11 @@ RSpec.describe "Spaces" do
       sign_in user
       get spaces_path
 
-      expect(response.body).to include("badge-subscribed")
+      # Check that subscribed space has the star icon indicator
+      doc = Nokogiri::HTML(response.body)
+      subscribed_item = doc.at_css(".space-name:contains('Subscribed Space')")
+      expect(subscribed_item).to be_present
+      expect(subscribed_item.at_css(".subscribed-icon")).to be_present
     end
 
     it "shows question counts" do
@@ -84,7 +88,7 @@ RSpec.describe "Spaces" do
       expect(response.body).to include("No questions in this space yet.")
     end
 
-    it "shows subscribed status when user is subscribed" do
+    it "shows subscribed button when user is subscribed" do
       user = create(:user)
       space = create(:space)
       create(:space_subscription, user: user, space: space)
@@ -92,7 +96,19 @@ RSpec.describe "Spaces" do
       sign_in user
       get space_path(space)
 
-      expect(response.body).to include("You are subscribed")
+      expect(response.body).to include("Subscribed")
+      expect(response.body).to include("unsubscribe")
+    end
+
+    it "shows subscribe button when user is not subscribed" do
+      user = create(:user)
+      space = create(:space)
+
+      sign_in user
+      get space_path(space)
+
+      expect(response.body).to include("Subscribe")
+      expect(response.body).not_to include("Subscribed")
     end
 
     it "shows admin actions for admins" do
@@ -584,6 +600,116 @@ RSpec.describe "Spaces" do
 
       expect(response).to redirect_to(publishers_space_path(space))
       expect(space.publisher?(publisher)).to be false
+    end
+  end
+
+  describe "POST /spaces/:id/subscribe" do
+    it "requires login" do
+      space = create(:space)
+      post subscribe_space_path(space)
+      expect(response).to redirect_to(new_user_session_path)
+    end
+
+    it "subscribes the user to the space" do
+      user = create(:user)
+      space = create(:space)
+      sign_in user
+
+      expect {
+        post subscribe_space_path(space)
+      }.to change(SpaceSubscription, :count).by(1)
+
+      expect(user.subscribed_spaces).to include(space)
+    end
+
+    it "redirects back with notice on HTML format" do
+      user = create(:user)
+      space = create(:space)
+      sign_in user
+
+      post subscribe_space_path(space)
+
+      expect(response).to redirect_to(space)
+      expect(flash[:notice]).to include("subscribed")
+    end
+
+    it "responds with turbo_stream format" do
+      user = create(:user)
+      space = create(:space)
+      sign_in user
+
+      post subscribe_space_path(space), headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include("turbo-stream")
+    end
+
+    it "does not create duplicate subscriptions" do
+      user = create(:user)
+      space = create(:space)
+      create(:space_subscription, user: user, space: space)
+      sign_in user
+
+      expect {
+        post subscribe_space_path(space)
+      }.not_to change(SpaceSubscription, :count)
+    end
+  end
+
+  describe "DELETE /spaces/:id/unsubscribe" do
+    it "requires login" do
+      space = create(:space)
+      delete unsubscribe_space_path(space)
+      expect(response).to redirect_to(new_user_session_path)
+    end
+
+    it "unsubscribes the user from the space" do
+      user = create(:user)
+      space = create(:space)
+      create(:space_subscription, user: user, space: space)
+      sign_in user
+
+      expect {
+        delete unsubscribe_space_path(space)
+      }.to change(SpaceSubscription, :count).by(-1)
+
+      expect(user.subscribed_spaces).not_to include(space)
+    end
+
+    it "redirects back with notice on HTML format" do
+      user = create(:user)
+      space = create(:space)
+      create(:space_subscription, user: user, space: space)
+      sign_in user
+
+      delete unsubscribe_space_path(space)
+
+      expect(response).to redirect_to(space)
+      expect(flash[:notice]).to include("unsubscribed")
+    end
+
+    it "responds with turbo_stream format" do
+      user = create(:user)
+      space = create(:space)
+      create(:space_subscription, user: user, space: space)
+      sign_in user
+
+      delete unsubscribe_space_path(space), headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include("turbo-stream")
+    end
+
+    it "handles unsubscribing when not subscribed gracefully" do
+      user = create(:user)
+      space = create(:space)
+      sign_in user
+
+      expect {
+        delete unsubscribe_space_path(space)
+      }.not_to change(SpaceSubscription, :count)
+
+      expect(response).to redirect_to(space)
     end
   end
 end

@@ -29,6 +29,9 @@
                 <%= link_to space.name, space_path(space), class: "space-link" %><%= ", " unless i == @article.spaces.size - 1 %>
               <% end %>
             </span>
+            <% @article.spaces.each do |space| %>
+              <%= render "shared/subscribe_button", space: space, size: "btn-small" %>
+            <% end %>
           <% else %>
             <span class="meta-separator">·</span>
             <span class="orphaned-badge">Orphaned</span>

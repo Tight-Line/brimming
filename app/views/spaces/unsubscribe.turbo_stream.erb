@@ -1,0 +1,6 @@
+<%= turbo_stream.replace "subscribe-button-#{@space.slug}" do %>
+  <%= render "shared/subscribe_button", space: @space %>
+<% end %>
+
+<%# Also remove from subscriptions page if present %>
+<%= turbo_stream.remove "subscription-#{@space.id}-" %>

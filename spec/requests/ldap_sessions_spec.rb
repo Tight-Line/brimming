@@ -177,5 +177,30 @@ RSpec.describe "LdapSessions", type: :request do
         expect(flash[:alert]).to include("Failed to create user account")
       end
     end
+
+    context "when email exists but is unverified" do
+      let!(:existing_user) { create(:user, email: "other@example.com") }
+      let!(:unverified_email) { create(:user_email, :unverified, user: existing_user, email: "testuser@example.com") }
+
+      before do
+        allow(mock_ldap).to receive(:auth)
+        allow(mock_ldap).to receive(:bind).and_return(true)
+        allow(mock_ldap).to receive(:search).and_yield(mock_user_entry)
+        allow(mock_ldap).to receive(:get_operation_result).and_return(OpenStruct.new(code: 0, message: "Success"))
+      end
+
+      it "redirects back with unverified email alert" do
+        post ldap_sign_in_path, params: { ldap_server_id: ldap_server.id, username: "testuser", password: "testpass" }
+        expect(response).to redirect_to(ldap_sign_in_path)
+        expect(flash[:alert]).to include("already registered but not verified")
+        expect(flash[:alert]).to include("testuser@example.com")
+      end
+
+      it "does not create a new user" do
+        expect {
+          post ldap_sign_in_path, params: { ldap_server_id: ldap_server.id, username: "testuser", password: "testpass" }
+        }.not_to change(User, :count)
+      end
+    end
   end
 end

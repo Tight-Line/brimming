@@ -1,0 +1,52 @@
+<%# Hamburger menu for authenticated users %>
+<div class="user-menu-dropdown" data-controller="dropdown">
+  <button type="button"
+          class="hamburger-btn"
+          data-action="dropdown#toggle"
+          data-dropdown-target="button"
+          aria-expanded="false"
+          aria-haspopup="true"
+          aria-label="User menu">
+    <% if current_user.avatar.attached? %>
+      <%= image_tag current_user.avatar.variant(:thumb), class: "nav-avatar", alt: current_user.display_name %>
+    <% else %>
+      <span class="nav-avatar-placeholder"><%= current_user.display_name.first.upcase %></span>
+    <% end %>
+    <span class="nav-username"><%= current_user.display_name %></span>
+    <span class="hamburger-icon">&#9662;</span>
+  </button>
+
+  <div class="user-menu-panel" data-dropdown-target="menu">
+    <div class="user-menu-header">
+      <%= render 'shared/user_badge', user: current_user, link: false %>
+    </div>
+
+    <div class="user-menu-divider"></div>
+
+    <nav class="user-menu-nav">
+      <%= link_to edit_settings_profile_path, class: "user-menu-item" do %>
+        <span class="user-menu-icon">&#9881;</span>
+        Profile
+      <% end %>
+
+      <%= link_to settings_subscriptions_path, class: "user-menu-item" do %>
+        <span class="user-menu-icon">&#9733;</span>
+        Subscriptions
+      <% end %>
+
+      <%= link_to bookmarks_path, class: "user-menu-item" do %>
+        <span class="user-menu-icon">&#128278;</span>
+        Bookmarks
+      <% end %>
+    </nav>
+
+    <div class="user-menu-divider"></div>
+
+    <div class="user-menu-footer">
+      <%= button_to destroy_user_session_path, method: :delete, class: "user-menu-logout" do %>
+        <span class="user-menu-icon">&#10140;</span>
+        Log out
+      <% end %>
+    </div>
+  </div>
+</div>

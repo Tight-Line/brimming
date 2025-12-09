@@ -35,6 +35,8 @@ RSpec.describe User do
     it { is_expected.to have_many(:space_publishers).dependent(:destroy) }
     it { is_expected.to have_many(:published_spaces).through(:space_publishers).source(:space) }
     it { is_expected.to have_many(:articles).dependent(:destroy) }
+    it { is_expected.to have_many(:user_emails).dependent(:destroy) }
+    it { is_expected.to have_one(:primary_user_email) }
   end
 
   describe "enums" do
@@ -400,6 +402,144 @@ RSpec.describe User do
     end
   end
 
+  describe "#add_email" do
+    let(:user) { create(:user) }
+
+    it "creates a new unverified email for the user" do
+      result = user.add_email("new@example.com")
+      expect(result).to be_a(UserEmail)
+      expect(result.email).to eq("new@example.com")
+      expect(result.verified?).to be false
+      expect(result.primary?).to be false
+    end
+  end
+
+  describe "#has_verified_email?" do
+    let(:user) { create(:user) }
+
+    it "returns true when user has a verified email matching the address" do
+      create(:user_email, :verified, user: user, email: "verified@example.com")
+      expect(user.has_verified_email?("verified@example.com")).to be true
+    end
+
+    it "returns false when email is unverified" do
+      create(:user_email, :unverified, user: user, email: "unverified@example.com")
+      expect(user.has_verified_email?("unverified@example.com")).to be false
+    end
+
+    it "returns false when email does not exist" do
+      expect(user.has_verified_email?("nonexistent@example.com")).to be false
+    end
+
+    it "is case insensitive" do
+      create(:user_email, :verified, user: user, email: "verified@example.com")
+      expect(user.has_verified_email?("VERIFIED@EXAMPLE.COM")).to be true
+    end
+  end
+
+  describe ".find_for_authentication" do
+    let!(:user) { create(:user, email: "primary@example.com") }
+
+    it "delegates to find_for_database_authentication" do
+      result = described_class.find_for_authentication(email: "primary@example.com")
+      expect(result).to eq(user)
+    end
+  end
+
+  describe ".find_for_database_authentication" do
+    let!(:user) { create(:user, email: "test@example.com") }
+
+    context "with nil email" do
+      it "returns nil" do
+        result = described_class.find_for_database_authentication(email: nil)
+        expect(result).to be_nil
+      end
+    end
+
+    context "with blank email" do
+      it "returns nil" do
+        result = described_class.find_for_database_authentication(email: "")
+        expect(result).to be_nil
+      end
+    end
+  end
+
+  describe ".find_first_by_auth_conditions" do
+    let!(:user) { create(:user, email: "test@example.com") }
+
+    context "with valid verified email" do
+      it "returns the user" do
+        result = described_class.find_first_by_auth_conditions(email: "test@example.com")
+        expect(result).to eq(user)
+      end
+    end
+
+    context "with nil email" do
+      it "returns nil" do
+        result = described_class.find_first_by_auth_conditions(email: nil)
+        expect(result).to be_nil
+      end
+    end
+
+    context "with blank email" do
+      it "returns nil" do
+        result = described_class.find_first_by_auth_conditions(email: "")
+        expect(result).to be_nil
+      end
+    end
+
+    context "with unverified email" do
+      it "returns nil" do
+        unverified = create(:user_email, :unverified, user: user, email: "unverified@example.com")
+        result = described_class.find_first_by_auth_conditions(email: "unverified@example.com")
+        expect(result).to be_nil
+      end
+    end
+  end
+
+  describe "after_create callback: create_primary_user_email" do
+    context "when user has blank email" do
+      it "does not create a primary user_email" do
+        # Use build and save to bypass validation
+        user = build(:user, email: "temp@example.com")
+        user.save!
+        user.user_emails.destroy_all
+        user.update_column(:email, "")
+        user.reload
+
+        # Manually trigger callback
+        user.send(:create_primary_user_email)
+
+        expect(user.user_emails.count).to eq(0)
+      end
+    end
+
+    context "when email already exists in user_emails" do
+      it "does not create a duplicate" do
+        user = create(:user, email: "existing@example.com")
+        initial_count = user.user_emails.count
+
+        # Manually trigger callback again
+        user.send(:create_primary_user_email)
+
+        expect(user.user_emails.count).to eq(initial_count)
+      end
+    end
+  end
+
+  describe "UnverifiedEmailError" do
+    it "stores the email address" do
+      error = User::UnverifiedEmailError.new("test@example.com")
+      expect(error.email).to eq("test@example.com")
+    end
+
+    it "has a descriptive message" do
+      error = User::UnverifiedEmailError.new("test@example.com")
+      expect(error.message).to include("test@example.com")
+      expect(error.message).to include("verified")
+    end
+  end
+
   describe ".from_omniauth" do
     let(:ldap_server) { create(:ldap_server) }
     let(:auth_hash) do
@@ -498,6 +638,54 @@ RSpec.describe User do
         expect(user.ldap_dn).to be_nil
       end
     end
+
+    context "when email exists but is unverified" do
+      let!(:existing_user) { create(:user, email: "other@example.com") }
+      let!(:unverified_email) { create(:user_email, :unverified, user: existing_user, email: "testuser@example.com") }
+
+      it "raises UnverifiedEmailError" do
+        expect {
+          User.from_omniauth(auth_hash, ldap_server)
+        }.to raise_error(User::UnverifiedEmailError, /testuser@example.com/)
+      end
+
+      it "includes the email in the error" do
+        error = nil
+        begin
+          User.from_omniauth(auth_hash, ldap_server)
+        rescue User::UnverifiedEmailError => e
+          error = e
+        end
+        expect(error.email).to eq("testuser@example.com")
+      end
+    end
+
+    context "when auth hash has nil email" do
+      let(:auth_hash_nil_email) do
+        OpenStruct.new(
+          provider: "ldap",
+          uid: "nilemail",
+          info: OpenStruct.new(
+            email: nil,
+            name: "No Email User",
+            nickname: "nilemail"
+          ),
+          extra: OpenStruct.new(
+            raw_info: OpenStruct.new(
+              dn: "uid=nilemail,ou=users,dc=example,dc=com"
+            )
+          )
+        )
+      end
+
+      it "handles nil email gracefully in processing" do
+        # The email becomes empty string after safe navigation
+        # This should fail validation, but let's verify the code path works
+        expect {
+          User.from_omniauth(auth_hash_nil_email, ldap_server)
+        }.to raise_error(ActiveRecord::RecordInvalid)
+      end
+    end
   end
 
   describe ".generate_unique_username" do
@@ -524,6 +712,196 @@ RSpec.describe User do
       create(:user, username: "popular_1")
       create(:user, username: "popular_2")
       expect(User.generate_unique_username("popular")).to eq("popular_3")
+    end
+  end
+
+  describe "#all_subscribed_spaces" do
+    let(:user) { create(:user) }
+    let(:space1) { create(:space) }
+    let(:space2) { create(:space) }
+
+    context "with only manual subscriptions" do
+      before do
+        create(:space_subscription, user: user, space: space1)
+      end
+
+      it "returns manually subscribed spaces" do
+        expect(user.all_subscribed_spaces).to include(space1)
+        expect(user.all_subscribed_spaces).not_to include(space2)
+      end
+    end
+
+    context "with LDAP subscriptions" do
+      let(:ldap_user) { create(:user, provider: "ldap", ldap_dn: "uid=test,ou=users,dc=example,dc=com") }
+      let(:ldap_server) { create(:ldap_server, enabled: true) }
+      let(:ldap_mapping) { create(:ldap_group_mapping, ldap_server: ldap_server) }
+
+      before do
+        create(:ldap_group_mapping_space, ldap_group_mapping: ldap_mapping, space: space2)
+      end
+
+      it "returns LDAP-mapped spaces" do
+        result = ldap_user.all_subscribed_spaces
+        expect(result).to include(space2)
+      end
+
+      it "excludes opted-out LDAP spaces" do
+        create(:space_opt_out, user: ldap_user, space: space2, ldap_group_mapping: ldap_mapping)
+        result = ldap_user.all_subscribed_spaces
+        expect(result).not_to include(space2)
+      end
+
+      it "combines manual and LDAP subscriptions" do
+        create(:space_subscription, user: ldap_user, space: space1)
+        result = ldap_user.all_subscribed_spaces
+        expect(result).to include(space1, space2)
+      end
+    end
+
+    context "with no subscriptions" do
+      it "returns empty collection" do
+        expect(user.all_subscribed_spaces).to be_empty
+      end
+    end
+  end
+
+  describe "#subscribed_to?" do
+    let(:user) { create(:user) }
+    let(:space) { create(:space) }
+
+    context "with manual subscription" do
+      before do
+        create(:space_subscription, user: user, space: space)
+      end
+
+      it "returns true for subscribed space" do
+        expect(user.subscribed_to?(space)).to be true
+      end
+    end
+
+    context "with LDAP subscription" do
+      let(:ldap_user) { create(:user, provider: "ldap", ldap_dn: "uid=test,ou=users,dc=example,dc=com") }
+      let(:ldap_server) { create(:ldap_server, enabled: true) }
+      let(:ldap_mapping) { create(:ldap_group_mapping, ldap_server: ldap_server) }
+
+      before do
+        create(:ldap_group_mapping_space, ldap_group_mapping: ldap_mapping, space: space)
+      end
+
+      it "returns true for LDAP-mapped space" do
+        expect(ldap_user.subscribed_to?(space)).to be true
+      end
+
+      it "returns false if opted out of LDAP space" do
+        create(:space_opt_out, user: ldap_user, space: space, ldap_group_mapping: ldap_mapping)
+        expect(ldap_user.subscribed_to?(space)).to be false
+      end
+    end
+
+    context "with no subscription" do
+      it "returns false" do
+        expect(user.subscribed_to?(space)).to be false
+      end
+    end
+  end
+
+  describe "#ldap_subscribed_space_ids" do
+    let(:space1) { create(:space) }
+    let(:space2) { create(:space) }
+
+    context "when user is not an LDAP user" do
+      let(:user) { create(:user, provider: nil) }
+
+      it "returns empty array" do
+        expect(user.ldap_subscribed_space_ids).to eq([])
+      end
+    end
+
+    context "when LDAP user has no ldap_dn" do
+      let(:ldap_user) { create(:user, provider: "ldap", ldap_dn: nil) }
+
+      it "returns empty array" do
+        expect(ldap_user.ldap_subscribed_space_ids).to eq([])
+      end
+    end
+
+    context "when LDAP user with valid ldap_dn" do
+      let(:ldap_user) { create(:user, provider: "ldap", ldap_dn: "uid=test,ou=users,dc=example,dc=com") }
+      let(:ldap_server) { create(:ldap_server, enabled: true) }
+      let(:disabled_server) { create(:ldap_server, enabled: false) }
+      let(:ldap_mapping) { create(:ldap_group_mapping, ldap_server: ldap_server) }
+      let(:disabled_mapping) { create(:ldap_group_mapping, ldap_server: disabled_server) }
+
+      before do
+        create(:ldap_group_mapping_space, ldap_group_mapping: ldap_mapping, space: space1)
+        create(:ldap_group_mapping_space, ldap_group_mapping: disabled_mapping, space: space2)
+      end
+
+      it "returns space IDs from enabled LDAP servers" do
+        expect(ldap_user.ldap_subscribed_space_ids).to include(space1.id)
+      end
+
+      it "excludes spaces from disabled LDAP servers" do
+        expect(ldap_user.ldap_subscribed_space_ids).not_to include(space2.id)
+      end
+
+      it "excludes opted-out spaces" do
+        create(:space_opt_out, user: ldap_user, space: space1, ldap_group_mapping: ldap_mapping)
+        expect(ldap_user.ldap_subscribed_space_ids).not_to include(space1.id)
+      end
+    end
+  end
+
+  describe "#ldap_subscription_for" do
+    let(:space) { create(:space) }
+
+    context "when user is not an LDAP user" do
+      let(:user) { create(:user, provider: nil) }
+
+      it "returns nil" do
+        expect(user.ldap_subscription_for(space)).to be_nil
+      end
+    end
+
+    context "when LDAP user has no ldap_dn" do
+      let(:ldap_user) { create(:user, provider: "ldap", ldap_dn: nil) }
+
+      it "returns nil" do
+        expect(ldap_user.ldap_subscription_for(space)).to be_nil
+      end
+    end
+
+    context "when LDAP user with valid ldap_dn" do
+      let(:ldap_user) { create(:user, provider: "ldap", ldap_dn: "uid=test,ou=users,dc=example,dc=com") }
+      let(:ldap_server) { create(:ldap_server, enabled: true) }
+      let(:disabled_server) { create(:ldap_server, enabled: false) }
+      let(:ldap_mapping) { create(:ldap_group_mapping, ldap_server: ldap_server, group_pattern: "cn=devops") }
+      let(:disabled_mapping) { create(:ldap_group_mapping, ldap_server: disabled_server, group_pattern: "cn=other") }
+      let(:other_space) { create(:space) }
+
+      before do
+        create(:ldap_group_mapping_space, ldap_group_mapping: ldap_mapping, space: space)
+        create(:ldap_group_mapping_space, ldap_group_mapping: disabled_mapping, space: other_space)
+      end
+
+      it "returns the LDAP mapping for a space from an enabled server" do
+        result = ldap_user.ldap_subscription_for(space)
+        expect(result).to eq(ldap_mapping)
+      end
+
+      it "returns nil for a space from a disabled server" do
+        expect(ldap_user.ldap_subscription_for(other_space)).to be_nil
+      end
+
+      it "returns nil if user has opted out of the space" do
+        create(:space_opt_out, user: ldap_user, space: space, ldap_group_mapping: ldap_mapping)
+        expect(ldap_user.ldap_subscription_for(space)).to be_nil
+      end
+
+      it "returns nil for a space with no LDAP mapping" do
+        unrelated_space = create(:space)
+        expect(ldap_user.ldap_subscription_for(unrelated_space)).to be_nil
+      end
     end
   end
 

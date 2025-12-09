@@ -1,0 +1,12 @@
+Verify your email address
+
+Hi <%= @user.display_name %>,
+
+Please visit the link below to verify your email address (<%= @user_email.email %>):
+
+<%= @verification_url %>
+
+If you didn't add this email to your Brimming account, you can safely ignore this message.
+
+Thanks,
+The Brimming Team

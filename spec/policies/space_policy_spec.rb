@@ -39,6 +39,14 @@ RSpec.describe SpacePolicy do
     it "denies manage_publishers" do
       expect(policy(user).manage_publishers?).to be_falsey
     end
+
+    it "denies subscribe" do
+      expect(policy(user).subscribe?).to be_falsey
+    end
+
+    it "denies unsubscribe" do
+      expect(policy(user).unsubscribe?).to be_falsey
+    end
   end
 
   describe "for regular users" do
@@ -70,6 +78,14 @@ RSpec.describe SpacePolicy do
 
     it "denies manage_publishers" do
       expect(policy(user).manage_publishers?).to be false
+    end
+
+    it "allows subscribe" do
+      expect(policy(user).subscribe?).to be true
+    end
+
+    it "allows unsubscribe" do
+      expect(policy(user).unsubscribe?).to be true
     end
   end
 

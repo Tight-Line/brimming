@@ -1,0 +1,10 @@
+<%= turbo_stream.replace "subscription-#{@space.id}-#{@mapping.id}" do %>
+  <%= render "settings/subscriptions/subscription_item", sub: {
+    space: @space,
+    source: :ldap,
+    ldap_group_name: @mapping.group_pattern,
+    opted_out: true,
+    subscribed: false,
+    mapping: @mapping
+  } %>
+<% end %>

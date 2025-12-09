@@ -3,8 +3,9 @@
 # SMTP Configuration
 # Configure Action Mailer to use SMTP with environment variables
 # This allows flexible configuration across different environments
+# Skip in test environment - tests use the :test delivery method
 
-if ENV["SMTP_HOST"].present?
+if ENV["SMTP_HOST"].present? && !Rails.env.test?
   Rails.application.config.action_mailer.delivery_method = :smtp
 
   smtp_settings = {
@@ -13,9 +14,12 @@ if ENV["SMTP_HOST"].present?
   }
 
   # TLS/SSL configuration
+  # Note: For servers without TLS support (like Mailhog), set SMTP_TLS=false
+  # This disables both TLS and STARTTLS to avoid connection errors
   if ENV["SMTP_TLS"] == "true"
     smtp_settings[:enable_starttls_auto] = true
   elsif ENV["SMTP_TLS"] == "false"
+    smtp_settings[:tls] = false
     smtp_settings[:enable_starttls_auto] = false
   end
 

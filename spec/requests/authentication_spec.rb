@@ -157,6 +157,15 @@ RSpec.describe "Authentication" do
 
         expect(response).to redirect_to(root_path)
       end
+
+      it "signs in with a secondary verified email" do
+        secondary = create(:user_email, :verified, user: user, email: "secondary@example.com")
+        post user_session_path, params: {
+          user: { email: "secondary@example.com", password: "password123" }
+        }
+
+        expect(response).to redirect_to(root_path)
+      end
     end
 
     context "with invalid credentials" do
@@ -175,6 +184,15 @@ RSpec.describe "Authentication" do
 
         expect(response.body).to include("Invalid")
       end
+
+      it "does not sign in with an unverified email" do
+        unverified = create(:user_email, :unverified, user: user, email: "unverified@example.com")
+        post user_session_path, params: {
+          user: { email: "unverified@example.com", password: "password123" }
+        }
+
+        expect(response.body).to include("Invalid")
+      end
     end
   end
 
@@ -187,6 +205,72 @@ RSpec.describe "Authentication" do
       delete destroy_user_session_path
 
       expect(response).to redirect_to(root_path)
+    end
+  end
+
+  describe "POST /users/password (password reset)" do
+    include ActiveJob::TestHelper
+
+    let(:user) { create(:user) }
+
+    context "with primary email" do
+      it "sends reset instructions" do
+        perform_enqueued_jobs do
+          post user_password_path, params: {
+            user: { email: user.email }
+          }
+        end
+
+        expect(response).to redirect_to(new_user_session_path)
+        expect(ActionMailer::Base.deliveries.count).to eq(1)
+      end
+    end
+
+    context "with secondary verified email" do
+      it "sends reset instructions" do
+        secondary = create(:user_email, :verified, user: user, email: "secondary@example.com")
+        ActionMailer::Base.deliveries.clear
+
+        perform_enqueued_jobs do
+          post user_password_path, params: {
+            user: { email: "secondary@example.com" }
+          }
+        end
+
+        expect(response).to redirect_to(new_user_session_path)
+        expect(ActionMailer::Base.deliveries.count).to eq(1)
+      end
+    end
+
+    context "with unverified email" do
+      it "does not send reset instructions" do
+        unverified = create(:user_email, :unverified, user: user, email: "unverified@example.com")
+        ActionMailer::Base.deliveries.clear
+
+        perform_enqueued_jobs do
+          post user_password_path, params: {
+            user: { email: "unverified@example.com" }
+          }
+        end
+
+        # Devise shows the redirect but doesn't send the email for non-existent users
+        # to prevent email enumeration attacks
+        expect(ActionMailer::Base.deliveries.count).to eq(0)
+      end
+    end
+
+    context "with non-existent email" do
+      it "does not send reset instructions" do
+        ActionMailer::Base.deliveries.clear
+
+        perform_enqueued_jobs do
+          post user_password_path, params: {
+            user: { email: "nonexistent@example.com" }
+          }
+        end
+
+        expect(ActionMailer::Base.deliveries.count).to eq(0)
+      end
     end
   end
 end

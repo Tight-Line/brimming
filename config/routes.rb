@@ -40,8 +40,21 @@ Rails.application.routes.draw do
     end
   end
 
+  # Email verification (outside settings namespace for simpler URLs)
+  get "verify_email", to: "email_verifications#show", as: :verify_email
+
   # User settings
   namespace :settings do
+    resource :profile, only: [ :edit, :update ] do
+      post :add_email
+      delete :remove_email
+      post :set_primary_email
+      post :resend_verification
+    end
+
+    resources :subscriptions, only: [ :index ]
+
+    # Keep LDAP spaces routes for now (will be removed in Phase 4)
     resources :ldap_spaces, only: [ :index ] do
       collection do
         post :opt_out
@@ -113,6 +126,8 @@ Rails.application.routes.draw do
       post :add_publisher
       delete :remove_publisher
       get :search
+      post :subscribe
+      delete :unsubscribe
     end
 
     # Q&A Wizard - space-scoped for moderators

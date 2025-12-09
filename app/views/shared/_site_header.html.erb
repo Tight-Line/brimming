@@ -17,14 +17,7 @@
 
     <div class="user-menu">
       <% if user_signed_in? %>
-        <span class="user-greeting">
-          <%= render 'shared/user_badge', user: current_user %>
-        </span>
-        <%= link_to "Bookmarks", bookmarks_path, class: "btn-settings", title: "My Bookmarks" %>
-        <% if current_user.ldap_user? %>
-          <%= link_to "LDAP Spaces", settings_ldap_spaces_path, class: "btn-settings" %>
-        <% end %>
-        <%= button_to "Log out", destroy_user_session_path, method: :delete, class: "btn-logout" %>
+        <%= render 'shared/user_menu' %>
       <% else %>
         <%= link_to "Log in", new_user_session_path, class: "btn-login" %>
         <%= link_to "Sign up", new_user_registration_path, class: "btn-signup" %>

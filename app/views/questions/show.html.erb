@@ -22,6 +22,7 @@
             <span>(edited <%= time_ago_in_words(@question.edited_at) %> ago)</span>
           <% end %>
           <span>in <span class="space"><%= link_to @question.space.name, space_path(@question.space) %></span></span>
+          <%= render "shared/subscribe_button", space: @question.space, size: "btn-small" %>
           <% if @question.views_count > 0 %>
             <span><%= @question.views_count %> <%= "view".pluralize(@question.views_count) %></span>
           <% end %>

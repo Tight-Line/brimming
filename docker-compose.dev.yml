@@ -6,6 +6,7 @@ x-rails-env: &rails-env
   DB_PASS: brimming_dev
   DB_NAME: brimming
   REDIS_URL: redis://valkey:6379/0
+  BRIMMING_BASE_URL: http://localhost:33000
   SMTP_HOST: mailhog
   SMTP_PORT: 1025
   SMTP_TLS: "false"
