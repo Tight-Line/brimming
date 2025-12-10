@@ -11,7 +11,7 @@ RSpec.describe UserEmailMailer do
     it "renders the headers" do
       expect(mail.subject).to eq("Verify your email address")
       expect(mail.to).to eq([ "new@example.com" ])
-      expect(mail.from).to eq([ "from@example.com" ])
+      expect(mail.from).to eq([ ActionMailer::Base.default[:from] ])
     end
 
     it "renders the body with verification link" do
