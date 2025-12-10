@@ -18,7 +18,7 @@ class HomeController < ApplicationController
       if subscribed_space_ids.any?
         # Order by: subscribed spaces first, then by created_at desc
         base_query
-          .select(ActiveRecord::Base.sanitize_sql_array(["questions.*, CASE WHEN space_id IN (?) THEN 0 ELSE 1 END AS subscription_order", subscribed_space_ids]))
+          .select(ActiveRecord::Base.sanitize_sql_array([ "questions.*, CASE WHEN space_id IN (?) THEN 0 ELSE 1 END AS subscription_order", subscribed_space_ids ]))
           .order(Arel.sql("subscription_order ASC, questions.created_at DESC"))
           .limit(10)
       else
