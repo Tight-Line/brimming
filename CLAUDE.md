@@ -485,6 +485,9 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 ### What's Working
 - Full data model with Users, Spaces, Questions, Answers, Comments, Votes
 - Devise authentication with registration (username + email + password), login/logout
+- **Multi-email support** with verification emails, primary email switching, login with any verified email
+- **User profile settings** page with display name, avatar upload (Active Storage), timezone selection
+- **Hamburger menu** for user settings navigation (Profile, Subscriptions, Bookmarks, LDAP Spaces)
 - Full web UI for browsing and creating questions, answers, and comments
 - Voting system for questions, answers, and comments (with Turbo Stream updates)
 - Nested comments with replies (up to 3 levels deep)
