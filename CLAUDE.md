@@ -10,6 +10,56 @@ A Stack Overflow-style Q&A platform built with Ruby on Rails.
 
 Open-source project hosted on GitHub under the MIT License.
 
+---
+
+## Session Plan File (CRITICAL)
+
+**You MUST maintain a session plan file at `.claude/session-plan.md` for every non-trivial task.**
+
+### Why
+Context compaction or conversation failures can cause loss of progress. The plan file serves as persistent memory that survives these failures, allowing work to resume without starting over.
+
+### When to Create/Update
+1. **After planning**: Write the full detailed plan before starting implementation
+2. **After each round of edits**: Update to reflect what was completed and what remains
+3. **Before any complex operation**: Ensure the file is current
+
+### What to Include
+- **Task Summary**: What the user asked for
+- **Current Status**: What phase of work we're in
+- **Completed Steps**: What has been done, with file paths and brief descriptions
+- **Remaining Steps**: What still needs to be done
+- **Key Decisions**: Any important choices made and why
+- **Test Status**: Whether tests pass, coverage status
+
+### Format Example
+```markdown
+# Session Plan: [Brief Task Description]
+
+## Task Summary
+[What the user requested]
+
+## Status: [Planning | In Progress | Testing | Complete]
+
+## Completed
+- [x] Step 1 description (files: path/to/file.rb)
+- [x] Step 2 description
+
+## Remaining
+- [ ] Step 3 description
+- [ ] Step 4 description
+
+## Key Decisions
+- Decision 1: [rationale]
+
+## Notes
+[Any other context needed to resume]
+```
+
+**NEVER skip updating this file. It is your memory across context boundaries.**
+
+---
+
 ### Core Concepts
 - **Questions** belong to **Spaces** and are posted by **Users**
 - **Answers** belong to Questions and are posted by Users
