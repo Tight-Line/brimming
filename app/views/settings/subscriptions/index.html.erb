@@ -1,0 +1,21 @@
+<% content_for :title, "My Subscriptions" %>
+
+<div class="settings-page">
+  <div class="settings-header">
+    <h1>My Subscriptions</h1>
+    <p class="settings-description">Manage your space subscriptions. Subscribed spaces appear in your feed.</p>
+  </div>
+
+  <% if @subscriptions.empty? %>
+    <div class="empty-state">
+      <p>You're not subscribed to any spaces yet.</p>
+      <p><%= link_to "Browse spaces", spaces_path %> to find topics that interest you.</p>
+    </div>
+  <% else %>
+    <div class="subscriptions-list">
+      <% @subscriptions.each do |sub| %>
+        <%= render "settings/subscriptions/subscription_item", sub: sub %>
+      <% end %>
+    </div>
+  <% end %>
+</div>

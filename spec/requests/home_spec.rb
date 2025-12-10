@@ -38,9 +38,16 @@ RSpec.describe "Home" do
       sign_in user
       get root_path
 
-      expect(response.body).to include("Subscribed Space")
-      expect(response.body).to include("badge-subscribed")
-      expect(response.body).to include("Unsubscribed Space")
+      # Check that subscribed space has the star icon indicator
+      doc = Nokogiri::HTML(response.body)
+      subscribed_item = doc.at_css(".space-name:contains('Subscribed Space')")
+      expect(subscribed_item).to be_present
+      expect(subscribed_item.at_css(".subscribed-icon")).to be_present
+
+      # Check that unsubscribed space does NOT have the star icon
+      unsubscribed_item = doc.at_css(".space-name:contains('Unsubscribed Space')")
+      expect(unsubscribed_item).to be_present
+      expect(unsubscribed_item.at_css(".subscribed-icon")).to be_nil
     end
 
     it "limits recent questions to 10" do

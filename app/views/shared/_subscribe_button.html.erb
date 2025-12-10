@@ -1,0 +1,39 @@
+<%# Subscribe/Unsubscribe button for a space
+    Local variables:
+    - space: The space to subscribe/unsubscribe from
+    - size: Optional button size class (e.g., "btn-small") %>
+<% size ||= nil %>
+<div id="subscribe-button-<%= space.slug %>" class="subscribe-button-container">
+  <% if user_signed_in? %>
+    <% ldap_mapping = current_user.ldap_subscription_for(space) %>
+    <% if ldap_mapping %>
+      <%# Subscribed via LDAP - show non-clickable badge with group info %>
+      <span class="subscription-badge subscription-badge-ldap" title="Subscribed via LDAP group mapping">
+        <span class="subscribe-icon">&#9733;</span> via <%= ldap_mapping.group_pattern %>
+      </span>
+    <% elsif current_user.subscribed_spaces.include?(space) %>
+      <%# Manually subscribed - show unsubscribe button %>
+      <%= button_to unsubscribe_space_path(space),
+          method: :delete,
+          class: ["btn", "btn-secondary", size].compact.join(" "),
+          title: "Unsubscribe from #{space.name}" do %>
+        <span class="subscribe-icon">&#9733;</span> Subscribed
+      <% end %>
+    <% else %>
+      <%# Not subscribed - show subscribe button %>
+      <%= button_to subscribe_space_path(space),
+          method: :post,
+          class: ["btn", "btn-primary", size].compact.join(" "),
+          title: "Subscribe to #{space.name}" do %>
+        <span class="subscribe-icon">&#9734;</span> Subscribe
+      <% end %>
+    <% end %>
+  <% else %>
+    <%= link_to new_user_session_path,
+        class: ["btn", "btn-primary", size].compact.join(" "),
+        title: "Sign in to subscribe",
+        data: { turbo_frame: "modal" } do %>
+      <span class="subscribe-icon">&#9734;</span> Subscribe
+    <% end %>
+  <% end %>
+</div>

@@ -1,0 +1,38 @@
+<%# Local variables: sub (hash with :space, :source, :ldap_group_name, :opted_out, :mapping) %>
+<div class="subscription-item" id="subscription-<%= sub[:space].id %>-<%= sub[:mapping]&.id %>">
+  <div class="subscription-info">
+    <h3 class="subscription-name">
+      <%= link_to sub[:space].name, space_path(sub[:space]) %>
+    </h3>
+    <% if sub[:source] == :ldap %>
+      <span class="subscription-badge subscription-badge-ldap" title="Assigned via LDAP group: <%= sub[:ldap_group_name] %>">
+        LDAP: <%= truncate(sub[:ldap_group_name], length: 30) %>
+      </span>
+      <% if sub[:opted_out] %>
+        <span class="subscription-badge subscription-badge-opted-out">Opted out</span>
+      <% end %>
+    <% else %>
+      <span class="subscription-badge subscription-badge-manual">Manual</span>
+    <% end %>
+  </div>
+  <div class="subscription-actions">
+    <% if sub[:source] == :ldap %>
+      <% if sub[:opted_out] %>
+        <%= button_to "Re-subscribe",
+            opt_in_settings_ldap_spaces_path(mapping_id: sub[:mapping].id, space_id: sub[:space].id),
+            method: :post,
+            class: "btn btn-small btn-primary" %>
+      <% else %>
+        <%= button_to "Opt out",
+            opt_out_settings_ldap_spaces_path(mapping_id: sub[:mapping].id, space_id: sub[:space].id),
+            method: :post,
+            class: "btn btn-small btn-secondary" %>
+      <% end %>
+    <% else %>
+      <%= button_to "Unsubscribe",
+          unsubscribe_space_path(sub[:space]),
+          method: :delete,
+          class: "btn btn-small btn-secondary" %>
+    <% end %>
+  </div>
+</div>

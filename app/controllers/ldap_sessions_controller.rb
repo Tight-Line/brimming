@@ -36,10 +36,10 @@ class LdapSessionsController < ApplicationController
       groups = auth_service.fetch_groups(user_entry.dn)
       auth_hash = auth_service.build_auth_hash(user_entry, groups)
 
-      # Find or create user
-      user = find_or_create_user_from_ldap(auth_hash)
+      # Find or create user using the centralized method
+      begin
+        user = User.from_omniauth(build_omniauth_hash(auth_hash), @ldap_server)
 
-      if user.persisted?
         # Store LDAP server ID for later use (e.g., settings page)
         session[:ldap_server_id] = @ldap_server.id
 
@@ -48,8 +48,12 @@ class LdapSessionsController < ApplicationController
 
         sign_in(user)
         redirect_to root_path, notice: "Signed in successfully via #{@ldap_server.name}."
-      else
-        redirect_to ldap_sign_in_path, alert: "Failed to create user account: #{user.errors.full_messages.join(', ')}"
+      rescue User::UnverifiedEmailError => e
+        redirect_to ldap_sign_in_path,
+          alert: "The email address #{e.email} is already registered but not verified. " \
+                 "Please verify your email first or use the password reset option."
+      rescue ActiveRecord::RecordInvalid => e
+        redirect_to ldap_sign_in_path, alert: "Failed to create user account: #{e.record.errors.full_messages.join(', ')}"
       end
     else
       redirect_to ldap_sign_in_path, alert: "Invalid username or password."
@@ -62,33 +66,21 @@ class LdapSessionsController < ApplicationController
     @ldap_server = LdapServer.enabled.find_by(id: params[:ldap_server_id])
   end
 
-  def find_or_create_user_from_ldap(auth_hash)
-    email = auth_hash[:info][:email]
-    uid = auth_hash[:uid]
-
-    user = User.find_by(provider: "ldap", uid: uid)
-    user ||= User.find_by(email: email)
-
-    if user
-      user.update!(
-        provider: "ldap",
-        uid: uid,
-        ldap_dn: auth_hash[:extra][:raw_info][:dn],
-        full_name: auth_hash[:info][:name].presence || user.full_name
+  # Convert our auth_hash to an OpenStruct that mimics OmniAuth's structure
+  def build_omniauth_hash(auth_hash)
+    OpenStruct.new(
+      provider: auth_hash[:provider],
+      uid: auth_hash[:uid],
+      info: OpenStruct.new(
+        email: auth_hash[:info][:email],
+        name: auth_hash[:info][:name],
+        nickname: auth_hash[:info][:nickname]
+      ),
+      extra: OpenStruct.new(
+        raw_info: OpenStruct.new(
+          dn: auth_hash[:extra][:raw_info][:dn]
+        )
       )
-    else
-      user = User.new(
-        provider: "ldap",
-        uid: uid,
-        ldap_dn: auth_hash[:extra][:raw_info][:dn],
-        email: email,
-        username: User.generate_unique_username(auth_hash[:info][:nickname] || email.split("@").first),
-        full_name: auth_hash[:info][:name],
-        password: Devise.friendly_token[0, 20]
-      )
-      user.save
-    end
-
-    user
+    )
   end
 end

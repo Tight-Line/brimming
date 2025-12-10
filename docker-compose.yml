@@ -10,6 +10,7 @@ x-rails-env: &rails-env
   DB_NAME: brimming
   REDIS_URL: redis://valkey:6379/0
   SECRET_KEY_BASE: ${SECRET_KEY_BASE:-changeme_in_production}
+  BRIMMING_BASE_URL: ${BRIMMING_BASE_URL:-http://localhost:3000}
   RAILS_LOG_TO_STDOUT: "true"
 
 x-rails-depends: &rails-depends

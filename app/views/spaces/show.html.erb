@@ -1,35 +1,37 @@
 <% content_for(:title) { "#{@space.name} - Brimming" } %>
 
-<div class="space-header">
-  <div class="space-title-row">
-    <h1><%= @space.name %></h1>
-    <% if policy(@space).update? || policy(@space).manage_moderators? || policy(@space).manage_publishers? %>
-      <div class="admin-actions">
-        <% if policy(@space).update? %>
-          <%= link_to "Edit", edit_space_path(@space), class: "btn btn-small btn-secondary" %>
-        <% end %>
-        <% if policy(@space).manage_moderators? %>
-          <%= link_to "Moderators", moderators_space_path(@space), class: "btn btn-small btn-secondary" %>
-        <% end %>
-        <% if policy(@space).manage_publishers? %>
-          <%= link_to "Publishers", publishers_space_path(@space), class: "btn btn-small btn-secondary" %>
-        <% end %>
-        <% if current_user&.can_moderate?(@space) && LlmService.available? %>
-          <%= link_to "Q&A Wizard", space_qa_wizard_path(@space), class: "btn btn-small btn-primary" %>
-        <% end %>
-        <% if policy(@space).destroy? %>
-          <%= button_to "Delete", space_path(@space), method: :delete,
-              class: "btn btn-small btn-danger",
-              data: { turbo_confirm: "Are you sure you want to delete this space?" } %>
-        <% end %>
-      </div>
-    <% end %>
+<div class="space-header space-header-compact">
+  <div class="space-header-main">
+    <div class="space-header-info">
+      <h1><%= @space.name %></h1>
+      <% if @space.description.present? %>
+        <p class="space-description"><%= @space.description %></p>
+      <% end %>
+    </div>
+    <div class="space-header-actions">
+      <%= render "shared/subscribe_button", space: @space %>
+    </div>
   </div>
-  <% if @space.description.present? %>
-    <p class="space-description"><%= @space.description %></p>
-  <% end %>
-  <% if current_user&.subscribed_spaces&.include?(@space) %>
-    <span class="badge badge-subscribed">You are subscribed</span>
+  <% if policy(@space).update? || policy(@space).manage_moderators? || policy(@space).manage_publishers? %>
+    <div class="admin-actions">
+      <% if policy(@space).update? %>
+        <%= link_to "Edit", edit_space_path(@space), class: "btn btn-small btn-secondary" %>
+      <% end %>
+      <% if policy(@space).manage_moderators? %>
+        <%= link_to "Moderators", moderators_space_path(@space), class: "btn btn-small btn-secondary" %>
+      <% end %>
+      <% if policy(@space).manage_publishers? %>
+        <%= link_to "Publishers", publishers_space_path(@space), class: "btn btn-small btn-secondary" %>
+      <% end %>
+      <% if current_user&.can_moderate?(@space) && LlmService.available? %>
+        <%= link_to "Q&A Wizard", space_qa_wizard_path(@space), class: "btn btn-small btn-primary" %>
+      <% end %>
+      <% if policy(@space).destroy? %>
+        <%= button_to "Delete", space_path(@space), method: :delete,
+            class: "btn btn-small btn-danger",
+            data: { turbo_confirm: "Are you sure you want to delete this space?" } %>
+      <% end %>
+    </div>
   <% end %>
 </div>
 

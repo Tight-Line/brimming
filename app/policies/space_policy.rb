@@ -33,6 +33,16 @@ class SpacePolicy < ApplicationPolicy
     user&.admin?
   end
 
+  # Any logged-in user can subscribe to a space
+  def subscribe?
+    user.present?
+  end
+
+  # Any logged-in user can unsubscribe from a space
+  def unsubscribe?
+    user.present?
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       scope.all

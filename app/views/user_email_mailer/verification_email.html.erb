@@ -1,0 +1,61 @@
+<table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #f8f9fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <tr>
+    <td style="padding: 40px 20px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+        <!-- Header -->
+        <tr>
+          <td style="padding: 32px 40px 24px; text-align: center; border-bottom: 1px solid #e9ecef;">
+            <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #4A90D9;">Brimming</h1>
+          </td>
+        </tr>
+
+        <!-- Content -->
+        <tr>
+          <td style="padding: 40px;">
+            <h2 style="margin: 0 0 24px; font-size: 20px; font-weight: 600; color: #333;">Verify your email address</h2>
+
+            <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.5; color: #555;">
+              Hi <%= @user.display_name %>,
+            </p>
+
+            <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.5; color: #555;">
+              Please click the button below to verify that <strong><%= @user_email.email %></strong> belongs to you.
+            </p>
+
+            <!-- Button -->
+            <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 auto 24px;">
+              <tr>
+                <td style="border-radius: 6px; background-color: #4A90D9;">
+                  <a href="<%= @verification_url %>" style="display: inline-block; padding: 14px 32px; font-size: 16px; font-weight: 500; color: #ffffff; text-decoration: none; border-radius: 6px;">Verify Email Address</a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin: 0 0 16px; font-size: 14px; line-height: 1.5; color: #777;">
+              Or copy and paste this link into your browser:
+            </p>
+
+            <p style="margin: 0 0 24px; font-size: 14px; line-height: 1.5; color: #4A90D9; word-break: break-all;">
+              <%= @verification_url %>
+            </p>
+
+            <hr style="border: none; border-top: 1px solid #e9ecef; margin: 24px 0;">
+
+            <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #777;">
+              If you didn't add this email to your Brimming account, you can safely ignore this message.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding: 24px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center;">
+            <p style="margin: 0; font-size: 14px; color: #777;">
+              Thanks,<br>The Brimming Team
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
