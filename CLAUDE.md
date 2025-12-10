@@ -420,10 +420,6 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
   - Human sponsor tracked via `sponsored_by` field `[x]`
   - Track source material (which Article/document spawned this Q&A) `[ ]`
   - Special styling/badge for official FAQ content in UI `[ ]`
-- **Batch operations:** `[ ]`
-  - Generate multiple Q&A pairs at once `[ ]`
-  - Bulk approve/reject suggestions `[ ]`
-  - Re-generate individual suggestions `[ ]`
 
 ### Phase 16: REST API & Swagger `[ ]`
 - API namespace with versioning (api/v1)
@@ -479,7 +475,7 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 ## Current Status
 
 **Completed Phases**: 1, 3, 4, 5, 6, 7, 8, 10, 12, 13
-**In Progress**: 11 (Email), 14 (RAG pipeline), 15 (Q&A Wizard - core workflow complete, batch ops pending)
+**In Progress**: 11 (Email digests), 14 (RAG pipeline with citations), 15 (Q&A Wizard - minor enhancements pending)
 **Not Started**: 16, 17, 18, 19
 
 ### What's Working
@@ -520,7 +516,6 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 ### Next Actions
 1. **Phase 11 (Email)**: Add email digests and notifications
 2. **Phase 14 (RAG)**: Complete RAG query pipeline with citations
-3. **Phase 15 (Q&A Wizard)**: Finish batch operations (bulk approve/reject, regenerate)
 
 ### Technical Debt
 
