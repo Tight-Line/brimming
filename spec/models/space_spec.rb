@@ -166,4 +166,72 @@ RSpec.describe Space do
       expect(space.publisher?(user)).to be false
     end
   end
+
+  describe "#effective_rag_chunk_limit" do
+    let(:space) { create(:space) }
+
+    context "when space has no override" do
+      it "returns the global default" do
+        expect(space.effective_rag_chunk_limit).to eq(SearchSetting.rag_chunk_limit)
+      end
+    end
+
+    context "when space has an override" do
+      before { space.update!(rag_chunk_limit: 25) }
+
+      it "returns the space-specific limit" do
+        expect(space.effective_rag_chunk_limit).to eq(25)
+      end
+    end
+
+    context "when space override is 0" do
+      before { space.update!(rag_chunk_limit: 0) }
+
+      it "falls back to global default (0 is not a valid chunk limit)" do
+        expect(space.effective_rag_chunk_limit).to eq(SearchSetting.rag_chunk_limit)
+      end
+    end
+
+    context "when global default is customized" do
+      before { SearchSetting.rag_chunk_limit = 15 }
+
+      it "returns the customized global default" do
+        expect(space.effective_rag_chunk_limit).to eq(15)
+      end
+    end
+  end
+
+  describe "#effective_similar_questions_limit" do
+    let(:space) { create(:space) }
+
+    context "when space has no override" do
+      it "returns the global default" do
+        expect(space.effective_similar_questions_limit).to eq(SearchSetting.similar_questions_limit)
+      end
+    end
+
+    context "when space has an override" do
+      before { space.update!(similar_questions_limit: 5) }
+
+      it "returns the space-specific limit" do
+        expect(space.effective_similar_questions_limit).to eq(5)
+      end
+    end
+
+    context "when space override is 0" do
+      before { space.update!(similar_questions_limit: 0) }
+
+      it "returns 0 to disable the feature" do
+        expect(space.effective_similar_questions_limit).to eq(0)
+      end
+    end
+
+    context "when global default is customized" do
+      before { SearchSetting.similar_questions_limit = 7 }
+
+      it "returns the customized global default" do
+        expect(space.effective_similar_questions_limit).to eq(7)
+      end
+    end
+  end
 end

@@ -38,6 +38,7 @@ Rails.application.routes.draw do
         post :set_default
       end
     end
+    resource :search_settings, only: [ :show, :update ]
   end
 
   # Email verification (outside settings namespace for simpler URLs)

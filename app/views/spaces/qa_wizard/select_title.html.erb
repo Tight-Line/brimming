@@ -30,6 +30,36 @@
     <p class="subtitle">Choose a question to develop into a full FAQ entry</p>
   </div>
 
+  <% if @similar_questions.present? %>
+    <div class="similar-questions-section">
+      <h2>Similar Existing Questions</h2>
+      <p class="section-description">
+        Before creating new content, consider reviewing these existing questions that may address the same topic:
+      </p>
+
+      <div class="similar-questions-list">
+        <% @similar_questions.each do |question| %>
+          <div class="similar-question <%= question[:solved] ? 'solved' : 'unsolved' %>">
+            <div class="question-info">
+              <span class="status-badge <%= question[:solved] ? 'badge-solved' : 'badge-unsolved' %>">
+                <%= question[:solved] ? 'Solved' : 'Needs Answer' %>
+              </span>
+              <%= link_to question[:title], question_path(question[:slug]), target: "_blank", class: "question-title" %>
+              <span class="answers-count">(<%= pluralize(question[:answers_count], "answer") %>)</span>
+            </div>
+            <div class="question-actions">
+              <% if question[:solved] %>
+                <%= link_to "Review", question_path(question[:slug]), target: "_blank", class: "btn btn-small btn-secondary" %>
+              <% else %>
+                <%= link_to "Add Answer", question_path(question[:slug]), target: "_blank", class: "btn btn-small btn-primary" %>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
   <div class="wizard-step">
     <% if @titles.empty? %>
       <div class="empty-state">
@@ -37,7 +67,8 @@
         <%= link_to "Try Again", space_qa_wizard_path(@space), class: "btn btn-primary" %>
       </div>
     <% else %>
-      <p>Click on a question to continue editing it:</p>
+      <h2>Generate New Question</h2>
+      <p>Or create a new FAQ entry by selecting one of these AI-generated questions:</p>
 
       <div class="title-list">
         <% @titles.each do |title| %>
@@ -257,19 +288,152 @@
   padding-top: 1.5rem;
   border-top: 1px solid var(--border-color);
 }
+
+/* Similar questions section */
+.similar-questions-section {
+  background: var(--bg-primary);
+  border: 2px solid var(--warning-border, #f0ad4e);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.similar-questions-section h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  color: var(--warning-text, #8a6d3b);
+}
+
+.similar-questions-section .section-description {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.similar-questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.similar-question {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+}
+
+.similar-question.solved {
+  border-left: 4px solid var(--success, #5cb85c);
+}
+
+.similar-question.unsolved {
+  border-left: 4px solid var(--warning, #f0ad4e);
+}
+
+.question-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.status-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.badge-solved {
+  background: var(--success-bg, #dff0d8);
+  color: var(--success-text, #3c763d);
+}
+
+.badge-unsolved {
+  background: var(--warning-bg, #fcf8e3);
+  color: var(--warning-text, #8a6d3b);
+}
+
+.question-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.question-title:hover {
+  text-decoration: underline;
+}
+
+.answers-count {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.question-actions {
+  margin-left: 1rem;
+}
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const loadingOverlay = document.getElementById('wizard-loading');
-  const titleOptions = document.querySelectorAll('.title-option');
+(function() {
+  function initSelectTitle() {
+    const titleList = document.querySelector('.title-list');
+    if (!titleList) return;
 
-  titleOptions.forEach(function(option) {
-    option.addEventListener('click', function() {
+    // Prevent double-initialization
+    if (titleList.dataset.initialized) return;
+    titleList.dataset.initialized = 'true';
+
+    const loadingOverlay = document.getElementById('wizard-loading');
+
+    function showLoading() {
       if (loadingOverlay) {
         loadingOverlay.style.display = 'flex';
       }
+    }
+
+    // Show loading on title option click
+    document.querySelectorAll('.title-option').forEach(function(option) {
+      option.addEventListener('click', showLoading);
     });
+  }
+
+  // Initialize on DOMContentLoaded (initial page load)
+  document.addEventListener('DOMContentLoaded', initSelectTitle);
+
+  // Initialize on turbo:load (Turbo navigation)
+  document.addEventListener('turbo:load', initSelectTitle);
+
+  // Also try turbo:render for good measure
+  document.addEventListener('turbo:render', initSelectTitle);
+
+  // Global Turbo event handlers for loading animation
+  document.addEventListener('turbo:click', function(event) {
+    if (event.target.closest('.title-option')) {
+      const loadingOverlay = document.getElementById('wizard-loading');
+      if (loadingOverlay) {
+        loadingOverlay.style.display = 'flex';
+      }
+    }
   });
-});
+
+  // Hide loading if Turbo navigation fails
+  document.addEventListener('turbo:frame-missing', function() {
+    const loadingOverlay = document.getElementById('wizard-loading');
+    if (loadingOverlay) {
+      loadingOverlay.style.display = 'none';
+    }
+  });
+})();
 </script>

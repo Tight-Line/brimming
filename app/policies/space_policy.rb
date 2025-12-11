@@ -16,7 +16,7 @@ class SpacePolicy < ApplicationPolicy
   end
 
   def update?
-    user&.admin?
+    user&.admin? || record.moderator?(user)
   end
 
   def destroy?

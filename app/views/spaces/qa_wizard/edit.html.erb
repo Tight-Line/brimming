@@ -51,7 +51,7 @@
           <%= f.text_area :question_body, value: @question_body, class: "form-control", rows: 4, required: true, id: "question_body_textarea" %>
         </div>
         <div class="tab-content" id="question_body_preview" style="display: none;">
-          <div class="markdown-preview" id="question_body_preview_content"></div>
+          <div class="markdown-preview markdown-body" id="question_body_preview_content"></div>
         </div>
         <small class="form-text text-muted">Provide context and specifics about what the user is asking. Supports markdown.</small>
       </div>
@@ -66,10 +66,29 @@
           <%= f.text_area :answer, value: @answer, class: "form-control", rows: 10, required: true, id: "answer_textarea" %>
         </div>
         <div class="tab-content" id="answer_preview" style="display: none;">
-          <div class="markdown-preview" id="answer_preview_content"></div>
+          <div class="markdown-preview markdown-body" id="answer_preview_content"></div>
         </div>
         <small class="form-text text-muted">A comprehensive answer that addresses the question. Supports markdown.</small>
       </div>
+
+      <% if @sources.present? %>
+        <div class="form-group">
+          <label>Sources</label>
+          <div class="sources-list">
+            <% @sources.each do |source| %>
+              <div class="source-item">
+                <span class="source-type"><%= source[:type] %></span>
+                <span class="source-title"><%= source[:title] %></span>
+                <% if source[:excerpt].present? %>
+                  <span class="source-excerpt"><%= truncate(source[:excerpt], length: 100) %></span>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+          <small class="form-text text-muted">These sources were used to generate the answer.</small>
+          <%= hidden_field_tag :sources, @sources.to_json %>
+        </div>
+      <% end %>
 
       <div class="form-info">
         <p>This will create a new question in <strong><%= @space.name %></strong> with the answer already marked as the official solution.</p>
@@ -296,12 +315,56 @@
 .markdown-preview {
   padding: 1rem;
   min-height: 100px;
-  background: var(--bg-primary);
   border-radius: 0 0 4px 4px;
 }
 
 .markdown-preview:empty::before {
   content: 'Nothing to preview';
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.sources-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.source-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.5rem;
+  background: var(--bg-primary);
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.source-type {
+  background: var(--primary);
+  color: white;
+  padding: 0.125rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.source-title {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.source-excerpt {
+  width: 100%;
+  font-size: 0.8rem;
   color: var(--text-muted);
   font-style: italic;
 }
@@ -329,62 +392,95 @@
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const form = document.getElementById('qa-wizard-form');
-  const loadingOverlay = document.getElementById('wizard-loading');
+(function() {
+  // Use event delegation for tab buttons - works regardless of when DOM is ready
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.tab-btn');
+    if (!btn) return;
 
-  // Show loading on form submit
-  if (form) {
-    form.addEventListener('submit', function() {
+    // Only handle tabs within QA wizard edit form
+    const form = btn.closest('#qa-wizard-form');
+    if (!form) return;
+
+    e.preventDefault();
+
+    const tabId = btn.dataset.tab;
+    const formGroup = btn.closest('.form-group');
+    if (!formGroup || !tabId) return;
+
+    // Update active tab button
+    formGroup.querySelectorAll('.tab-btn').forEach(function(b) {
+      b.classList.remove('active');
+    });
+    btn.classList.add('active');
+
+    // Show/hide tab content
+    formGroup.querySelectorAll('.tab-content').forEach(function(content) {
+      content.style.display = content.id === tabId ? 'block' : 'none';
+    });
+
+    // If switching to preview, render markdown
+    if (tabId.endsWith('_preview')) {
+      const textareaId = tabId.replace('_preview', '_textarea');
+      const textarea = document.getElementById(textareaId);
+      const previewContent = document.getElementById(tabId + '_content');
+
+      if (textarea && previewContent) {
+        const text = textarea.value || '';
+        if (!text.trim()) {
+          previewContent.innerHTML = '';
+          return;
+        }
+
+        previewContent.innerHTML = '<em>Loading preview...</em>';
+
+        // Get CSRF token
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        const csrfToken = csrfMeta ? csrfMeta.content : '';
+
+        // Fetch markdown preview from server
+        fetch('/markdown/preview', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
+          },
+          body: JSON.stringify({ text: text })
+        })
+        .then(function(response) {
+          if (!response.ok) throw new Error('Preview request failed');
+          return response.json();
+        })
+        .then(function(data) {
+          previewContent.innerHTML = data.html || '';
+        })
+        .catch(function(error) {
+          console.error('Markdown preview error:', error);
+          previewContent.innerHTML = '<em>Failed to load preview</em>';
+        });
+      }
+    }
+  });
+
+  // Global Turbo event handlers for loading animation
+  document.addEventListener('turbo:submit-start', function(event) {
+    const form = event.target;
+    if (form && form.id === 'qa-wizard-form') {
+      const loadingOverlay = document.getElementById('wizard-loading');
       if (loadingOverlay) {
         loadingOverlay.style.display = 'flex';
       }
-    });
-  }
-
-  // Markdown preview tabs
-  document.querySelectorAll('.tab-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      const tabId = this.dataset.tab;
-      const formGroup = this.closest('.form-group');
-
-      // Update active tab button
-      formGroup.querySelectorAll('.tab-btn').forEach(function(b) {
-        b.classList.remove('active');
-      });
-      this.classList.add('active');
-
-      // Show/hide tab content
-      formGroup.querySelectorAll('.tab-content').forEach(function(content) {
-        content.style.display = content.id === tabId ? 'block' : 'none';
-      });
-
-      // If switching to preview, render markdown
-      if (tabId.endsWith('_preview')) {
-        const textareaId = tabId.replace('_preview', '_textarea');
-        const textarea = document.getElementById(textareaId);
-        const previewContent = document.getElementById(tabId + '_content');
-
-        if (textarea && previewContent) {
-          // Fetch markdown preview from server
-          fetch('/markdown/preview', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify({ text: textarea.value })
-          })
-          .then(function(response) { return response.json(); })
-          .then(function(data) {
-            previewContent.innerHTML = data.html || '';
-          })
-          .catch(function() {
-            previewContent.innerHTML = '<em>Failed to load preview</em>';
-          });
-        }
-      }
-    });
+    }
   });
-});
+
+  document.addEventListener('turbo:submit-end', function(event) {
+    const form = event.target;
+    if (form && form.id === 'qa-wizard-form') {
+      const loadingOverlay = document.getElementById('wizard-loading');
+      if (loadingOverlay && !event.detail.success) {
+        loadingOverlay.style.display = 'none';
+      }
+    }
+  });
+})();
 </script>

@@ -106,8 +106,8 @@ RSpec.describe SpacePolicy do
       expect(policy(user).create?).to be false
     end
 
-    it "denies update" do
-      expect(policy(user).update?).to be false
+    it "allows update" do
+      expect(policy(user).update?).to be true
     end
 
     it "denies destroy" do

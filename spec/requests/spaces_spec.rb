@@ -134,7 +134,7 @@ RSpec.describe "Spaces" do
       expect(response.body).not_to include("admin-actions")
     end
 
-    it "shows Moderators link for space moderators but not Publishers" do
+    it "shows Moderators and Edit links for space moderators but not Publishers or Delete" do
       user = create(:user)
       space = create(:space)
       space.add_moderator(user)
@@ -143,8 +143,8 @@ RSpec.describe "Spaces" do
       get space_path(space)
 
       expect(response.body).to include("Moderators")
+      expect(response.body).to include("Edit")
       expect(response.body).not_to include("Publishers")
-      expect(response.body).not_to include("Edit")
       expect(response.body).not_to include("Delete")
     end
   end
@@ -260,6 +260,16 @@ RSpec.describe "Spaces" do
 
       expect(space.reload.name).to eq("Updated")
       expect(response).to redirect_to(space_path(space))
+    end
+
+    it "allows admins to update rag_chunk_limit" do
+      admin = create(:user, :admin)
+      space = create(:space)
+      sign_in admin
+
+      patch space_path(space), params: { space: { rag_chunk_limit: 25 } }
+
+      expect(space.reload.rag_chunk_limit).to eq(25)
     end
 
     it "re-renders form with errors for invalid data" do

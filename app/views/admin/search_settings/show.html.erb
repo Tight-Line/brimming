@@ -1,0 +1,41 @@
+<% content_for(:title) { "Search Settings - Admin - Brimming" } %>
+
+<div class="admin-page">
+  <header class="admin-page-header">
+    <h1>Search Settings</h1>
+    <p class="page-description">Configure global settings for search and RAG (Retrieval-Augmented Generation).</p>
+  </header>
+
+  <%= form_with url: admin_search_settings_path, method: :patch, class: "admin-form" do |f| %>
+    <div class="form-section">
+      <h2>RAG Settings</h2>
+
+      <div class="form-group">
+        <%= f.label :rag_chunk_limit, "Default Chunk Retrieval Limit" %>
+        <%= f.number_field :rag_chunk_limit, value: @rag_chunk_limit, min: 1, max: 50, class: "form-control form-control-narrow" %>
+        <p class="form-hint">
+          Maximum number of content chunks to retrieve when generating AI answers.
+          Higher values provide more context but increase token usage.
+          Spaces can override this with their own limit.
+        </p>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h2>Q&A Wizard Settings</h2>
+
+      <div class="form-group">
+        <%= f.label :similar_questions_limit, "Similar Questions to Show" %>
+        <%= f.number_field :similar_questions_limit, value: @similar_questions_limit, min: 0, max: 10, class: "form-control form-control-narrow" %>
+        <p class="form-hint">
+          Number of similar existing questions to highlight in the Q&A Wizard before generating new content.
+          Set to 0 to disable this feature. Spaces can override this with their own limit.
+        </p>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <%= f.submit "Save Settings", class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</div>

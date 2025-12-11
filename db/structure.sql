@@ -872,6 +872,39 @@ CREATE TABLE brimming.schema_migrations (
 
 
 --
+-- Name: search_settings; Type: TABLE; Schema: brimming; Owner: -
+--
+
+CREATE TABLE brimming.search_settings (
+    id bigint NOT NULL,
+    key character varying NOT NULL,
+    value text NOT NULL,
+    description character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: search_settings_id_seq; Type: SEQUENCE; Schema: brimming; Owner: -
+--
+
+CREATE SEQUENCE brimming.search_settings_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: search_settings_id_seq; Type: SEQUENCE OWNED BY; Schema: brimming; Owner: -
+--
+
+ALTER SEQUENCE brimming.search_settings_id_seq OWNED BY brimming.search_settings.id;
+
+
+--
 -- Name: space_moderators; Type: TABLE; Schema: brimming; Owner: -
 --
 
@@ -1010,7 +1043,10 @@ CREATE TABLE brimming.spaces (
     slug character varying NOT NULL,
     description text,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    qa_wizard_prompt text,
+    rag_chunk_limit integer,
+    similar_questions_limit integer
 );
 
 
@@ -1328,6 +1364,13 @@ ALTER TABLE ONLY brimming.questions ALTER COLUMN id SET DEFAULT nextval('brimmin
 
 
 --
+-- Name: search_settings id; Type: DEFAULT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.search_settings ALTER COLUMN id SET DEFAULT nextval('brimming.search_settings_id_seq'::regclass);
+
+
+--
 -- Name: space_moderators id; Type: DEFAULT; Schema: brimming; Owner: -
 --
 
@@ -1572,6 +1615,14 @@ ALTER TABLE ONLY brimming.questions
 
 ALTER TABLE ONLY brimming.schema_migrations
     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: search_settings search_settings_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.search_settings
+    ADD CONSTRAINT search_settings_pkey PRIMARY KEY (id);
 
 
 --
@@ -2200,6 +2251,13 @@ CREATE INDEX index_questions_on_vote_score ON brimming.questions USING btree (vo
 
 
 --
+-- Name: index_search_settings_on_key; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE UNIQUE INDEX index_search_settings_on_key ON brimming.search_settings USING btree (key);
+
+
+--
 -- Name: index_space_moderators_on_space_id; Type: INDEX; Schema: brimming; Owner: -
 --
 
@@ -2791,6 +2849,10 @@ ALTER TABLE ONLY brimming.ldap_group_mapping_spaces
 SET search_path TO brimming,public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20251211035633'),
+('20251211023123'),
+('20251211023053'),
+('20251210190145'),
 ('20251206210953'),
 ('20251206210838'),
 ('20251206195247'),
