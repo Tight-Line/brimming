@@ -38,7 +38,7 @@ gem "rouge", "~> 4.0"
 # Document text extraction for article indexing
 gem "pdf-reader", "~> 2.12"  # PDF text extraction
 gem "docx", "~> 0.8"         # Word document extraction
-gem "roo", "~> 2.10"         # Excel spreadsheet extraction
+gem "roo", "~> 3.0"          # Excel spreadsheet extraction
 gem "csv"                    # Required by roo (not default in Ruby 3.4+)
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
