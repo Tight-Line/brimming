@@ -439,13 +439,16 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
   - Re-ranking options (cross-encoder, reciprocal rank fusion) `[skipped]` *(optional/future - current retrieval quality is sufficient)*
 - **Citation support:**
   - Track which chunks contributed to a response `[x]`
-  - Link citations back to source content (Article, Question, Answer) `[x]`
+  - Link citations back to source content (Article, Question) `[x]`
   - Inline citations `[1]`, `[2]` in AI Answer and Q&A Wizard `[x]`
   - AnswerSource model persists citations on published FAQ answers `[x]`
   - Database lookup fallback for slug resolution when LLM returns unmatched source IDs `[x]`
 - **Admin configuration:**
   - Chunk size, overlap, max chunks per query (via EmbeddingProvider + SearchSetting) `[x]`
   - Per-space override for RAG chunk limit `[x]`
+- **Prompt engineering:**
+  - RAG and fallback prompts in `config/prompts/` `[x]`
+  - Markdown formatting rules to ensure proper list rendering `[x]`
 
 ### Phase 15: Q&A Wizard `[~]`
 - **Admin/moderator tool to populate spaces with pre-approved FAQ content**
@@ -565,7 +568,8 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - **"Helpful Robot"** system user for AI-generated content with human sponsorship tracking
 - **Bookmarks** for users to save Questions, Answers, Comments, and Articles for later
 - **AI Answer** with inline citations `[1]`, `[2]` linking to source articles/questions
-- **AnswerSource model** for persisting citations on FAQ answers (moved from QuestionSource)
+- **AnswerSource model** for persisting citations on FAQ answers
+- **Prompt engineering** with markdown formatting rules for proper list rendering in AI-generated content
 - 100% test coverage (line and branch)
 
 ### Next Actions

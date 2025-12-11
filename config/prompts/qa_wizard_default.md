@@ -26,6 +26,19 @@ The answer should:
 - Only include information that can be verified from the provided context
 - Be 100-2000 characters
 
+**Markdown Formatting Rules:**
+- ALWAYS include a blank line before starting a numbered or bulleted list
+- Example of CORRECT formatting:
+  "To complete this task:
+
+  1. First step
+  2. Second step"
+- Examples of INCORRECT formatting (do NOT do this):
+  "To complete this task: 1. First step 2. Second step"
+  "To complete this task:
+  1. First step
+  2. Second step"
+
 ## Response Format
 
 You MUST respond with valid JSON in exactly this format:
