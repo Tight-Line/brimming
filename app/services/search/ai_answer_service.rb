@@ -203,6 +203,12 @@ module Search
         response["sources"].map.with_index(1) do |src, index|
           # Try to find the actual source record to get the slug
           source_record = chunk_lookup[[ src["type"], src["id"] ]]
+
+          # If not in chunks, try database lookup (LLM might reference sources we didn't send)
+          if source_record.nil? && src["id"].present?
+            source_record = find_source_by_type_and_id(src["type"], src["id"])
+          end
+
           {
             number: src["number"] || index,
             type: src["type"],
@@ -259,6 +265,17 @@ module Search
 
     def sanitize_like(str)
       str.gsub(/[%_]/) { |m| "\\#{m}" }
+    end
+
+    # Look up source record from database by type and ID
+    # Returns nil if type is unknown or record not found
+    def find_source_by_type_and_id(type, id)
+      case type
+      when "Article"
+        Article.find_by(id: id)
+      when "Question"
+        Question.find_by(id: id)
+      end
     end
   end
 end

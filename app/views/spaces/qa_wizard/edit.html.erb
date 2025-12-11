@@ -74,18 +74,21 @@
       <% if @sources.present? %>
         <div class="form-group">
           <label>Sources</label>
-          <div class="sources-list">
+          <div class="citation-source-list">
             <% @sources.each do |source| %>
-              <div class="source-item">
-                <span class="source-type"><%= source[:type] %></span>
-                <span class="source-title"><%= source[:title] %></span>
-                <% if source[:excerpt].present? %>
-                  <span class="source-excerpt"><%= truncate(source[:excerpt], length: 100) %></span>
-                <% end %>
+              <div class="citation-source-item">
+                <span class="citation-source-number">[<%= source[:number] %>]</span>
+                <span class="citation-source-type"><%= source[:type] %></span>
+                <%
+                  # Use slug from source data (populated by controller)
+                  slug = source[:slug] || source[:id].to_s
+                  path = source[:type] == "Article" ? "/articles/#{slug}" : "/questions/#{slug}"
+                %>
+                <a href="<%= path %>" class="citation-source-link" target="_blank" title="<%= source[:excerpt]&.truncate(200) %>"><%= source[:title] %></a>
               </div>
             <% end %>
           </div>
-          <small class="form-text text-muted">These sources were used to generate the answer.</small>
+          <small class="form-text text-muted">Hover over a source title to see the excerpt used.</small>
           <%= hidden_field_tag :sources, @sources.to_json %>
         </div>
       <% end %>
@@ -336,39 +339,6 @@
   overflow-y: auto;
 }
 
-.source-item {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: baseline;
-  padding: 0.5rem;
-  background: var(--bg-primary);
-  border-radius: 4px;
-  font-size: 0.875rem;
-}
-
-.source-type {
-  background: var(--primary);
-  color: white;
-  padding: 0.125rem 0.5rem;
-  border-radius: 3px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-.source-title {
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.source-excerpt {
-  width: 100%;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  font-style: italic;
-}
-
 .form-info {
   padding: 1rem;
   background: var(--bg-secondary);
@@ -390,6 +360,10 @@
   border-top: 1px solid var(--border-color);
 }
 </style>
+
+<script>
+<%= citation_converter_js(@sources) %>
+</script>
 
 <script>
 (function() {
@@ -452,7 +426,12 @@
           return response.json();
         })
         .then(function(data) {
-          previewContent.innerHTML = data.html || '';
+          let html = data.html || '';
+          // Convert inline citations [1], [2] to clickable links using shared helper
+          if (window.CitationHelper && window.CitationHelper.convertInlineCitations) {
+            html = window.CitationHelper.convertInlineCitations(html);
+          }
+          previewContent.innerHTML = html;
         })
         .catch(function(error) {
           console.error('Markdown preview error:', error);

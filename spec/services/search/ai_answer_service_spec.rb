@@ -152,13 +152,61 @@ RSpec.describe Search::AiAnswerService do
         end
       end
 
-      context "when LLM returns source not in chunks" do
+      context "when LLM returns Article source not in chunks but exists in database" do
+        let!(:search_article) { create(:article, title: "Search Article", user: user, spaces: [ space ]) }
+        let!(:chunk) { create(:chunk, chunkable: search_article, content: "Content that matches") }
+        # This article exists in DB but wasn't in the chunks sent to the LLM
+        let!(:referenced_article) { create(:article, title: "Referenced Article", user: user, spaces: [ space ]) }
+
+        before do
+          allow(EmbeddingService).to receive(:available?).and_return(false)
+          # LLM returns a source with ID of referenced_article (exists in DB, not in chunks)
+          allow(mock_client).to receive(:generate_json).and_return({
+            "answer" => "Answer referencing different article",
+            "sources" => [
+              { "type" => "Article", "id" => referenced_article.id, "title" => "Referenced Article", "excerpt" => "..." }
+            ]
+          })
+        end
+
+        it "looks up Article slug from database when not in chunk lookup" do
+          result = described_class.call(query: "Content that matches")
+
+          expect(result.sources.first[:slug]).to eq(referenced_article.slug)
+        end
+      end
+
+      context "when LLM returns Question source not in chunks but exists in database" do
+        let!(:search_article) { create(:article, title: "Search Article", user: user, spaces: [ space ]) }
+        let!(:chunk) { create(:chunk, chunkable: search_article, content: "Content that matches") }
+        # This question exists in DB but wasn't in the chunks sent to the LLM
+        let!(:referenced_question) { create(:question, title: "Referenced Question", user: user, space: space) }
+
+        before do
+          allow(EmbeddingService).to receive(:available?).and_return(false)
+          # LLM returns a Question source (exists in DB, not in chunks)
+          allow(mock_client).to receive(:generate_json).and_return({
+            "answer" => "Answer referencing a question",
+            "sources" => [
+              { "type" => "Question", "id" => referenced_question.id, "title" => "Referenced Question", "excerpt" => "..." }
+            ]
+          })
+        end
+
+        it "looks up Question slug from database when not in chunk lookup" do
+          result = described_class.call(query: "Content that matches")
+
+          expect(result.sources.first[:slug]).to eq(referenced_question.slug)
+        end
+      end
+
+      context "when LLM returns source not found anywhere (non-existent ID)" do
         let!(:article) { create(:article, title: "Matched Article", user: user, spaces: [ space ]) }
         let!(:chunk) { create(:chunk, chunkable: article, content: "Content that matches") }
 
         before do
           allow(EmbeddingService).to receive(:available?).and_return(false)
-          # LLM returns a source with ID 99999 that doesn't exist in chunks
+          # LLM returns a source with ID 99999 that doesn't exist anywhere
           allow(mock_client).to receive(:generate_json).and_return({
             "answer" => "Answer with unknown source",
             "sources" => [
@@ -167,10 +215,54 @@ RSpec.describe Search::AiAnswerService do
           })
         end
 
-        it "uses ID as fallback slug when source not found in chunks" do
+        it "uses ID as fallback slug when source not found in chunks or database" do
           result = described_class.call(query: "Content that matches")
 
           expect(result.sources.first[:slug]).to eq("99999")
+        end
+      end
+
+      context "when LLM returns source with unknown type" do
+        let!(:article) { create(:article, title: "Matched Article", user: user, spaces: [ space ]) }
+        let!(:chunk) { create(:chunk, chunkable: article, content: "Content that matches") }
+
+        before do
+          allow(EmbeddingService).to receive(:available?).and_return(false)
+          # LLM returns a source with unknown type (neither Article nor Question)
+          allow(mock_client).to receive(:generate_json).and_return({
+            "answer" => "Answer with unknown type source",
+            "sources" => [
+              { "type" => "SomeUnknownType", "id" => 1, "title" => "Unknown Type Source", "excerpt" => "..." }
+            ]
+          })
+        end
+
+        it "uses ID as fallback slug when source type is unknown" do
+          result = described_class.call(query: "Content that matches")
+
+          expect(result.sources.first[:slug]).to eq("1")
+        end
+      end
+
+      context "when LLM returns source that matches a chunk" do
+        let!(:article) { create(:article, title: "Matched Article", user: user, spaces: [ space ]) }
+        let!(:chunk) { create(:chunk, chunkable: article, content: "Content with matching source") }
+
+        before do
+          allow(EmbeddingService).to receive(:available?).and_return(false)
+          # LLM returns a source with ID matching the article we have in chunks
+          allow(mock_client).to receive(:generate_json).and_return({
+            "answer" => "Answer with matching source",
+            "sources" => [
+              { "type" => "Article", "id" => article.id, "title" => "Matched Article", "excerpt" => "..." }
+            ]
+          })
+        end
+
+        it "uses actual article slug when source found in chunks" do
+          result = described_class.call(query: "matching")
+
+          expect(result.sources.first[:slug]).to eq(article.slug)
         end
       end
 

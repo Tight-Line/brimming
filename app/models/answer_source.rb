@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class QuestionSource < ApplicationRecord
+class AnswerSource < ApplicationRecord
   SOURCE_TYPES = %w[Article Question Chunk Upload].freeze
   SOURCE_TYPES_DISPLAY = {
     "Article" => "Article",
@@ -9,7 +9,7 @@ class QuestionSource < ApplicationRecord
     "Upload" => "Uploaded Document"
   }.freeze
 
-  belongs_to :question
+  belongs_to :answer
 
   validates :source_type, presence: true, inclusion: { in: SOURCE_TYPES }
   validates :source_excerpt, presence: true

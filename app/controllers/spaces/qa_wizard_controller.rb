@@ -101,6 +101,8 @@ module Spaces
         return
       end
 
+      sources = parse_sources_param(params[:sources])
+
       ActiveRecord::Base.transaction do
         @question = Question.create!(
           user: robot,
@@ -119,6 +121,9 @@ module Spaces
 
         # Mark as solved (official FAQ)
         @answer.mark_as_correct!
+
+        # Save citation sources on the answer (not the question)
+        create_answer_sources(@answer, sources)
       end
 
       redirect_to question_path(@question), notice: "FAQ question created successfully!"
@@ -265,23 +270,41 @@ module Spaces
         sources: []
       }
 
+      # Build a lookup of chunkable records for slug resolution
+      chunk_lookup = chunks.each_with_object({}) do |chunk, hash|
+        source = chunk.chunkable
+        hash[[ source.class.name, source.id ]] = source
+      end
+
       # Parse sources from LLM response if present
       if response["sources"].is_a?(Array)
-        result[:sources] = response["sources"].map do |source|
+        result[:sources] = response["sources"].each_with_index.map do |source, index|
+          source_type = source["type"].to_s
+          source_id = source["id"].to_i
+
+          # Try chunk lookup first, then database lookup as fallback
+          source_record = chunk_lookup[[ source_type, source_id ]]
+          source_record ||= find_source_by_type_and_id(source_type, source_id) if source_id.positive?
+
           {
-            type: source["type"].to_s,
-            id: source["id"].to_i,
+            number: source["number"] || (index + 1),
+            type: source_type,
+            id: source_id,
+            slug: source_record&.slug || source["id"].to_s,
             title: source["title"].to_s,
             excerpt: source["excerpt"].to_s
           }
         end
       elsif chunks.any?
         # Fallback: use the chunks we provided as sources
-        result[:sources] = chunks.map do |chunk|
+        # Articles and Questions (the only chunkable types) always have slugs
+        result[:sources] = chunks.each_with_index.map do |chunk, index|
           source = chunk.chunkable
           {
+            number: index + 1,
             type: source.class.name,
             id: source.id,
+            slug: source.slug,
             title: source.try(:title) || "Untitled",
             excerpt: chunk.content.truncate(200)
           }
@@ -360,9 +383,51 @@ module Spaces
     def parse_sources_param(sources_param)
       return [] if sources_param.blank?
 
-      JSON.parse(sources_param)
+      parsed = JSON.parse(sources_param)
+      # Symbolize keys for consistency
+      parsed.map do |source|
+        source.transform_keys(&:to_sym)
+      end
     rescue JSON::ParserError
       []
+    end
+
+    # Create AnswerSource records from the sources data
+    def create_answer_sources(answer, sources)
+      return if sources.blank?
+
+      sources.each do |source|
+        answer.answer_sources.create!(
+          source_type: normalize_source_type(source[:type]),
+          source_id: source[:id].presence,
+          source_title: source[:title],
+          source_excerpt: source[:excerpt],
+          citation_number: source[:number]
+        )
+      end
+    end
+
+    # Normalize source types to valid AnswerSource types
+    def normalize_source_type(type)
+      case type
+      when "Article", "Question"
+        type
+      when "Chunk"
+        "Chunk"
+      else
+        "Article" # Default fallback
+      end
+    end
+
+    # Look up source record from database by type and ID
+    # Returns nil if type is unknown or record not found
+    def find_source_by_type_and_id(type, id)
+      case type
+      when "Article"
+        Article.find_by(id: id)
+      when "Question"
+        Question.find_by(id: id)
+      end
     end
 
     # Find similar existing questions based on the search query

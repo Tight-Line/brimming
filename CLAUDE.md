@@ -422,7 +422,7 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - **Turbo Stream updates** for instant bookmark/unbookmark feedback `[x]`
 - **BookmarkPolicy** - users can only manage their own bookmarks `[x]`
 
-### Phase 14: Chunking & RAG Queries `[~]`
+### Phase 14: Chunking & RAG Queries `[x]`
 - **Content chunking** for long-form content (Articles, long Questions/Answers)
   - Break content into overlapping chunks for better retrieval precision `[x]`
   - Chunk model (chunkable_type, chunkable_id, chunk_index, content, embedding) `[x]`
@@ -434,14 +434,18 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
   - Retrieval returns relevant chunks with source context `[x]`
   - ChunkVectorQueryService for semantic chunk search `[x]`
 - **RAG query pipeline:**
-  - Query → embedding → chunk retrieval → context assembly → response `[ ]`
-  - Configurable number of chunks to retrieve `[ ]`
-  - Re-ranking options (cross-encoder, reciprocal rank fusion) `[ ]`
+  - Query → embedding → chunk retrieval → context assembly → response `[x]`
+  - Configurable number of chunks to retrieve `[x]`
+  - Re-ranking options (cross-encoder, reciprocal rank fusion) `[skipped]` *(optional/future - current retrieval quality is sufficient)*
 - **Citation support:**
-  - Track which chunks contributed to a response `[ ]`
-  - Link citations back to source content (Article, Question, Answer) `[ ]`
+  - Track which chunks contributed to a response `[x]`
+  - Link citations back to source content (Article, Question, Answer) `[x]`
+  - Inline citations `[1]`, `[2]` in AI Answer and Q&A Wizard `[x]`
+  - AnswerSource model persists citations on published FAQ answers `[x]`
+  - Database lookup fallback for slug resolution when LLM returns unmatched source IDs `[x]`
 - **Admin configuration:**
-  - Chunk size, overlap, max chunks per query (partially via EmbeddingProvider) `[~]`
+  - Chunk size, overlap, max chunks per query (via EmbeddingProvider + SearchSetting) `[x]`
+  - Per-space override for RAG chunk limit `[x]`
 
 ### Phase 15: Q&A Wizard `[~]`
 - **Admin/moderator tool to populate spaces with pre-approved FAQ content**
@@ -523,8 +527,8 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 
 ## Current Status
 
-**Completed Phases**: 1, 3, 4, 5, 6, 7, 8, 10, 12, 13
-**In Progress**: 11 (Email digests), 14 (RAG pipeline with citations), 15 (Q&A Wizard - minor enhancements pending)
+**Completed Phases**: 1, 3, 4, 5, 6, 7, 8, 10, 12, 13, 14
+**In Progress**: 11 (Email digests), 15 (Q&A Wizard - minor enhancements pending)
 **Not Started**: 16, 17, 18, 19
 
 ### What's Working
@@ -560,11 +564,12 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - **Q&A Wizard** for moderators to generate FAQ content from articles, topics, or knowledge base
 - **"Helpful Robot"** system user for AI-generated content with human sponsorship tracking
 - **Bookmarks** for users to save Questions, Answers, Comments, and Articles for later
+- **AI Answer** with inline citations `[1]`, `[2]` linking to source articles/questions
+- **AnswerSource model** for persisting citations on FAQ answers (moved from QuestionSource)
 - 100% test coverage (line and branch)
 
 ### Next Actions
 1. **Phase 11 (Email)**: Add email digests and notifications
-2. **Phase 14 (RAG)**: Complete RAG query pipeline with citations
 
 ### Technical Debt
 

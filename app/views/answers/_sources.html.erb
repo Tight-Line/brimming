@@ -1,0 +1,38 @@
+<div class="answer-sources">
+  <h4 class="sources-header">Sources</h4>
+  <div class="citation-source-list">
+    <% answer.answer_sources.order(:citation_number).each do |source| %>
+      <div class="citation-source-item">
+        <span class="citation-source-number">[<%= source.citation_number %>]</span>
+        <span class="citation-source-type"><%= source.display_source_type %></span>
+        <% if source.source.present? %>
+          <% case source.source_type %>
+          <% when "Article" %>
+            <%= link_to source.source_title.presence || source.source.title, article_path(source.source), class: "citation-source-link", target: "_blank" %>
+          <% when "Question" %>
+            <%= link_to source.source_title.presence || source.source.title, question_path(source.source), class: "citation-source-link", target: "_blank" %>
+          <% end %>
+        <% else %>
+          <span class="citation-source-link"><%= source.source_title %></span>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<style>
+.answer-sources {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.answer-sources .sources-header {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+</style>

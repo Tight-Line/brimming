@@ -9,6 +9,7 @@ class Answer < ApplicationRecord
   has_many :votes, dependent: :destroy
   has_many :comments, as: :commentable, dependent: :destroy
   has_many :bookmarks, as: :bookmarkable, dependent: :destroy
+  has_many :answer_sources, dependent: :destroy
 
   # Callbacks
   after_commit :refresh_question_search_vector, on: %i[create update destroy]

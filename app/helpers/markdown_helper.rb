@@ -22,9 +22,9 @@ module MarkdownHelper
   def markdown(text)
     return "" if text.blank?
 
-    # Pre-process: ensure blank line before fenced code blocks
-    # Redcarpet requires this for proper parsing
+    # Pre-process: Redcarpet requires blank lines before certain block elements
     processed_text = preprocess_fenced_code_blocks(text)
+    processed_text = preprocess_lists(processed_text)
 
     renderer = HTMLWithRouge.new(
       hard_wrap: false,
@@ -60,6 +60,33 @@ module MarkdownHelper
     # Add blank line before opening ``` with language identifier if not already present
     # Use \w+ (not \w?) to only match opening fences with language, not closing ```
     result.gsub(/([^\n])\n(```\w)/, "\\1\n\n\\2")
+  end
+
+  def preprocess_lists(text)
+    # Redcarpet requires a blank line before lists to recognize them
+    # LLMs often generate lists immediately after paragraphs without blank lines
+    #
+    # Strategy: Process line by line, adding blank lines before list starts
+    lines = text.split("\n", -1) # -1 preserves trailing empty strings
+    result_lines = []
+
+    lines.each_with_index do |line, index|
+      # Check if this line starts a list
+      is_list_start = line.match?(/^\d+\. /) || line.match?(/^[-*] /)
+
+      if is_list_start && index > 0
+        prev_line = lines[index - 1]
+        prev_is_list_item = prev_line.match?(/^\d+\. /) || prev_line.match?(/^[-*] /)
+        prev_is_blank = prev_line.strip.empty?
+
+        # Add blank line if previous line is not a list item and not already blank
+        result_lines << "" if !prev_is_list_item && !prev_is_blank
+      end
+
+      result_lines << line
+    end
+
+    result_lines.join("\n")
   end
 
   private

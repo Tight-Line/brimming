@@ -59,6 +59,7 @@ RSpec.describe QuestionSource do
   describe "#display_source_type" do
     it "returns human-readable source type names" do
       expect(build(:question_source, source_type: "Article").display_source_type).to eq("Article")
+      expect(build(:question_source, source_type: "Question").display_source_type).to eq("Question")
       expect(build(:question_source, source_type: "Chunk").display_source_type).to eq("Content Chunk")
       expect(build(:question_source, source_type: "Upload").display_source_type).to eq("Uploaded Document")
     end

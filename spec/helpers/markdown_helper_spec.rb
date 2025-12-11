@@ -123,6 +123,29 @@ RSpec.describe MarkdownHelper do
       expect(result).to include("code")
     end
 
+    it "handles numbered lists without preceding blank line" do
+      # LLMs often generate lists directly after paragraphs without blank lines
+      result = helper.markdown("Here are the steps:\n1. First step\n2. Second step")
+      expect(result).to include("<ol>")
+      expect(result).to include("<li>")
+      expect(result).to include("First step")
+      expect(result).to include("Second step")
+    end
+
+    it "handles bullet lists without preceding blank line" do
+      result = helper.markdown("Important points:\n- First point\n- Second point")
+      expect(result).to include("<ul>")
+      expect(result).to include("<li>")
+      expect(result).to include("First point")
+    end
+
+    it "handles asterisk lists without preceding blank line" do
+      result = helper.markdown("Important points:\n* First point\n* Second point")
+      expect(result).to include("<ul>")
+      expect(result).to include("<li>")
+      expect(result).to include("First point")
+    end
+
     it "escapes HTML in inline code" do
       result = helper.markdown("Use `<script>` tag")
       expect(result).to include("&lt;script&gt;")
@@ -162,6 +185,45 @@ RSpec.describe MarkdownHelper do
       result = helper.preprocess_fenced_code_blocks(input)
       # Should only add blank before opening fence, not closing
       expect(result).to eq("text:\n\n```ruby\ncode\n```\nmore")
+    end
+  end
+
+  describe "#preprocess_lists" do
+    it "adds blank line before numbered lists" do
+      input = "text:\n1. First item"
+      result = helper.preprocess_lists(input)
+      expect(result).to eq("text:\n\n1. First item")
+    end
+
+    it "adds blank line before bullet lists with dash" do
+      input = "text:\n- First item"
+      result = helper.preprocess_lists(input)
+      expect(result).to eq("text:\n\n- First item")
+    end
+
+    it "adds blank line before bullet lists with asterisk" do
+      input = "text:\n* First item"
+      result = helper.preprocess_lists(input)
+      expect(result).to eq("text:\n\n* First item")
+    end
+
+    it "preserves existing blank lines before lists" do
+      input = "text:\n\n1. First item"
+      result = helper.preprocess_lists(input)
+      expect(result).to eq("text:\n\n1. First item")
+    end
+
+    it "does not add blank line between list items" do
+      input = "1. First item\n2. Second item\n3. Third item"
+      result = helper.preprocess_lists(input)
+      # Should not add extra blank lines between items
+      expect(result).to eq("1. First item\n2. Second item\n3. Third item")
+    end
+
+    it "handles multi-digit list numbers" do
+      input = "text:\n10. Tenth item"
+      result = helper.preprocess_lists(input)
+      expect(result).to eq("text:\n\n10. Tenth item")
     end
   end
 
