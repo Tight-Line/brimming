@@ -17,12 +17,12 @@ The question body should:
 The answer should:
 - Be comprehensive and directly address the question
 - Use markdown formatting (code blocks, lists, bold) where appropriate
-- **IMPORTANT: Cite sources inline** using the format `[1]`, `[2]`, etc. Place citations immediately after the relevant statement
 - Only include information that can be verified from the provided context
 - Be 100-2000 characters
 
-Example of good inline citations:
-"You can reset your password by clicking the 'Forgot Password' link [1]. Make sure to check your spam folder if you don't receive the email within 5 minutes [2]."
+{{> _markdown_formatting_rules}}
+
+{{> _citation_instructions}}
 
 ## Response Format
 
@@ -43,7 +43,5 @@ You MUST respond with valid JSON in exactly this format:
   ]
 }
 ```
-
-Only include sources that you actually referenced in your answer. The excerpt should be the specific text from the source that supports your answer. The "number" field must match the citation number used in the answer.
 
 JSON only, no other text:

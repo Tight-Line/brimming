@@ -11,25 +11,12 @@ Answer the user's question based ONLY on the context provided above. If the cont
 Guidelines:
 - Be concise but comprehensive
 - Use markdown formatting where appropriate (lists, bold, code blocks)
-- **IMPORTANT: Cite sources inline** using the format `[1]`, `[2]`, etc. Place citations immediately after the relevant statement
 - Do not make up information not present in the context
 - If multiple sources provide relevant information, synthesize them into a coherent answer
 
-**Markdown Formatting Rules:**
-- ALWAYS include a blank line before starting a numbered or bulleted list
-- Example of CORRECT formatting:
-  "To complete this task:
+{{> _markdown_formatting_rules}}
 
-  1. First step
-  2. Second step"
-- Examples of INCORRECT formatting (do NOT do this):
-  "To complete this task: 1. First step 2. Second step"
-  "To complete this task:
-  1. First step
-  2. Second step"
-
-Example of good inline citations:
-"You can reset your password by clicking the 'Forgot Password' link [1]. Make sure to check your spam folder if you don't receive the email within 5 minutes [2]."
+{{> _citation_instructions}}
 
 ## Response Format
 
@@ -49,8 +36,6 @@ You MUST respond with valid JSON in exactly this format:
   ]
 }
 ```
-
-Only include sources that you actually referenced in your answer. The excerpt should be the specific text from the source that supports your answer. The "number" field must match the citation number used in the answer.
 
 ## User Question
 

@@ -17,9 +17,6 @@ module Search
   #   result.chunks_used  # => 5
   #
   class AiAnswerService
-    RAG_PROMPT_PATH = Rails.root.join("config/prompts/ai_answer_rag.md")
-    FALLBACK_PROMPT_PATH = Rails.root.join("config/prompts/ai_answer_fallback.md")
-
     Result = Struct.new(:answer, :sources, :chunks_used, :query, :from_knowledge_base, keyword_init: true)
 
     class << self
@@ -116,24 +113,17 @@ module Search
     end
 
     def build_prompt(chunks)
-      template = rag_prompt_template
       context = format_chunks(chunks)
-
-      template
-        .gsub("{{QUERY}}", query)
-        .gsub("{{RAG_CONTEXT}}", context)
-    end
-
-    def rag_prompt_template
-      @rag_prompt_template ||= File.read(RAG_PROMPT_PATH)
-    end
-
-    def fallback_prompt_template
-      @fallback_prompt_template ||= File.read(FALLBACK_PROMPT_PATH)
+      PromptTemplateService.render("ai_answer_rag.md", {
+        "QUERY" => query,
+        "RAG_CONTEXT" => context
+      })
     end
 
     def build_fallback_prompt
-      fallback_prompt_template.gsub("{{QUERY}}", query)
+      PromptTemplateService.render("ai_answer_fallback.md", {
+        "QUERY" => query
+      })
     end
 
     def format_chunks(chunks)

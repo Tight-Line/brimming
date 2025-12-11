@@ -16,9 +16,6 @@
 #   )
 #
 class QaWizardPromptService
-  # Fixed instructions file - always appended to persona
-  INSTRUCTIONS_PATH = Rails.root.join("config/prompts/qa_wizard_instructions.md")
-
   # Supported variables in persona prompts (instructions use RAG_CONTEXT internally)
   PERSONA_VARIABLES = %w[SPACE_NAME SPACE_DESCRIPTION].freeze
 
@@ -34,7 +31,6 @@ class QaWizardPromptService
   # @return [String] The interpolated prompt
   def build_content_prompt(title:, chunks:)
     persona = effective_persona
-    instructions = instructions_template
     context = build_rag_context(chunks)
 
     # Interpolate persona variables
@@ -42,10 +38,12 @@ class QaWizardPromptService
       "SPACE_NAME" => space.name,
       "SPACE_DESCRIPTION" => space_description_section
     }
-    interpolated_persona = interpolate(persona, persona_variables)
+    interpolated_persona = PromptTemplateService.interpolate(persona, persona_variables)
 
-    # Interpolate instructions (RAG_CONTEXT)
-    interpolated_instructions = interpolate(instructions, { "RAG_CONTEXT" => context })
+    # Load and interpolate instructions (with partial resolution)
+    interpolated_instructions = PromptTemplateService.render("qa_wizard_instructions.md", {
+      "RAG_CONTEXT" => context
+    })
 
     # Combine persona + instructions + question title
     <<~PROMPT
@@ -73,10 +71,6 @@ class QaWizardPromptService
   end
 
   private
-
-  def instructions_template
-    @instructions_template ||= File.read(INSTRUCTIONS_PATH)
-  end
 
   def space_description_section
     return "" if space.description.blank?
@@ -153,19 +147,5 @@ class QaWizardPromptService
         url: "#"
       }
     end
-  end
-
-  # Interpolate variables in the template
-  # @param template [String] The template with {{VARIABLE}} placeholders
-  # @param variables [Hash] Variable name => value mapping
-  # @return [String] The interpolated template
-  def interpolate(template, variables)
-    result = template.dup
-
-    variables.each do |name, value|
-      result.gsub!("{{#{name}}}", value.to_s)
-    end
-
-    result
   end
 end

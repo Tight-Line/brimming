@@ -9,18 +9,7 @@ Please provide a helpful answer based on your general knowledge. Be concise and 
 - If the question seems organization-specific, acknowledge that you don't have access to that specific information
 - Keep the answer brief and to the point
 
-**Markdown Formatting Rules:**
-- ALWAYS include a blank line before starting a numbered or bulleted list
-- Example of CORRECT formatting:
-  "To complete this task:
-
-  1. First step
-  2. Second step"
-- Examples of INCORRECT formatting (do NOT do this):
-  "To complete this task: 1. First step 2. Second step"
-  "To complete this task:
-  1. First step
-  2. Second step"
+{{> _markdown_formatting_rules}}
 
 ## Response Format
 
