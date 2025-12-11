@@ -65,6 +65,28 @@
   <% end %>
 </div>
 
+<% if @query.present? && current_user && LlmService.available? %>
+  <div id="ai-answer-panel" class="ai-answer-panel" data-query="<%= @query %>" data-space="<%= @space&.slug %>">
+    <div class="ai-answer-header">
+      <span class="ai-answer-icon">✨</span>
+      <span class="ai-answer-title">AI Answer</span>
+      <span class="ai-answer-badge">Beta</span>
+    </div>
+    <div class="ai-answer-content-wrapper">
+      <div class="ai-answer-content">
+        <div class="ai-answer-loading">
+          <div class="loading-dots">
+            <span></span><span></span><span></span>
+          </div>
+          <span class="loading-text">Generating answer...</span>
+        </div>
+      </div>
+      <div class="ai-answer-fade"></div>
+    </div>
+    <button class="ai-answer-expand" style="display: none;">Show more</button>
+  </div>
+<% end %>
+
 <div class="card">
   <% if @results && @results.hits.any? %>
     <div class="search-results-header">
@@ -210,3 +232,431 @@
     </div>
   <% end %>
 </div>
+
+<style>
+/* AI Answer Panel */
+.ai-answer-panel {
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.ai-answer-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ai-answer-icon {
+  font-size: 1.25rem;
+}
+
+.ai-answer-title {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ai-answer-badge {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  background: var(--primary);
+  color: white;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.ai-answer-content-wrapper {
+  position: relative;
+  max-height: 300px;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.ai-answer-content-wrapper.expanded {
+  max-height: none;
+}
+
+.ai-answer-fade {
+  display: none;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(to bottom, transparent, #f4f7ff);
+  pointer-events: none;
+}
+
+.ai-answer-content-wrapper:not(.expanded) .ai-answer-fade.visible {
+  display: block;
+}
+
+.ai-answer-expand {
+  display: none;
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: #3584e4;
+  color: #ffffff;
+  border: 1px solid #2a6fc9;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.ai-answer-expand:hover {
+  background: #1a5fb4;
+}
+
+.ai-answer-content {
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.ai-answer-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.loading-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  background: var(--primary);
+  border-radius: 50%;
+  animation: bounce 1.4s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(1) { animation-delay: 0s; }
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+.ai-answer-text {
+  margin-bottom: 1rem;
+}
+
+.ai-answer-text p {
+  margin: 0 0 0.75rem 0;
+}
+
+.ai-answer-text p:last-child {
+  margin-bottom: 0;
+}
+
+.ai-answer-sources {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.ai-sources-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.ai-source-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ai-source-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.ai-source-number {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary, #3584e4);
+  flex-shrink: 0;
+  min-width: 1.5rem;
+}
+
+.ai-source-type {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.35rem;
+  background: var(--bg-secondary);
+  border-radius: 3px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.ai-source-link {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.ai-source-link:hover {
+  text-decoration: underline;
+}
+
+.ai-answer-error {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.ai-answer-no-result {
+  color: var(--text-secondary);
+}
+
+.ai-general-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  color: #856404;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.ai-warning-icon {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+}
+
+.ai-warning-text {
+  font-weight: 500;
+}
+
+.ai-citation-link {
+  color: var(--primary, #3584e4);
+  text-decoration: none;
+  white-space: nowrap;
+  margin: 0 1px;
+}
+
+.ai-citation-link:hover {
+  text-decoration: underline;
+}
+
+.ai-citation-link sup {
+  font-size: 0.75em;
+  font-weight: 600;
+}
+
+.ai-citation-icon {
+  vertical-align: super;
+  margin-left: 1px;
+  opacity: 0.7;
+}
+
+.ai-citation-link:hover .ai-citation-icon {
+  opacity: 1;
+}
+</style>
+
+<script>
+(function() {
+  const RENDER_MARKDOWN_PATH = '<%= markdown_preview_path %>';
+  const AI_ANSWER_PATH = '<%= search_ai_answer_path %>';
+
+  function initAiAnswer() {
+    const panel = document.getElementById('ai-answer-panel');
+    if (!panel) return;
+    if (panel.dataset.loaded) return;
+    panel.dataset.loaded = 'true';
+
+    const query = panel.dataset.query;
+    const space = panel.dataset.space;
+    const contentEl = panel.querySelector('.ai-answer-content');
+
+    if (!query) {
+      panel.style.display = 'none';
+      return;
+    }
+
+    const params = new URLSearchParams();
+    params.append('q', query);
+    if (space) params.append('space', space);
+
+    fetch(AI_ANSWER_PATH, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
+        'Accept': 'application/json'
+      },
+      body: params
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.answer) {
+        renderAnswer(data, contentEl);
+      } else {
+        contentEl.innerHTML = '<div class="ai-answer-no-result">No AI answer available for this query.</div>';
+      }
+    })
+    .catch(error => {
+      console.error('AI Answer error:', error);
+      contentEl.innerHTML = '<div class="ai-answer-error">Unable to generate AI answer.</div>';
+    });
+  }
+
+  function renderAnswer(data, contentEl) {
+    // Use server-side markdown rendering for consistent styling
+    const markdownParams = new URLSearchParams();
+    markdownParams.append('text', data.answer);
+
+    fetch(RENDER_MARKDOWN_PATH, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
+        'Accept': 'application/json'
+      },
+      body: markdownParams
+    })
+    .then(response => response.json())
+    .then(markdownData => {
+      let html = '';
+      if (!data.from_knowledge_base) {
+        html += renderGeneralKnowledgeWarning();
+      }
+      // Convert inline citations [1], [2] to clickable links
+      const processedHtml = convertInlineCitations(markdownData.html, data.sources);
+      html += '<div class="ai-answer-text markdown-body">' + processedHtml + '</div>';
+      html += renderSources(data.sources);
+      contentEl.innerHTML = html;
+      checkOverflow(contentEl);
+    })
+    .catch(error => {
+      // Fallback to raw text if markdown rendering fails
+      console.error('Markdown render error:', error);
+      let html = '';
+      if (!data.from_knowledge_base) {
+        html += renderGeneralKnowledgeWarning();
+      }
+      html += '<div class="ai-answer-text">' + escapeHtml(data.answer) + '</div>';
+      html += renderSources(data.sources);
+      contentEl.innerHTML = html;
+      checkOverflow(contentEl);
+    });
+  }
+
+  function convertInlineCitations(html, sources) {
+    if (!sources || sources.length === 0) return html;
+
+    // Build a map of citation number to source info
+    const sourceMap = {};
+    sources.forEach(function(source, index) {
+      // Use source.number if provided, otherwise use index + 1
+      const num = source.number || (index + 1);
+      sourceMap[num] = source;
+    });
+
+    // Replace [1], [2], etc. with clickable superscript links
+    return html.replace(/\[(\d+)\]/g, function(match, num) {
+      const source = sourceMap[parseInt(num, 10)];
+      if (!source) return match; // Keep original if no matching source
+
+      const path = source.type === 'Article' ? '/articles/' : '/questions/';
+      const url = path + (source.slug || source.id);
+      const title = escapeHtml(source.title || 'Source ' + num);
+
+      return '<a href="' + url + '" class="ai-citation-link" title="' + title + '" target="_blank">' +
+        '<sup>[' + num + ']</sup>' +
+        '<svg class="ai-citation-icon" viewBox="0 0 16 16" width="12" height="12">' +
+        '<path fill="currentColor" d="M4.5 3.5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-3a.5.5 0 0 1 1 0v3a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h3a.5.5 0 0 1 0 1h-3z"/>' +
+        '<path fill="currentColor" d="M9 1.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-1 0V2.707l-5.146 5.147a.5.5 0 0 1-.708-.708L13.293 2H9.5a.5.5 0 0 1-.5-.5z"/>' +
+        '</svg>' +
+        '</a>';
+    });
+  }
+
+  function renderGeneralKnowledgeWarning() {
+    return '<div class="ai-general-warning">' +
+      '<span class="ai-warning-icon">⚠️</span>' +
+      '<span class="ai-warning-text">This answer is from the AI\'s general knowledge, not from your organization\'s knowledge base. Double-check this answer before relying on it.</span>' +
+      '</div>';
+  }
+
+  function renderSources(sources) {
+    if (!sources || sources.length === 0) return '';
+
+    let html = '<div class="ai-answer-sources">';
+    html += '<div class="ai-sources-label">Sources</div>';
+    html += '<div class="ai-source-list">';
+
+    sources.forEach(function(source, index) {
+      const num = source.number || (index + 1);
+      const path = source.type === 'Article' ? '/articles/' : '/questions/';
+      const slug = source.slug || source.id;
+      html += '<div class="ai-source-item">';
+      html += '<span class="ai-source-number">[' + num + ']</span>';
+      html += '<span class="ai-source-type">' + escapeHtml(source.type) + '</span>';
+      html += '<a href="' + path + slug + '" class="ai-source-link" target="_blank">' + escapeHtml(source.title) + '</a>';
+      html += '</div>';
+    });
+
+    html += '</div></div>';
+    return html;
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function checkOverflow(contentEl) {
+    const wrapper = contentEl.closest('.ai-answer-content-wrapper');
+    const expandBtn = wrapper.parentElement.querySelector('.ai-answer-expand');
+    const fadeEl = wrapper.querySelector('.ai-answer-fade');
+
+    // Check if content overflows the max-height
+    if (contentEl.scrollHeight > wrapper.clientHeight) {
+      expandBtn.style.display = 'inline-block';
+      fadeEl.classList.add('visible');
+    }
+  }
+
+  function initExpandButton() {
+    document.addEventListener('click', function(e) {
+      const btn = e.target.closest('.ai-answer-expand');
+      if (!btn) return;
+
+      const panel = btn.closest('.ai-answer-panel');
+      const wrapper = panel.querySelector('.ai-answer-content-wrapper');
+
+      if (wrapper.classList.contains('expanded')) {
+        wrapper.classList.remove('expanded');
+        btn.textContent = 'Show more';
+      } else {
+        wrapper.classList.add('expanded');
+        btn.textContent = 'Show less';
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', initAiAnswer);
+  document.addEventListener('turbo:load', initAiAnswer);
+  initExpandButton();
+})();
+</script>

@@ -140,4 +140,137 @@ RSpec.describe "Search" do
       expect(json["questions"].length).to be <= 5
     end
   end
+
+  describe "POST /search/ai_answer" do
+    context "when not logged in" do
+      it "redirects to sign in" do
+        post search_ai_answer_path, params: { q: "test" }
+
+        expect(response).to redirect_to(new_user_session_path)
+      end
+    end
+
+    context "when logged in" do
+      before { sign_in user }
+
+      context "when no LLM provider configured" do
+        before do
+          allow(LlmService).to receive(:available?).and_return(false)
+        end
+
+        it "returns empty answer" do
+          post search_ai_answer_path, params: { q: "How do I test?" }, as: :json
+
+          expect(response).to have_http_status(:ok)
+          json = response.parsed_body
+          expect(json["query"]).to eq("How do I test?")
+          expect(json["answer"]).to be_nil
+          expect(json["sources"]).to eq([])
+          expect(json["chunks_used"]).to eq(0)
+        end
+      end
+
+      context "when LLM provider is configured" do
+        let(:llm_provider) { create(:llm_provider, :openai, enabled: true, is_default: true) }
+        let(:mock_client) { instance_double(LlmService::Client) }
+
+        before do
+          llm_provider
+          allow(LlmService).to receive(:available?).and_return(true)
+          allow(LlmService).to receive(:client).and_return(mock_client)
+        end
+
+        context "when no chunks found" do
+          before do
+            allow(EmbeddingService).to receive(:available?).and_return(false)
+            allow(mock_client).to receive(:generate_json).and_return({
+              "answer" => "Here's a general answer based on my knowledge."
+            })
+          end
+
+          it "returns general knowledge answer with warning flag" do
+            post search_ai_answer_path, params: { q: "nonexistent topic" }, as: :json
+
+            expect(response).to have_http_status(:ok)
+            json = response.parsed_body
+            expect(json["answer"]).to include("general answer")
+            expect(json["sources"]).to eq([])
+            expect(json["chunks_used"]).to eq(0)
+            expect(json["from_knowledge_base"]).to be(false)
+          end
+        end
+
+        context "when chunks are found" do
+          let!(:article) { create(:article, title: "Password Reset Guide", spaces: [ space ]) }
+          let!(:chunk) { create(:chunk, chunkable: article, content: "To reset password click the forgot password link.") }
+
+          before do
+            allow(EmbeddingService).to receive(:available?).and_return(false)
+            allow(mock_client).to receive(:generate_json).and_return({
+              "answer" => "To reset your password, click the forgot password link. (Source 1)",
+              "sources" => [
+                { "type" => "Article", "id" => article.id, "title" => article.title, "excerpt" => "To reset password..." }
+              ]
+            })
+          end
+
+          it "returns AI-generated answer with sources" do
+            post search_ai_answer_path, params: { q: "reset password" }, as: :json
+
+            expect(response).to have_http_status(:ok)
+            json = response.parsed_body
+            expect(json["query"]).to eq("reset password")
+            expect(json["answer"]).to include("forgot password")
+            expect(json["sources"].length).to eq(1)
+            expect(json["sources"].first["type"]).to eq("Article")
+            expect(json["chunks_used"]).to eq(1)
+            expect(json["from_knowledge_base"]).to be(true)
+          end
+        end
+
+        context "with space filter" do
+          let!(:article) { create(:article, title: "Space-specific article", spaces: [ space ]) }
+          let!(:chunk) { create(:chunk, chunkable: article, content: "Content in the target space") }
+          let(:other_space) { create(:space) }
+          let!(:other_article) { create(:article, title: "Other space article", spaces: [ other_space ]) }
+          let!(:other_chunk) { create(:chunk, chunkable: other_article, content: "Content in other space") }
+
+          before do
+            allow(EmbeddingService).to receive(:available?).and_return(false)
+            allow(mock_client).to receive(:generate_json).and_return({
+              "answer" => "Answer from space-specific content",
+              "sources" => []
+            })
+          end
+
+          it "filters chunks by space" do
+            post search_ai_answer_path, params: { q: "Content", space: space.slug }, as: :json
+
+            expect(response).to have_http_status(:ok)
+            json = response.parsed_body
+            expect(json["answer"]).to include("space-specific")
+          end
+        end
+
+        context "when LLM returns error" do
+          let!(:article) { create(:article, title: "Test Article", spaces: [ space ]) }
+          let!(:chunk) { create(:chunk, chunkable: article, content: "Error test content for handling") }
+
+          before do
+            allow(EmbeddingService).to receive(:available?).and_return(false)
+            allow(mock_client).to receive(:generate_json).and_raise(LlmService::Client::ApiError, "Rate limit exceeded")
+          end
+
+          it "handles error gracefully" do
+            post search_ai_answer_path, params: { q: "Error test" }, as: :json
+
+            expect(response).to have_http_status(:ok)
+            json = response.parsed_body
+            expect(json["answer"]).to be_nil
+            expect(json["sources"]).to eq([])
+          end
+        end
+      end
+    end
+  end
 end

@@ -153,6 +153,7 @@ Rails.application.routes.draw do
   # Global search
   get "search", to: "search#index", as: :search
   get "search/suggestions", to: "search#suggestions", as: :search_suggestions
+  post "search/ai_answer", to: "search#ai_answer", as: :search_ai_answer
 
   resources :users, only: [ :show ], param: :username do
     collection do

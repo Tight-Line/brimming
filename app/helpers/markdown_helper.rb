@@ -46,11 +46,20 @@ module MarkdownHelper
   end
 
   def preprocess_fenced_code_blocks(text)
-    # Add blank line before opening ``` if not already present
-    # This ensures Redcarpet recognizes fenced code blocks
-    # We identify opening fences by the language identifier (```ruby, ```js, etc.)
-    # Fences without language (```) require users to add blank line manually
-    text.gsub(/([^\n])\n(```\w)/, "\\1\n\n\\2")
+    # Handle indented fenced code blocks (common in LLM output inside list items)
+    # Redcarpet doesn't recognize ``` when indented, so we need to:
+    # 1. Remove leading whitespace from fence lines
+    # 2. Ensure blank line before opening fence
+    result = text.dup
+
+    # Remove indentation from fenced code blocks (handles ```lang and closing ```)
+    # This regex finds indented ``` lines and removes the leading whitespace
+    result = result.gsub(/^[ \t]+(```\w*)/, '\1')  # Opening fence with optional language
+    result = result.gsub(/^[ \t]+(```)$/, '\1')    # Closing fence
+
+    # Add blank line before opening ``` with language identifier if not already present
+    # Use \w+ (not \w?) to only match opening fences with language, not closing ```
+    result.gsub(/([^\n])\n(```\w)/, "\\1\n\n\\2")
   end
 
   private

@@ -442,7 +442,6 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
   - Link citations back to source content (Article, Question, Answer) `[ ]`
 - **Admin configuration:**
   - Chunk size, overlap, max chunks per query (partially via EmbeddingProvider) `[~]`
-  - Re-indexing tools for chunk regeneration `[ ]`
 
 ### Phase 15: Q&A Wizard `[~]`
 - **Admin/moderator tool to populate spaces with pre-approved FAQ content**
