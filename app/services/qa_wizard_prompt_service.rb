@@ -2,8 +2,11 @@
 
 # Service for building Q&A Wizard prompts with variable interpolation
 #
-# Supports per-space custom prompts with fallback to system default.
-# Variables are interpolated using {{VARIABLE_NAME}} syntax.
+# The prompt is composed of two parts:
+# 1. Persona (editable): System-wide default from SearchSetting, overridable per-space
+# 2. Instructions (fixed): RAG context and response format, always appended
+#
+# This ensures custom prompts can't break the required JSON response format.
 #
 # Usage:
 #   service = QaWizardPromptService.new(space)
@@ -13,10 +16,11 @@
 #   )
 #
 class QaWizardPromptService
-  DEFAULT_PROMPT_PATH = Rails.root.join("config/prompts/qa_wizard_default.md")
+  # Fixed instructions file - always appended to persona
+  INSTRUCTIONS_PATH = Rails.root.join("config/prompts/qa_wizard_instructions.md")
 
-  # Supported variables in prompts
-  VARIABLES = %w[SPACE_NAME SPACE_DESCRIPTION RAG_CONTEXT].freeze
+  # Supported variables in persona prompts (instructions use RAG_CONTEXT internally)
+  PERSONA_VARIABLES = %w[SPACE_NAME SPACE_DESCRIPTION].freeze
 
   attr_reader :space
 
@@ -29,44 +33,49 @@ class QaWizardPromptService
   # @param chunks [Array<Chunk>] Relevant context chunks from KB
   # @return [String] The interpolated prompt
   def build_content_prompt(title:, chunks:)
-    template = effective_template
+    persona = effective_persona
+    instructions = instructions_template
     context = build_rag_context(chunks)
 
-    variables = {
+    # Interpolate persona variables
+    persona_variables = {
       "SPACE_NAME" => space.name,
-      "SPACE_DESCRIPTION" => space_description_section,
-      "RAG_CONTEXT" => context
+      "SPACE_DESCRIPTION" => space_description_section
     }
+    interpolated_persona = interpolate(persona, persona_variables)
 
-    prompt = interpolate(template, variables)
+    # Interpolate instructions (RAG_CONTEXT)
+    interpolated_instructions = interpolate(instructions, { "RAG_CONTEXT" => context })
 
-    # Add the question title as a final instruction
+    # Combine persona + instructions + question title
     <<~PROMPT
-      #{prompt}
+      #{interpolated_persona}
+
+      #{interpolated_instructions}
 
       QUESTION TITLE: #{title}
     PROMPT
   end
 
-  # Get the effective template (space custom or system default)
-  # @return [String] The prompt template
-  def effective_template
+  # Get the effective persona (space custom or system default)
+  # @return [String] The persona prompt
+  def effective_persona
     if space.qa_wizard_prompt.present?
       space.qa_wizard_prompt
     else
-      default_template
+      SearchSetting.qa_wizard_persona
     end
   end
 
-  # Check if the space has a custom prompt
+  # Check if the space has a custom persona
   def custom_prompt?
     space.qa_wizard_prompt.present?
   end
 
   private
 
-  def default_template
-    @default_template ||= File.read(DEFAULT_PROMPT_PATH)
+  def instructions_template
+    @instructions_template ||= File.read(INSTRUCTIONS_PATH)
   end
 
   def space_description_section

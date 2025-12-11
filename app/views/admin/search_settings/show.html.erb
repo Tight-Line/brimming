@@ -32,6 +32,19 @@
           Set to 0 to disable this feature. Spaces can override this with their own limit.
         </p>
       </div>
+
+      <div class="form-group">
+        <%= f.label :qa_wizard_persona, "Default Persona Prompt" %>
+        <%= f.text_area :qa_wizard_persona, value: @qa_wizard_persona, rows: 8, class: "form-control" %>
+        <p class="form-hint">
+          The persona and instructions for the AI when generating Q&A content. This defines the assistant's
+          role and behavior. Spaces can override this with their own persona prompt.<br>
+          <strong>Supported variables:</strong> <code>{{SPACE_NAME}}</code>, <code>{{SPACE_DESCRIPTION}}</code>
+        </p>
+        <p class="form-hint">
+          <em>Note: The RAG context and JSON response format instructions are automatically appended and cannot be customized.</em>
+        </p>
+      </div>
     </div>
 
     <div class="form-actions">

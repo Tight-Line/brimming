@@ -6,19 +6,19 @@ RSpec.describe QaWizardPromptService do
   let(:space) { create(:space, name: "Test Space", description: "A test space for Q&A") }
   let(:service) { described_class.new(space) }
 
-  describe "#effective_template" do
+  describe "#effective_persona" do
     context "when space has no custom prompt" do
-      it "returns the default template" do
-        expect(service.effective_template).to include("{{SPACE_NAME}}")
-        expect(service.effective_template).to include("{{RAG_CONTEXT}}")
+      it "returns the default persona from SearchSetting" do
+        expect(service.effective_persona).to include("{{SPACE_NAME}}")
+        expect(service.effective_persona).to include("{{SPACE_DESCRIPTION}}")
       end
     end
 
     context "when space has a custom prompt" do
-      before { space.update!(qa_wizard_prompt: "Custom prompt for {{SPACE_NAME}}") }
+      before { space.update!(qa_wizard_prompt: "Custom persona for {{SPACE_NAME}}") }
 
-      it "returns the custom prompt" do
-        expect(service.effective_template).to eq("Custom prompt for {{SPACE_NAME}}")
+      it "returns the custom persona" do
+        expect(service.effective_persona).to eq("Custom persona for {{SPACE_NAME}}")
       end
     end
   end
@@ -93,16 +93,20 @@ RSpec.describe QaWizardPromptService do
       end
     end
 
-    context "with custom prompt" do
+    context "with custom persona" do
       before do
-        space.update!(qa_wizard_prompt: "Generate FAQ for {{SPACE_NAME}}\n\nContext: {{RAG_CONTEXT}}")
+        space.update!(qa_wizard_prompt: "You are an expert FAQ writer for {{SPACE_NAME}}.")
       end
 
-      it "uses the custom template" do
+      it "uses the custom persona and appends fixed instructions" do
         prompt = service.build_content_prompt(title: "How do I test?", chunks: chunks)
-        expect(prompt).to include("Generate FAQ for Test Space")
-        expect(prompt).to include("Context:")
+        # Custom persona is used
+        expect(prompt).to include("You are an expert FAQ writer for Test Space.")
+        # Fixed instructions are always appended
+        expect(prompt).to include("Context from Knowledge Base")
         expect(prompt).to include("This is chunk 1 content")
+        expect(prompt).to include("Response Format")
+        expect(prompt).to include("JSON only")
       end
     end
   end

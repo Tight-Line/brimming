@@ -9,7 +9,10 @@
 #   SearchSetting.set("custom_key", "val")  # generic setter
 #
 class SearchSetting < ApplicationRecord
-  # Known setting keys and their defaults
+  # Path to the default persona prompt file
+  DEFAULT_PERSONA_PATH = Rails.root.join("config/prompts/qa_wizard_persona.md")
+
+  # Known setting keys and their defaults (text defaults loaded from files)
   DEFAULTS = {
     "rag_chunk_limit" => 10,
     "similar_questions_limit" => 3
@@ -49,5 +52,21 @@ class SearchSetting < ApplicationRecord
 
   def self.similar_questions_limit=(value)
     set("similar_questions_limit", value.to_i, description: "Number of similar existing questions to show in Q&A Wizard")
+  end
+
+  # Typed accessor for qa_wizard_persona (text prompt)
+  # Returns the stored persona or the default from file
+  def self.qa_wizard_persona
+    setting = find_by(key: "qa_wizard_persona")
+    setting&.value || default_persona
+  end
+
+  def self.qa_wizard_persona=(value)
+    set("qa_wizard_persona", value.to_s, description: "System-wide persona prompt for Q&A Wizard content generation")
+  end
+
+  # Load default persona from file
+  def self.default_persona
+    @default_persona ||= File.read(DEFAULT_PERSONA_PATH)
   end
 end

@@ -155,4 +155,34 @@ RSpec.describe SearchSetting, type: :model do
       expect(described_class.similar_questions_limit).to eq(7)
     end
   end
+
+  describe ".qa_wizard_persona" do
+    context "when not set" do
+      it "returns the default persona from file" do
+        expect(described_class.qa_wizard_persona).to include("{{SPACE_NAME}}")
+        expect(described_class.qa_wizard_persona).to include("{{SPACE_DESCRIPTION}}")
+      end
+    end
+
+    context "when set" do
+      before { create(:search_setting, key: "qa_wizard_persona", value: "Custom persona prompt") }
+
+      it "returns the stored value" do
+        expect(described_class.qa_wizard_persona).to eq("Custom persona prompt")
+      end
+    end
+  end
+
+  describe ".qa_wizard_persona=" do
+    it "stores the value" do
+      described_class.qa_wizard_persona = "New persona prompt"
+      expect(described_class.qa_wizard_persona).to eq("New persona prompt")
+    end
+
+    it "sets an appropriate description" do
+      described_class.qa_wizard_persona = "New persona prompt"
+      setting = described_class.find_by(key: "qa_wizard_persona")
+      expect(setting.description).to include("persona")
+    end
+  end
 end

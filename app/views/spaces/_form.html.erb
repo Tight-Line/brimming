@@ -27,13 +27,15 @@
   </div>
 
   <div class="form-group">
-    <%= f.label :qa_wizard_prompt, "Q&A Wizard Prompt" %>
+    <%= f.label :qa_wizard_prompt, "Q&A Wizard Persona" %>
     <%= f.text_area :qa_wizard_prompt, class: "form-control",
-        rows: 10,
-        placeholder: "Custom prompt for Q&A wizard generation (optional)..." %>
+        rows: 8,
+        placeholder: "Custom persona prompt for Q&A wizard (optional)..." %>
     <small class="form-hint">
-      Custom system prompt for the Q&A Wizard. Leave blank to use the default prompt.<br>
-      Supported variables: <code>{{SPACE_NAME}}</code>, <code>{{SPACE_DESCRIPTION}}</code>, <code>{{RAG_CONTEXT}}</code>
+      Custom persona prompt for Q&A content generation in this space. Defines the assistant's role and behavior.
+      Leave blank to use the system-wide default.<br>
+      <strong>Supported variables:</strong> <code>{{SPACE_NAME}}</code>, <code>{{SPACE_DESCRIPTION}}</code><br>
+      <em>Note: The RAG context and JSON response format are automatically appended.</em>
     </small>
   </div>
 

@@ -49,6 +49,18 @@ RSpec.describe "Admin::SearchSettings", type: :request do
         get admin_search_settings_path
         expect(response.body).to include("5")
       end
+
+      it "displays the persona prompt textarea" do
+        get admin_search_settings_path
+        expect(response.body).to include("Default Persona Prompt")
+        expect(response.body).to include("qa_wizard_persona")
+      end
+
+      it "displays the current qa_wizard_persona value" do
+        SearchSetting.qa_wizard_persona = "Custom persona text"
+        get admin_search_settings_path
+        expect(response.body).to include("Custom persona text")
+      end
     end
   end
 
@@ -90,6 +102,27 @@ RSpec.describe "Admin::SearchSettings", type: :request do
 
         expect(response).to redirect_to(admin_search_settings_path)
         expect(flash[:notice]).to include("Search settings updated")
+      end
+
+      it "updates qa_wizard_persona" do
+        patch admin_search_settings_path, params: {
+          rag_chunk_limit: 10,
+          similar_questions_limit: 3,
+          qa_wizard_persona: "Updated persona prompt"
+        }
+
+        expect(SearchSetting.qa_wizard_persona).to eq("Updated persona prompt")
+      end
+
+      it "ignores blank qa_wizard_persona" do
+        SearchSetting.qa_wizard_persona = "Original prompt"
+        patch admin_search_settings_path, params: {
+          rag_chunk_limit: 10,
+          similar_questions_limit: 3,
+          qa_wizard_persona: ""
+        }
+
+        expect(SearchSetting.qa_wizard_persona).to eq("Original prompt")
       end
     end
   end

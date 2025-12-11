@@ -5,11 +5,13 @@ module Admin
     def show
       @rag_chunk_limit = SearchSetting.rag_chunk_limit
       @similar_questions_limit = SearchSetting.similar_questions_limit
+      @qa_wizard_persona = SearchSetting.qa_wizard_persona
     end
 
     def update
       SearchSetting.rag_chunk_limit = params[:rag_chunk_limit].to_i
       SearchSetting.similar_questions_limit = params[:similar_questions_limit].to_i
+      SearchSetting.qa_wizard_persona = params[:qa_wizard_persona] if params[:qa_wizard_persona].present?
 
       redirect_to admin_search_settings_path, notice: "Search settings updated successfully."
     end
