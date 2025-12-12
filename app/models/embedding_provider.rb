@@ -11,33 +11,38 @@ class EmbeddingProvider < ApplicationRecord
   #
   # These were determined empirically by testing queries against known-relevant
   # and known-irrelevant documents.
+  # Last updated: December 2025
   DEFAULT_SIMILARITY_THRESHOLDS = {
     # OpenAI models (lower scores, ~0.15-0.35 range)
-    "text-embedding-3-small" => 0.28,
     "text-embedding-3-large" => 0.28,
+    "text-embedding-3-small" => 0.28,
     "text-embedding-ada-002" => 0.28,
     # Cohere models
+    "embed-v4.0" => 0.30,
     "embed-english-v3.0" => 0.30,
     "embed-multilingual-v3.0" => 0.30,
     "embed-english-light-v3.0" => 0.28,
     "embed-multilingual-light-v3.0" => 0.28,
     # Ollama models (vary widely)
-    "embeddinggemma" => 0.38,
     "nomic-embed-text" => 0.42,
     "mxbai-embed-large" => 0.35,
-    "all-minilm" => 0.30,
     "snowflake-arctic-embed" => 0.32,
+    "all-minilm" => 0.30,
+    "bge-m3" => 0.32,
     # Azure OpenAI (same as OpenAI)
     # Bedrock models
-    "amazon.titan-embed-text-v1" => 0.25,
+    "cohere.embed-v4" => 0.30,
     "amazon.titan-embed-text-v2:0" => 0.25,
+    "amazon.titan-embed-text-v1" => 0.25,
     "cohere.embed-english-v3" => 0.30,
     "cohere.embed-multilingual-v3" => 0.30,
     # HuggingFace models
-    "sentence-transformers/all-MiniLM-L6-v2" => 0.30,
-    "sentence-transformers/all-mpnet-base-v2" => 0.32,
+    "BAAI/bge-m3" => 0.32,
+    "BAAI/bge-large-en-v1.5" => 0.32,
+    "BAAI/bge-base-en-v1.5" => 0.32,
     "BAAI/bge-small-en-v1.5" => 0.32,
-    "BAAI/bge-base-en-v1.5" => 0.32
+    "sentence-transformers/all-mpnet-base-v2" => 0.32,
+    "sentence-transformers/all-MiniLM-L6-v2" => 0.30
   }.freeze
 
   # Fallback thresholds by provider type (used if model not in above list)
@@ -50,73 +55,83 @@ class EmbeddingProvider < ApplicationRecord
     "ollama" => 0.35
   }.freeze
 
-  # Available models per provider with their dimensions
+  # Available models per provider with their dimensions (newest first)
+  # Last updated: December 2025
   MODELS = {
     "openai" => {
-      "text-embedding-3-small" => 1536,
       "text-embedding-3-large" => 3072,
+      "text-embedding-3-small" => 1536,
       "text-embedding-ada-002" => 1536
     },
     "cohere" => {
+      "embed-v4.0" => 1536,
       "embed-english-v3.0" => 1024,
       "embed-multilingual-v3.0" => 1024,
       "embed-english-light-v3.0" => 384,
       "embed-multilingual-light-v3.0" => 384
     },
     "ollama" => {
-      "embeddinggemma" => 768,
       "nomic-embed-text" => 768,
       "mxbai-embed-large" => 1024,
+      "snowflake-arctic-embed" => 1024,
       "all-minilm" => 384,
-      "snowflake-arctic-embed" => 1024
+      "bge-m3" => 1024
     },
     "azure_openai" => {
-      "text-embedding-ada-002" => 1536,
+      "text-embedding-3-large" => 3072,
       "text-embedding-3-small" => 1536,
-      "text-embedding-3-large" => 3072
+      "text-embedding-ada-002" => 1536
     },
     "bedrock" => {
-      "amazon.titan-embed-text-v1" => 1536,
+      "cohere.embed-v4" => 1536,
       "amazon.titan-embed-text-v2:0" => 1024,
+      "amazon.titan-embed-text-v1" => 1536,
       "cohere.embed-english-v3" => 1024,
       "cohere.embed-multilingual-v3" => 1024
     },
     "huggingface" => {
-      "sentence-transformers/all-MiniLM-L6-v2" => 384,
-      "sentence-transformers/all-mpnet-base-v2" => 768,
+      "BAAI/bge-m3" => 1024,
+      "BAAI/bge-large-en-v1.5" => 1024,
+      "BAAI/bge-base-en-v1.5" => 768,
       "BAAI/bge-small-en-v1.5" => 384,
-      "BAAI/bge-base-en-v1.5" => 768
+      "sentence-transformers/all-mpnet-base-v2" => 768,
+      "sentence-transformers/all-MiniLM-L6-v2" => 384
     }
   }.freeze
 
   # Maximum context length in tokens per model
   # Used to truncate input text before embedding
+  # Last updated: December 2025
   MAX_TOKENS = {
     # OpenAI models
-    "text-embedding-3-small" => 8191,
     "text-embedding-3-large" => 8191,
+    "text-embedding-3-small" => 8191,
     "text-embedding-ada-002" => 8191,
-    # Cohere models (v3 supports 512 tokens for search)
+    # Cohere models (v4 supports 128k context, v3 supports 512 tokens for search)
+    "embed-v4.0" => 128_000,
     "embed-english-v3.0" => 512,
     "embed-multilingual-v3.0" => 512,
     "embed-english-light-v3.0" => 512,
     "embed-multilingual-light-v3.0" => 512,
     # Ollama models (conservative limits due to tokenization variance on code)
-    "embeddinggemma" => 2048,
-    "nomic-embed-text" => 600,
+    "nomic-embed-text" => 8192,
     "mxbai-embed-large" => 512,
-    "all-minilm" => 256,
     "snowflake-arctic-embed" => 512,
+    "all-minilm" => 256,
+    "bge-m3" => 8192,
     # Bedrock models
-    "amazon.titan-embed-text-v1" => 8000,
+    "cohere.embed-v4" => 128_000,
     "amazon.titan-embed-text-v2:0" => 8000,
+    "amazon.titan-embed-text-v1" => 8000,
     "cohere.embed-english-v3" => 512,
     "cohere.embed-multilingual-v3" => 512,
     # HuggingFace models
-    "sentence-transformers/all-MiniLM-L6-v2" => 256,
-    "sentence-transformers/all-mpnet-base-v2" => 384,
+    "BAAI/bge-m3" => 8192,
+    "BAAI/bge-large-en-v1.5" => 512,
+    "BAAI/bge-base-en-v1.5" => 512,
     "BAAI/bge-small-en-v1.5" => 512,
-    "BAAI/bge-base-en-v1.5" => 512
+    "sentence-transformers/all-mpnet-base-v2" => 384,
+    "sentence-transformers/all-MiniLM-L6-v2" => 256
   }.freeze
 
   # Average characters per token (conservative estimate)

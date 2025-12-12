@@ -213,19 +213,19 @@ RSpec.describe EmbeddingProvider do
   describe ".default_config_for" do
     it "returns default configuration for OpenAI" do
       config = described_class.default_config_for("openai")
-      expect(config[:embedding_model]).to eq("text-embedding-3-small")
-      expect(config[:dimensions]).to eq(1536)
+      expect(config[:embedding_model]).to eq("text-embedding-3-large")
+      expect(config[:dimensions]).to eq(3072)
     end
 
     it "returns default configuration for Cohere" do
       config = described_class.default_config_for("cohere")
-      expect(config[:embedding_model]).to eq("embed-english-v3.0")
-      expect(config[:dimensions]).to eq(1024)
+      expect(config[:embedding_model]).to eq("embed-v4.0")
+      expect(config[:dimensions]).to eq(1536)
     end
 
     it "returns default configuration for Ollama" do
       config = described_class.default_config_for("ollama")
-      expect(config[:embedding_model]).to eq("embeddinggemma")
+      expect(config[:embedding_model]).to eq("nomic-embed-text")
       expect(config[:dimensions]).to eq(768)
     end
   end
@@ -268,9 +268,9 @@ RSpec.describe EmbeddingProvider do
       provider = build(:embedding_provider, provider_type: "openai", embedding_model: "text-embedding-3-small")
       expect(provider.similarity_threshold).to eq(0.28)
 
-      # Ollama embeddinggemma has threshold 0.38
-      provider = build(:embedding_provider, :ollama, embedding_model: "embeddinggemma")
-      expect(provider.similarity_threshold).to eq(0.38)
+      # Ollama nomic-embed-text has threshold 0.42
+      provider = build(:embedding_provider, :ollama, embedding_model: "nomic-embed-text")
+      expect(provider.similarity_threshold).to eq(0.42)
     end
 
     it "returns a custom threshold when set in settings" do
@@ -295,7 +295,7 @@ RSpec.describe EmbeddingProvider do
       # Model-specific thresholds take precedence
       expect(build(:embedding_provider, provider_type: "openai", embedding_model: "text-embedding-3-small").default_similarity_threshold).to eq(0.28)
       expect(build(:embedding_provider, provider_type: "cohere", embedding_model: "embed-english-v3.0").default_similarity_threshold).to eq(0.30)
-      expect(build(:embedding_provider, :ollama, embedding_model: "embeddinggemma").default_similarity_threshold).to eq(0.38)
+      expect(build(:embedding_provider, :ollama, embedding_model: "nomic-embed-text").default_similarity_threshold).to eq(0.42)
       expect(build(:embedding_provider, provider_type: "huggingface", embedding_model: "sentence-transformers/all-MiniLM-L6-v2").default_similarity_threshold).to eq(0.30)
     end
 

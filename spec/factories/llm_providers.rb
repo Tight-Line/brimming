@@ -17,7 +17,7 @@ FactoryBot.define do
 
     trait :anthropic do
       provider_type { "anthropic" }
-      llm_model { "claude-3-5-sonnet-20241022" }
+      llm_model { "claude-sonnet-4-5-20250929" }
       api_key { "sk-ant-test-key" }
     end
 
