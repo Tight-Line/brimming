@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 class QuestionSource < ApplicationRecord
-  SOURCE_TYPES = %w[Article Chunk Upload].freeze
+  SOURCE_TYPES = %w[Article Question Chunk Upload].freeze
   SOURCE_TYPES_DISPLAY = {
     "Article" => "Article",
+    "Question" => "Question",
     "Chunk" => "Content Chunk",
     "Upload" => "Uploaded Document"
   }.freeze

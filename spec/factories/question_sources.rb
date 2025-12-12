@@ -5,11 +5,18 @@ FactoryBot.define do
     question
     source_type { "Article" }
     source_id { nil }
+    source_title { "Source Title" }
     source_excerpt { "This is the relevant excerpt from the source material that inspired this Q&A." }
+    citation_number { 1 }
 
     trait :from_article do
       source_type { "Article" }
       source_id { nil } # Will be set in tests if needed
+    end
+
+    trait :from_question do
+      source_type { "Question" }
+      source_id { nil }
     end
 
     trait :from_chunk do

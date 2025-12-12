@@ -5,41 +5,83 @@ require "net/http"
 class LlmProvider < ApplicationRecord
   PROVIDER_TYPES = %w[openai anthropic ollama azure_openai bedrock cohere].freeze
 
-  # Available models per provider (alphabetized for easy navigation)
+  # Available models per provider (newest first, then alphabetized within generation)
   # Note: Ollama models are discovered dynamically via OllamaDiscoveryService
+  # Last updated: December 2025
   MODELS = {
     "openai" => %w[
-      gpt-3.5-turbo
-      gpt-4
-      gpt-4-turbo
+      gpt-5.2-chat-latest
+      gpt-5.2
+      gpt-5.2-pro
+      gpt-5-chat-latest
+      gpt-5
+      gpt-5-mini
+      gpt-5-nano
+      gpt-5-codex
+      gpt-5-pro
+      gpt-5-search-api
+      gpt-5.1-chat-latest
+      gpt-5.1
+      gpt-5.1-codex
+      gpt-5.1-codex-mini
+      gpt-5.1-codex-max
+      o3
+      o3-mini
+      o4-mini
+      gpt-4.1
+      gpt-4.1-mini
+      gpt-4.1-nano
       gpt-4o
       gpt-4o-mini
+      gpt-4-turbo
+      gpt-4
+      gpt-3.5-turbo
     ],
     "anthropic" => %w[
-      claude-3-5-haiku-20241022
-      claude-3-5-sonnet-20241022
-      claude-3-opus-20240229
+      claude-opus-4-5-20251101
+      claude-sonnet-4-5-20250929
+      claude-haiku-4-5-20251001
+      claude-opus-4-1-20250805
       claude-sonnet-4-20250514
+      claude-opus-4-20250514
+      claude-3-7-sonnet-20250219
+      claude-3-5-haiku-20241022
+      claude-3-haiku-20240307
     ],
     "azure_openai" => %w[
-      gpt-35-turbo
-      gpt-4
-      gpt-4-turbo
+      o3
+      o3-mini
+      o4-mini
+      gpt-4.1
+      gpt-4.1-mini
       gpt-4o
       gpt-4o-mini
+      gpt-4-turbo
+      gpt-4
+      gpt-35-turbo
     ],
     "bedrock" => %w[
-      amazon.titan-text-premier-v1:0
+      anthropic.claude-opus-4-5-20251101-v1:0
+      anthropic.claude-sonnet-4-5-20250929-v1:0
+      anthropic.claude-haiku-4-5-20251001-v1:0
+      anthropic.claude-opus-4-1-20250805-v1:0
+      anthropic.claude-sonnet-4-20250514-v1:0
+      anthropic.claude-opus-4-20250514-v1:0
+      anthropic.claude-3-7-sonnet-20250219-v1:0
       anthropic.claude-3-5-haiku-20241022-v1:0
-      anthropic.claude-3-5-sonnet-20241022-v2:0
-      anthropic.claude-3-sonnet-20240229-v1:0
-      meta.llama3-70b-instruct-v1:0
+      meta.llama4-maverick-17b-instruct-v1:0
+      meta.llama4-scout-17b-instruct-v1:0
+      meta.llama3-3-70b-instruct-v1:0
+      meta.llama3-1-405b-instruct-v1:0
+      meta.llama3-1-70b-instruct-v1:0
+      amazon.titan-text-premier-v1:0
     ],
     "cohere" => %w[
-      command
-      command-light
-      command-r
+      command-a-03-2025
+      command-r-plus-08-2024
+      command-r-08-2024
       command-r-plus
+      command-r
     ]
   }.freeze
 

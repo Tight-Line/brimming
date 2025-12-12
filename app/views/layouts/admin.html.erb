@@ -52,6 +52,10 @@
             <span class="admin-nav-icon">&#9656;</span>
             Embedding Providers
           <% end %>
+          <%= link_to admin_search_settings_path, class: "admin-nav-item #{'active' if request.path.start_with?('/admin/search_settings')}" do %>
+            <span class="admin-nav-icon">&#9656;</span>
+            Search Settings
+          <% end %>
 
           <h4>System</h4>
           <%= link_to "/admin/sidekiq", class: "admin-nav-item", target: "_blank" do %>

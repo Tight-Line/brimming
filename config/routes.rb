@@ -38,6 +38,7 @@ Rails.application.routes.draw do
         post :set_default
       end
     end
+    resource :search_settings, only: [ :show, :update ]
   end
 
   # Email verification (outside settings namespace for simpler URLs)
@@ -152,6 +153,7 @@ Rails.application.routes.draw do
   # Global search
   get "search", to: "search#index", as: :search
   get "search/suggestions", to: "search#suggestions", as: :search_suggestions
+  post "search/ai_answer", to: "search#ai_answer", as: :search_ai_answer
 
   resources :users, only: [ :show ], param: :username do
     collection do

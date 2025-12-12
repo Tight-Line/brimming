@@ -48,6 +48,7 @@
         <%= markdown(@question.body) %>
       </div>
 
+
       <%= render 'comments/comments_section', comments: @question_comments, commentable: @question %>
     </div>
   </div>
@@ -86,6 +87,9 @@
               <div class="answer-body markdown-body">
                 <%= markdown(answer.body) %>
               </div>
+              <% if answer.answer_sources.any? %>
+                <%= render 'answers/sources', answer: answer %>
+              <% end %>
               <div class="answer-meta">
                 <% if answer.system_generated? %>
                   <span class="badge badge-info">Official Answer</span>

@@ -8,7 +8,14 @@
     <h1>Q&A Wizard</h1>
   </div>
 
-  <% unless @llm_available %>
+  <% if !@has_knowledge_base %>
+    <div class="alert alert-warning">
+      <strong>No Content Available:</strong>
+      The Q&A Wizard needs existing content to generate FAQ questions from.
+      Please <%= link_to "create an article", new_article_path(space_id: @space.slug) %>
+      or add some questions to this space first.
+    </div>
+  <% elsif !@llm_available %>
     <div class="alert alert-warning">
       <strong>LLM Provider Required:</strong>
       The Q&A Wizard requires an LLM provider to generate FAQ content.
@@ -32,7 +39,7 @@
                 <span>Generate questions from an existing article</span>
               </div>
             </label>
-            <div class="source-option-details" id="article-details">
+            <div class="source-option-details" id="article-details"<%= ' style="display: none;"'.html_safe unless default_source == "article" %>>
               <% if @articles.any? %>
                 <%= select_tag :article_id,
                              options_from_collection_for_select(@articles, :id, :title),
@@ -71,14 +78,14 @@
                 <span>Describe a topic and let AI generate questions</span>
               </div>
             </label>
-            <div class="source-option-details" id="topic-details" style="display: none;">
+            <div class="source-option-details" id="topic-details"<%= ' style="display: none;"'.html_safe unless default_source == "topic" %>>
               <%= text_area_tag :topic_description, nil, class: "form-control", rows: 3, placeholder: "Describe the topic you want to generate FAQ questions for..." %>
             </div>
           </div>
         </div>
 
         <div class="form-group form-group-inline">
-          <%= label_tag :count, "Questions" %>
+          <%= label_tag :count, "Suggest this many question titles" %>
           <%= number_field_tag :count, 5, min: 1, max: 20, step: 1, class: "form-control form-control-narrow" %>
         </div>
 
@@ -351,6 +358,7 @@
 
 .form-group-inline {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 0.75rem;
 }
@@ -374,43 +382,94 @@
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const form = document.getElementById('qa-wizard-form');
-  if (!form) return;
+(function() {
+  function initQaWizard() {
+    const form = document.getElementById('qa-wizard-form');
+    if (!form) return;
 
-  const articleDetails = document.getElementById('article-details');
-  const ragDetails = document.getElementById('rag-details');
-  const topicDetails = document.getElementById('topic-details');
-  const loadingOverlay = document.getElementById('wizard-loading');
+    // Prevent double-initialization
+    if (form.dataset.initialized) return;
+    form.dataset.initialized = 'true';
 
-  function updateSections() {
-    const selected = form.querySelector('input[name="source_type"]:checked');
-    if (!selected) return;
+    const articleDetails = document.getElementById('article-details');
+    const ragDetails = document.getElementById('rag-details');
+    const topicDetails = document.getElementById('topic-details');
+    const loadingOverlay = document.getElementById('wizard-loading');
 
-    if (articleDetails) {
-      articleDetails.style.display = selected.value === 'article' ? 'block' : 'none';
+    function updateSections() {
+      const selected = form.querySelector('input[name="source_type"]:checked');
+      if (!selected) return;
+
+      const value = selected.value;
+
+      if (articleDetails) {
+        articleDetails.style.display = value === 'article' ? 'block' : 'none';
+      }
+      if (ragDetails) {
+        ragDetails.style.display = value === 'rag' ? 'block' : 'none';
+      }
+      if (topicDetails) {
+        topicDetails.style.display = value === 'topic' ? 'block' : 'none';
+      }
     }
-    if (ragDetails) {
-      ragDetails.style.display = selected.value === 'rag' ? 'block' : 'none';
+
+    // Initial update (ensures JS state matches server-rendered state)
+    updateSections();
+
+    // Use event delegation on form for radio button changes
+    form.addEventListener('change', function(event) {
+      if (event.target.name === 'source_type') {
+        updateSections();
+      }
+    });
+
+    // Also listen for clicks on the source option wrappers (backup for label clicks)
+    document.querySelectorAll('.source-option-wrapper').forEach(function(wrapper) {
+      wrapper.addEventListener('click', function() {
+        // Small delay to let the radio button state update first
+        setTimeout(updateSections, 0);
+      });
+    });
+
+    // Show loading animation
+    function showLoading() {
+      if (loadingOverlay) {
+        loadingOverlay.style.display = 'flex';
+      }
     }
-    if (topicDetails) {
-      topicDetails.style.display = selected.value === 'topic' ? 'block' : 'none';
-    }
+
+    // Native form submit event
+    form.addEventListener('submit', showLoading);
   }
 
-  // Initial update
-  updateSections();
+  // Initialize on DOMContentLoaded (initial page load)
+  document.addEventListener('DOMContentLoaded', initQaWizard);
 
-  // Update on change
-  form.querySelectorAll('input[name="source_type"]').forEach(function(radio) {
-    radio.addEventListener('change', updateSections);
-  });
+  // Initialize on turbo:load (Turbo navigation)
+  document.addEventListener('turbo:load', initQaWizard);
 
-  // Show loading animation on form submit
-  form.addEventListener('submit', function() {
-    if (loadingOverlay) {
-      loadingOverlay.style.display = 'flex';
+  // Also try turbo:render for good measure
+  document.addEventListener('turbo:render', initQaWizard);
+
+  // Global Turbo event handlers for loading animation (don't need form reference)
+  document.addEventListener('turbo:submit-start', function(event) {
+    const form = event.target;
+    if (form && form.id === 'qa-wizard-form') {
+      const loadingOverlay = document.getElementById('wizard-loading');
+      if (loadingOverlay) {
+        loadingOverlay.style.display = 'flex';
+      }
     }
   });
-});
+
+  document.addEventListener('turbo:submit-end', function(event) {
+    const form = event.target;
+    if (form && form.id === 'qa-wizard-form') {
+      const loadingOverlay = document.getElementById('wizard-loading');
+      if (loadingOverlay && !event.detail.success) {
+        loadingOverlay.style.display = 'none';
+      }
+    }
+  });
+})();
 </script>

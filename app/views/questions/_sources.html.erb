@@ -1,0 +1,102 @@
+<div class="question-sources">
+  <h4 class="sources-header">Sources</h4>
+  <div class="sources-list">
+    <% question.question_sources.order(:citation_number).each do |source| %>
+      <div class="source-item">
+        <span class="source-citation">[<%= source.citation_number %>]</span>
+        <span class="source-type-badge"><%= source.display_source_type %></span>
+        <% if source.source.present? %>
+          <% case source.source_type %>
+          <% when "Article" %>
+            <%= link_to source.source_title.presence || source.source.title, article_path(source.source), class: "source-link" %>
+          <% when "Question" %>
+            <%= link_to source.source_title.presence || source.source.title, question_path(source.source), class: "source-link" %>
+          <% else %>
+            <span class="source-title"><%= source.source_title %></span>
+          <% end %>
+        <% else %>
+          <span class="source-title"><%= source.source_title %></span>
+        <% end %>
+        <% if source.source_excerpt.present? %>
+          <p class="source-excerpt"><%= truncate(source.source_excerpt, length: 200) %></p>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<style>
+.question-sources {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.sources-header {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.question-sources .sources-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.question-sources .source-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--bg-primary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.question-sources .source-citation {
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 0.875rem;
+  min-width: 2rem;
+}
+
+.question-sources .source-type-badge {
+  background: var(--primary);
+  color: white;
+  padding: 0.125rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.question-sources .source-link {
+  color: var(--primary);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.question-sources .source-link:hover {
+  text-decoration: underline;
+}
+
+.question-sources .source-title {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.question-sources .source-excerpt {
+  width: 100%;
+  margin: 0.5rem 0 0 0;
+  padding-left: 2rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.4;
+}
+</style>

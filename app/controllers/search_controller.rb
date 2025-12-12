@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class SearchController < ApplicationController
+  before_action :authenticate_user!, only: [ :ai_answer ]
+
   # GET /search
   def index
     @query = params[:q]
@@ -33,6 +35,18 @@ class SearchController < ApplicationController
     ).call
 
     render json: result
+  end
+
+  # POST /search/ai_answer
+  def ai_answer
+    space = Space.find_by(slug: params[:space]) if params[:space].present?
+
+    result = Search::AiAnswerService.call(
+      query: params[:q],
+      space: space
+    )
+
+    render json: ai_answer_json(result)
   end
 
   private
@@ -86,5 +100,15 @@ class SearchController < ApplicationController
   def truncate_body(body)
     # Body is always present per Question validation
     body.truncate(200)
+  end
+
+  def ai_answer_json(result)
+    {
+      query: result.query,
+      answer: result.answer,
+      sources: result.sources,
+      chunks_used: result.chunks_used,
+      from_knowledge_base: result.from_knowledge_base
+    }
   end
 end

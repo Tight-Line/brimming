@@ -4270,3 +4270,91 @@ pre.highlight.text::before { content: ""; }
     width: 100%;
   }
 }
+
+/* ============================================
+   Citation Links (shared across AI Answer, Q&A Wizard, Question Sources)
+   ============================================ */
+
+/* Inline citation links [1], [2] in content */
+.citation-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  white-space: nowrap;
+  margin: 0 1px;
+}
+
+.citation-link sup {
+  font-size: 0.75em;
+  font-weight: 600;
+}
+
+.citation-link .citation-icon {
+  vertical-align: super;
+  margin-left: 1px;
+  opacity: 0.7;
+}
+
+.citation-link:hover {
+  text-decoration: underline;
+}
+
+.citation-link:hover .citation-icon {
+  opacity: 1;
+}
+
+/* Source list styling */
+.citation-sources {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.citation-sources-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.citation-source-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.citation-source-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.citation-source-number {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  flex-shrink: 0;
+  min-width: 1.5rem;
+}
+
+.citation-source-type {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.35rem;
+  background: var(--background-color);
+  border-radius: 3px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.citation-source-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.citation-source-link:hover {
+  text-decoration: underline;
+}

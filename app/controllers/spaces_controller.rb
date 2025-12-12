@@ -126,6 +126,6 @@ class SpacesController < ApplicationController
   end
 
   def space_params
-    params.require(:space).permit(:name, :description)
+    params.require(:space).permit(:name, :description, :qa_wizard_prompt, :rag_chunk_limit, :similar_questions_limit)
   end
 end

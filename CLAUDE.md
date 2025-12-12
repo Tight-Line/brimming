@@ -10,6 +10,56 @@ A Stack Overflow-style Q&A platform built with Ruby on Rails.
 
 Open-source project hosted on GitHub under the MIT License.
 
+---
+
+## Session Plan File (CRITICAL)
+
+**You MUST maintain a session plan file at `.claude/session-plan.md` for every non-trivial task.**
+
+### Why
+Context compaction or conversation failures can cause loss of progress. The plan file serves as persistent memory that survives these failures, allowing work to resume without starting over.
+
+### When to Create/Update
+1. **After planning**: Write the full detailed plan before starting implementation
+2. **After each round of edits**: Update to reflect what was completed and what remains
+3. **Before any complex operation**: Ensure the file is current
+
+### What to Include
+- **Task Summary**: What the user asked for
+- **Current Status**: What phase of work we're in
+- **Completed Steps**: What has been done, with file paths and brief descriptions
+- **Remaining Steps**: What still needs to be done
+- **Key Decisions**: Any important choices made and why
+- **Test Status**: Whether tests pass, coverage status
+
+### Format Example
+```markdown
+# Session Plan: [Brief Task Description]
+
+## Task Summary
+[What the user requested]
+
+## Status: [Planning | In Progress | Testing | Complete]
+
+## Completed
+- [x] Step 1 description (files: path/to/file.rb)
+- [x] Step 2 description
+
+## Remaining
+- [ ] Step 3 description
+- [ ] Step 4 description
+
+## Key Decisions
+- Decision 1: [rationale]
+
+## Notes
+[Any other context needed to resume]
+```
+
+**NEVER skip updating this file. It is your memory across context boundaries.**
+
+---
+
 ### Core Concepts
 - **Questions** belong to **Spaces** and are posted by **Users**
 - **Answers** belong to Questions and are posted by Users
@@ -372,7 +422,7 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - **Turbo Stream updates** for instant bookmark/unbookmark feedback `[x]`
 - **BookmarkPolicy** - users can only manage their own bookmarks `[x]`
 
-### Phase 14: Chunking & RAG Queries `[~]`
+### Phase 14: Chunking & RAG Queries `[x]`
 - **Content chunking** for long-form content (Articles, long Questions/Answers)
   - Break content into overlapping chunks for better retrieval precision `[x]`
   - Chunk model (chunkable_type, chunkable_id, chunk_index, content, embedding) `[x]`
@@ -384,15 +434,21 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
   - Retrieval returns relevant chunks with source context `[x]`
   - ChunkVectorQueryService for semantic chunk search `[x]`
 - **RAG query pipeline:**
-  - Query → embedding → chunk retrieval → context assembly → response `[ ]`
-  - Configurable number of chunks to retrieve `[ ]`
-  - Re-ranking options (cross-encoder, reciprocal rank fusion) `[ ]`
+  - Query → embedding → chunk retrieval → context assembly → response `[x]`
+  - Configurable number of chunks to retrieve `[x]`
+  - Re-ranking options (cross-encoder, reciprocal rank fusion) `[skipped]` *(optional/future - current retrieval quality is sufficient)*
 - **Citation support:**
-  - Track which chunks contributed to a response `[ ]`
-  - Link citations back to source content (Article, Question, Answer) `[ ]`
+  - Track which chunks contributed to a response `[x]`
+  - Link citations back to source content (Article, Question) `[x]`
+  - Inline citations `[1]`, `[2]` in AI Answer and Q&A Wizard `[x]`
+  - AnswerSource model persists citations on published FAQ answers `[x]`
+  - Database lookup fallback for slug resolution when LLM returns unmatched source IDs `[x]`
 - **Admin configuration:**
-  - Chunk size, overlap, max chunks per query (partially via EmbeddingProvider) `[~]`
-  - Re-indexing tools for chunk regeneration `[ ]`
+  - Chunk size, overlap, max chunks per query (via EmbeddingProvider + SearchSetting) `[x]`
+  - Per-space override for RAG chunk limit `[x]`
+- **Prompt engineering:**
+  - RAG and fallback prompts in `config/prompts/` `[x]`
+  - Markdown formatting rules to ensure proper list rendering `[x]`
 
 ### Phase 15: Q&A Wizard `[~]`
 - **Admin/moderator tool to populate spaces with pre-approved FAQ content**
@@ -474,8 +530,8 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 
 ## Current Status
 
-**Completed Phases**: 1, 3, 4, 5, 6, 7, 8, 10, 12, 13
-**In Progress**: 11 (Email digests), 14 (RAG pipeline with citations), 15 (Q&A Wizard - minor enhancements pending)
+**Completed Phases**: 1, 3, 4, 5, 6, 7, 8, 10, 12, 13, 14
+**In Progress**: 11 (Email digests), 15 (Q&A Wizard - minor enhancements pending)
 **Not Started**: 16, 17, 18, 19
 
 ### What's Working
@@ -511,11 +567,13 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - **Q&A Wizard** for moderators to generate FAQ content from articles, topics, or knowledge base
 - **"Helpful Robot"** system user for AI-generated content with human sponsorship tracking
 - **Bookmarks** for users to save Questions, Answers, Comments, and Articles for later
+- **AI Answer** with inline citations `[1]`, `[2]` linking to source articles/questions
+- **AnswerSource model** for persisting citations on FAQ answers
+- **Prompt engineering** with markdown formatting rules for proper list rendering in AI-generated content
 - 100% test coverage (line and branch)
 
 ### Next Actions
 1. **Phase 11 (Email)**: Add email digests and notifications
-2. **Phase 14 (RAG)**: Complete RAG query pipeline with citations
 
 ### Technical Debt
 

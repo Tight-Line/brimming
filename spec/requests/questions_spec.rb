@@ -160,6 +160,67 @@ RSpec.describe "Questions" do
 
       expect(response.body).to include("2 comments")
     end
+
+    context "with answer sources (citations)" do
+      let(:question) { create(:question) }
+      let!(:answer) { create(:answer, question: question, body: "Here is the answer [1].") }
+      let!(:article) { create(:article, title: "Source Article for Citation") }
+
+      it "displays sources section when answer has sources" do
+        create(:answer_source,
+               answer: answer,
+               source_type: "Article",
+               source_id: article.id,
+               source_title: "Source Article for Citation",
+               source_excerpt: "Relevant excerpt text",
+               citation_number: 1)
+
+        get question_path(question)
+
+        expect(response.body).to include("Sources")
+        expect(response.body).to include("[1]")
+        expect(response.body).to include("Source Article for Citation")
+      end
+
+      it "displays citation numbers in order" do
+        create(:answer_source, answer: answer, citation_number: 2, source_title: "Second Source",
+               source_type: "Article", source_excerpt: "Excerpt 2")
+        create(:answer_source, answer: answer, citation_number: 1, source_title: "First Source",
+               source_type: "Article", source_excerpt: "Excerpt 1")
+
+        get question_path(question)
+
+        expect(response.body).to include("[1]")
+        expect(response.body).to include("[2]")
+        # First source should appear before second (ordered by citation_number)
+        expect(response.body.index("[1]")).to be < response.body.index("[2]")
+      end
+
+      it "links to Article sources" do
+        create(:answer_source, answer: answer, source_type: "Article", source_id: article.id,
+               source_title: article.title, citation_number: 1, source_excerpt: "Excerpt")
+
+        get question_path(question)
+
+        expect(response.body).to include(article_path(article))
+      end
+
+      it "links to Question sources" do
+        other_question = create(:question, title: "Referenced Question")
+        create(:answer_source, answer: answer, source_type: "Question", source_id: other_question.id,
+               source_title: other_question.title, citation_number: 1, source_excerpt: "Excerpt")
+
+        get question_path(question)
+
+        expect(response.body).to include(question_path(other_question))
+      end
+
+      it "does not display sources section when answer has no sources" do
+        get question_path(question)
+
+        expect(response.body).not_to include("answer-sources")
+      end
+    end
   end
 
   describe "GET /questions/new" do

@@ -26,6 +26,39 @@
     <small class="form-hint">Optional description to help users understand the purpose of this space</small>
   </div>
 
+  <div class="form-group">
+    <%= f.label :qa_wizard_prompt, "Q&A Wizard Persona" %>
+    <%= f.text_area :qa_wizard_prompt, class: "form-control",
+        rows: 8,
+        placeholder: "Custom persona prompt for Q&A wizard (optional)..." %>
+    <small class="form-hint">
+      Custom persona prompt for Q&A content generation in this space. Defines the assistant's role and behavior.
+      Leave blank to use the system-wide default.<br>
+      <strong>Supported variables:</strong> <code>{{SPACE_NAME}}</code>, <code>{{SPACE_DESCRIPTION}}</code><br>
+      <em>Note: The RAG context and JSON response format are automatically appended.</em>
+    </small>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :rag_chunk_limit, "RAG Chunk Limit" %>
+    <%= f.number_field :rag_chunk_limit, class: "form-control form-control-narrow",
+        min: 1, max: 50,
+        placeholder: SearchSetting.rag_chunk_limit %>
+    <small class="form-hint">
+      Number of content chunks to retrieve for AI-generated answers. Leave blank to use the global default (<%= SearchSetting.rag_chunk_limit %>).
+    </small>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :similar_questions_limit, "Similar Questions Limit" %>
+    <%= f.number_field :similar_questions_limit, class: "form-control form-control-narrow",
+        min: 0, max: 10,
+        placeholder: SearchSetting.similar_questions_limit %>
+    <small class="form-hint">
+      Number of similar existing questions to show in Q&A Wizard. Set to 0 to disable. Leave blank to use the global default (<%= SearchSetting.similar_questions_limit %>).
+    </small>
+  </div>
+
   <div class="form-actions">
     <%= f.submit space.persisted? ? "Update Space" : "Create Space", class: "btn btn-primary" %>
     <%= link_to "Cancel", space.persisted? ? space_path(space) : spaces_path, class: "btn btn-secondary" %>

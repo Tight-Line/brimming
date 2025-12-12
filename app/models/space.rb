@@ -63,6 +63,19 @@ class Space < ApplicationRecord
     publishers.include?(user)
   end
 
+  # Returns the effective RAG chunk limit for this space.
+  # Uses space-specific override if set (and positive), otherwise falls back to global default.
+  def effective_rag_chunk_limit
+    rag_chunk_limit&.positive? ? rag_chunk_limit : SearchSetting.rag_chunk_limit
+  end
+
+  # Returns the effective similar questions limit for this space.
+  # Uses space-specific override if set (including 0 to disable), otherwise falls back to global default.
+  # Unlike rag_chunk_limit, 0 is a valid value that disables similar questions.
+  def effective_similar_questions_limit
+    similar_questions_limit.nil? ? SearchSetting.similar_questions_limit : similar_questions_limit
+  end
+
   private
 
   def generate_slug

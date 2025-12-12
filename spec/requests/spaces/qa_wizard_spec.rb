@@ -35,18 +35,34 @@ RSpec.describe "Spaces::QaWizard" do
     context "when logged in as moderator" do
       before { sign_in moderator }
 
-      it "returns success" do
-        get space_qa_wizard_path(space)
-        expect(response).to have_http_status(:success)
+      context "when space has no content (no articles, no questions)" do
+        it "shows warning that content is required" do
+          get space_qa_wizard_path(space)
+          expect(response).to have_http_status(:success)
+          expect(response.body).to include("No Content Available")
+          expect(response.body).to include("create an article")
+        end
+
+        it "does not show the wizard form" do
+          get space_qa_wizard_path(space)
+          expect(response.body).not_to include("Choose a Source")
+        end
       end
 
-      it "shows the wizard form" do
-        get space_qa_wizard_path(space)
-        expect(response.body).to include("Q&amp;A Wizard")
-        expect(response.body).to include(space.name)
-      end
+      context "when space has questions but no articles" do
+        let!(:question) { create(:question, space: space, user: user) }
 
-      context "when space has no articles" do
+        it "returns success" do
+          get space_qa_wizard_path(space)
+          expect(response).to have_http_status(:success)
+        end
+
+        it "shows the wizard form" do
+          get space_qa_wizard_path(space)
+          expect(response.body).to include("Q&amp;A Wizard")
+          expect(response.body).to include(space.name)
+        end
+
         it "shows empty hint for article source" do
           get space_qa_wizard_path(space)
           expect(response.body).to include("No articles in this space yet")
@@ -62,12 +78,10 @@ RSpec.describe "Spaces::QaWizard" do
           get space_qa_wizard_path(space)
           expect(response.body).to match(/source_type_topic[^>]*checked/)
         end
-      end
 
-      context "when space has no knowledge base content" do
-        it "hides knowledge base option" do
+        it "shows knowledge base option" do
           get space_qa_wizard_path(space)
-          expect(response.body).not_to include("From Knowledge Base")
+          expect(response.body).to include("From Knowledge Base")
         end
       end
 
@@ -116,6 +130,8 @@ RSpec.describe "Spaces::QaWizard" do
     end
 
     context "when no LLM provider configured" do
+      let!(:article) { create(:article, spaces: [ space ]) }
+
       before do
         sign_in moderator
         LlmProvider.delete_all
@@ -724,6 +740,154 @@ RSpec.describe "Spaces::QaWizard" do
     end
   end
 
+  describe "citation tracking" do
+    before { sign_in moderator }
+
+    let!(:article) { create(:article, spaces: [ space ], title: "Source Article") }
+
+    context "when sources are provided" do
+      let(:sources_json) do
+        [
+          { number: 1, type: "Article", id: article.id, title: "Source Article", excerpt: "Relevant excerpt [1]" },
+          { number: 2, type: "Question", id: 999, title: "Referenced Question", excerpt: "Another excerpt [2]" }
+        ].to_json
+      end
+
+      it "creates AnswerSource records for each source" do
+        expect {
+          post submit_space_qa_wizard_path(space), params: {
+            question_title: "How do I do something?",
+            question_body: "I need help with this task.",
+            answer: "Here's how you do it [1]. See also [2].",
+            sources: sources_json
+          }
+        }.to change(AnswerSource, :count).by(2)
+      end
+
+      it "stores citation numbers on sources" do
+        post submit_space_qa_wizard_path(space), params: {
+          question_title: "How do I do something?",
+          question_body: "I need help with this task.",
+          answer: "Here's how you do it [1].",
+          sources: sources_json
+        }
+
+        answer = Answer.last
+        source = answer.answer_sources.find_by(citation_number: 1)
+        expect(source).to be_present
+        expect(source.source_title).to eq("Source Article")
+        expect(source.source_excerpt).to eq("Relevant excerpt [1]")
+      end
+
+      it "stores source titles" do
+        post submit_space_qa_wizard_path(space), params: {
+          question_title: "How do I do something?",
+          question_body: "I need help with this task.",
+          answer: "Here's the answer.",
+          sources: sources_json
+        }
+
+        answer = Answer.last
+        expect(answer.answer_sources.pluck(:source_title)).to contain_exactly(
+          "Source Article", "Referenced Question"
+        )
+      end
+
+      it "associates sources with the created answer" do
+        post submit_space_qa_wizard_path(space), params: {
+          question_title: "How do I do something?",
+          question_body: "I need help with this task.",
+          answer: "Here's the answer [1].",
+          sources: sources_json
+        }
+
+        answer = Answer.last
+        expect(answer.answer_sources.count).to eq(2)
+      end
+    end
+
+    context "when sources are not provided" do
+      it "creates question without sources" do
+        expect {
+          post submit_space_qa_wizard_path(space), params: {
+            question_title: "How do I do something?",
+            question_body: "I need help with this task.",
+            answer: "Here's the answer."
+          }
+        }.to change(Question, :count).by(1)
+           .and change(AnswerSource, :count).by(0)
+      end
+    end
+
+    context "when sources JSON is invalid" do
+      it "creates question without sources" do
+        expect {
+          post submit_space_qa_wizard_path(space), params: {
+            question_title: "How do I do something?",
+            question_body: "I need help with this task.",
+            answer: "Here's the answer.",
+            sources: "invalid json {"
+          }
+        }.to change(Question, :count).by(1)
+           .and change(AnswerSource, :count).by(0)
+      end
+    end
+
+    context "source type normalization" do
+      it "accepts Article source type" do
+        sources_json = [ { number: 1, type: "Article", id: 1, title: "Title", excerpt: "Excerpt" } ].to_json
+
+        post submit_space_qa_wizard_path(space), params: {
+          question_title: "Test question here?",
+          question_body: "Test body content here.",
+          answer: "Test answer [1].",
+          sources: sources_json
+        }
+
+        expect(AnswerSource.last.source_type).to eq("Article")
+      end
+
+      it "accepts Question source type" do
+        sources_json = [ { number: 1, type: "Question", id: 1, title: "Title", excerpt: "Excerpt" } ].to_json
+
+        post submit_space_qa_wizard_path(space), params: {
+          question_title: "Test question here?",
+          question_body: "Test body content here.",
+          answer: "Test answer [1].",
+          sources: sources_json
+        }
+
+        expect(AnswerSource.last.source_type).to eq("Question")
+      end
+
+      it "accepts Chunk source type" do
+        sources_json = [ { number: 1, type: "Chunk", id: 1, title: "Title", excerpt: "Excerpt" } ].to_json
+
+        post submit_space_qa_wizard_path(space), params: {
+          question_title: "Test question here?",
+          question_body: "Test body content here.",
+          answer: "Test answer [1].",
+          sources: sources_json
+        }
+
+        expect(AnswerSource.last.source_type).to eq("Chunk")
+      end
+
+      it "normalizes unknown source types to Article" do
+        sources_json = [ { number: 1, type: "Unknown", id: 1, title: "Title", excerpt: "Excerpt" } ].to_json
+
+        post submit_space_qa_wizard_path(space), params: {
+          question_title: "Test question here?",
+          question_body: "Test body content here.",
+          answer: "Test answer [1].",
+          sources: sources_json
+        }
+
+        expect(AnswerSource.last.source_type).to eq("Article")
+      end
+    end
+  end
+
   describe "GET /spaces/:space_id/qa_wizard/select_title" do
     before { sign_in moderator }
 
@@ -778,12 +942,605 @@ RSpec.describe "Spaces::QaWizard" do
       }
 
       expect(response).to redirect_to(select_title_space_qa_wizard_path(space))
+      # Now searches both Articles and Questions (no types filter = default)
       expect(Search::ChunkVectorQueryService).to have_received(:new).with(
         q: "features",
         space_id: space.id,
-        limit: 10,
-        types: %w[Article]
+        limit: 10
       )
+    end
+  end
+
+  describe "sources parsing" do
+    let(:mock_context) { instance_double("RubyLLM::Context") }
+    let(:mock_chat) { instance_double(RubyLLM::Chat) }
+
+    before do
+      sign_in moderator
+      allow(RubyLLM).to receive(:context).and_return(mock_context)
+      allow(mock_context).to receive(:chat).and_return(mock_chat)
+    end
+
+    context "when LLM returns sources matching actual chunks" do
+      let(:source_article) { create(:article, title: "MatchingArticle", user: create(:user)) }
+      let!(:source_chunk) { create(:chunk, chunkable: source_article, content: "Content with matchword for search") }
+      let!(:source_article_space) { create(:article_space, article: source_article, space: space) }
+
+      let(:mock_content) do
+        # LLM returns source with ID matching actual article
+        {
+          "question_body" => "I need help with this.",
+          "answer" => "Here is the answer [1].",
+          "sources" => [
+            { "number" => 1, "type" => "Article", "id" => source_article.id, "title" => "MatchingArticle", "excerpt" => "Some excerpt" }
+          ]
+        }
+      end
+
+      before do
+        allow(mock_chat).to receive(:ask).and_return(double(content: mock_content.to_json))
+      end
+
+      it "uses actual article slug for source links" do
+        get edit_space_qa_wizard_path(space), params: {
+          title: "matchword",
+          source_type: "topic",
+          source_data: "test",
+          generate_content: "true"
+        }
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Sources")
+        expect(response.body).to include("MatchingArticle")
+        # Should use the article's slug, not the numeric ID
+        expect(response.body).to include("/articles/#{source_article.slug}")
+      end
+    end
+
+    context "when LLM returns sources in response" do
+      let(:mock_content) do
+        {
+          "question_body" => "I need help with this.",
+          "answer" => "Here is the answer.",
+          "sources" => [
+            { "type" => "Article", "id" => 1, "title" => "Test Article", "excerpt" => "Some excerpt" }
+          ]
+        }
+      end
+
+      before do
+        allow(mock_chat).to receive(:ask).and_return(double(content: mock_content.to_json))
+      end
+
+      it "displays sources in the edit form" do
+        get edit_space_qa_wizard_path(space), params: {
+          title: "Test question?",
+          source_type: "topic",
+          source_data: "test",
+          generate_content: "true"
+        }
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Sources")
+        expect(response.body).to include("Test Article")
+      end
+    end
+
+    context "when LLM does not return sources but chunks were used" do
+      let(:article) { create(:article, title: "Fallback Article", user: create(:user)) }
+      let!(:chunk) { create(:chunk, chunkable: article, content: "This chunk contains findme keyword for testing") }
+      let!(:article_space) { create(:article_space, article: article, space: space) }
+
+      let(:mock_content) do
+        {
+          "question_body" => "Question from chunks.",
+          "answer" => "Answer from chunks."
+        }
+      end
+
+      before do
+        allow(mock_chat).to receive(:ask).and_return(double(content: mock_content.to_json))
+      end
+
+      it "falls back to using chunks as sources" do
+        get edit_space_qa_wizard_path(space), params: {
+          title: "findme",
+          source_type: "topic",
+          source_data: "test",
+          generate_content: "true"
+        }
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Sources")
+        expect(response.body).to include("Fallback Article")
+      end
+    end
+
+    context "when sources are passed as JSON string param" do
+      let(:mock_content) do
+        {
+          "question_body" => "Question body.",
+          "answer" => "Answer."
+        }
+      end
+
+      before do
+        allow(mock_chat).to receive(:ask).and_return(double(content: mock_content.to_json))
+      end
+
+      it "parses JSON string sources" do
+        sources_json = [ { type: "Article", id: 1, title: "From Param", excerpt: "Excerpt" } ].to_json
+
+        get edit_space_qa_wizard_path(space), params: {
+          title: "Test question?",
+          source_type: "topic",
+          source_data: "test",
+          sources: sources_json
+        }
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("From Param")
+      end
+
+      it "handles invalid JSON gracefully" do
+        get edit_space_qa_wizard_path(space), params: {
+          title: "Test question?",
+          source_type: "topic",
+          source_data: "test",
+          sources: "not valid json {"
+        }
+
+        expect(response).to have_http_status(:success)
+        expect(response.body).not_to include("Sources")
+      end
+    end
+
+    context "when multiple chunks from same article are returned" do
+      let(:article) { create(:article, title: "DedupeTestArticle123", user: create(:user)) }
+      let!(:chunk1) { create(:chunk, chunkable: article, content: "First chunk with uniqueword content") }
+      let!(:chunk2) { create(:chunk, chunkable: article, content: "Second chunk with uniqueword too") }
+      let!(:article_space) { create(:article_space, article: article, space: space) }
+
+      let(:mock_content) do
+        {
+          "question_body" => "Question.",
+          "answer" => "Answer."
+        }
+      end
+
+      before do
+        allow(mock_chat).to receive(:ask).and_return(double(content: mock_content.to_json))
+      end
+
+      it "deduplicates sources by type and id" do
+        get edit_space_qa_wizard_path(space), params: {
+          title: "uniqueword",
+          source_type: "topic",
+          source_data: "test",
+          generate_content: "true"
+        }
+
+        expect(response).to have_http_status(:success)
+        # Should only show the article once even though 2 chunks matched
+        # Count occurrences of the article title in source links
+        expect(response.body.scan(">DedupeTestArticle123</a>").count).to eq(1)
+      end
+    end
+
+    context "when LLM returns source not in chunks" do
+      let(:article) { create(:article, title: "RealArticle", user: create(:user)) }
+      let!(:chunk) { create(:chunk, chunkable: article, content: "Chunk with testword content") }
+      let!(:article_space) { create(:article_space, article: article, space: space) }
+
+      # LLM returns a source with an ID that doesn't match any chunk's chunkable
+      let(:mock_content) do
+        {
+          "question_body" => "Question.",
+          "answer" => "Answer [1].",
+          "sources" => [
+            { "number" => 1, "type" => "Article", "id" => 99999, "title" => "Unknown Article", "excerpt" => "Excerpt" }
+          ]
+        }
+      end
+
+      before do
+        allow(mock_chat).to receive(:ask).and_return(double(content: mock_content.to_json))
+      end
+
+      it "falls back to using ID as slug when source not found anywhere" do
+        get edit_space_qa_wizard_path(space), params: {
+          title: "testword",
+          source_type: "topic",
+          source_data: "test",
+          generate_content: "true"
+        }
+
+        expect(response).to have_http_status(:success)
+        # Should show the source with ID as the slug fallback
+        expect(response.body).to include("/articles/99999")
+      end
+    end
+
+    context "when LLM returns source with unknown type" do
+      let(:article) { create(:article, title: "RealArticle", user: create(:user)) }
+      let!(:chunk) { create(:chunk, chunkable: article, content: "Chunk with unknowntype content") }
+      let!(:article_space) { create(:article_space, article: article, space: space) }
+
+      # LLM returns a source with unknown type
+      let(:mock_content) do
+        {
+          "question_body" => "Question.",
+          "answer" => "Answer [1].",
+          "sources" => [
+            { "number" => 1, "type" => "SomeUnknownType", "id" => 42, "title" => "Unknown Type", "excerpt" => "Excerpt" }
+          ]
+        }
+      end
+
+      before do
+        allow(mock_chat).to receive(:ask).and_return(double(content: mock_content.to_json))
+      end
+
+      it "falls back to using ID as slug when source type is unknown" do
+        get edit_space_qa_wizard_path(space), params: {
+          title: "unknowntype",
+          source_type: "topic",
+          source_data: "test",
+          generate_content: "true"
+        }
+
+        expect(response).to have_http_status(:success)
+        # Since the type is unknown, it defaults to Question path with ID as slug fallback
+        # (view code uses Article path only for type == "Article", otherwise Question path)
+        expect(response.body).to include("/questions/42")
+      end
+    end
+
+    context "when LLM returns source with zero or negative ID" do
+      let(:article) { create(:article, title: "RealArticle", user: create(:user)) }
+      let!(:chunk) { create(:chunk, chunkable: article, content: "Chunk with zeroids content") }
+      let!(:article_space) { create(:article_space, article: article, space: space) }
+
+      # LLM returns a source with id = 0 (invalid)
+      let(:mock_content) do
+        {
+          "question_body" => "Question.",
+          "answer" => "Answer [1].",
+          "sources" => [
+            { "number" => 1, "type" => "Article", "id" => 0, "title" => "Zero ID Source", "excerpt" => "Excerpt" }
+          ]
+        }
+      end
+
+      before do
+        allow(mock_chat).to receive(:ask).and_return(double(content: mock_content.to_json))
+      end
+
+      it "skips database lookup for invalid source IDs and uses ID as slug fallback" do
+        get edit_space_qa_wizard_path(space), params: {
+          title: "zeroids",
+          source_type: "topic",
+          source_data: "test",
+          generate_content: "true"
+        }
+
+        expect(response).to have_http_status(:success)
+        # Should use ID as slug fallback since no database lookup is performed for id <= 0
+        expect(response.body).to include("/articles/0")
+      end
+    end
+
+    context "when LLM returns Article source not in chunks but exists in database" do
+      let(:search_article) { create(:article, title: "SearchArticle", user: create(:user)) }
+      let!(:chunk) { create(:chunk, chunkable: search_article, content: "Chunk with searchterm content") }
+      let!(:article_space) { create(:article_space, article: search_article, space: space) }
+
+      # This article exists in DB but wasn't in the chunks sent to the LLM
+      let(:referenced_article) { create(:article, title: "ReferencedArticle", user: create(:user)) }
+      let!(:referenced_article_space) { create(:article_space, article: referenced_article, space: space) }
+
+      # LLM returns a source with ID matching referenced_article (exists in DB, not in chunks)
+      let(:mock_content) do
+        {
+          "question_body" => "Question.",
+          "answer" => "Answer [1].",
+          "sources" => [
+            { "number" => 1, "type" => "Article", "id" => referenced_article.id, "title" => "ReferencedArticle", "excerpt" => "Excerpt" }
+          ]
+        }
+      end
+
+      before do
+        allow(mock_chat).to receive(:ask).and_return(double(content: mock_content.to_json))
+      end
+
+      it "looks up Article slug from database when source not in chunk lookup" do
+        get edit_space_qa_wizard_path(space), params: {
+          title: "searchterm",
+          source_type: "topic",
+          source_data: "test",
+          generate_content: "true"
+        }
+
+        expect(response).to have_http_status(:success)
+        # Should use the actual article slug from database lookup
+        expect(response.body).to include("/articles/#{referenced_article.slug}")
+      end
+    end
+
+    context "when LLM returns Question source not in chunks but exists in database" do
+      let(:search_article) { create(:article, title: "SearchArticle", user: create(:user)) }
+      let!(:chunk) { create(:chunk, chunkable: search_article, content: "Chunk with findme content") }
+      let!(:article_space) { create(:article_space, article: search_article, space: space) }
+
+      # This question exists in DB but wasn't in the chunks sent to the LLM
+      let(:referenced_question) { create(:question, title: "ReferencedQuestion", space: space) }
+
+      # LLM returns a Question source (exists in DB, not in chunks)
+      let(:mock_content) do
+        {
+          "question_body" => "Question.",
+          "answer" => "Answer [1].",
+          "sources" => [
+            { "number" => 1, "type" => "Question", "id" => referenced_question.id, "title" => "ReferencedQuestion", "excerpt" => "Excerpt" }
+          ]
+        }
+      end
+
+      before do
+        allow(mock_chat).to receive(:ask).and_return(double(content: mock_content.to_json))
+      end
+
+      it "looks up Question slug from database when source not in chunk lookup" do
+        get edit_space_qa_wizard_path(space), params: {
+          title: "findme",
+          source_type: "topic",
+          source_data: "test",
+          generate_content: "true"
+        }
+
+        expect(response).to have_http_status(:success)
+        # Should use the actual question slug from database lookup
+        expect(response.body).to include("/questions/#{referenced_question.slug}")
+      end
+    end
+  end
+
+  describe "custom space prompts" do
+    let(:mock_context) { instance_double("RubyLLM::Context") }
+    let(:mock_chat) { instance_double(RubyLLM::Chat) }
+    let(:mock_content) do
+      {
+        "question_body" => "Custom prompt question.",
+        "answer" => "Custom prompt answer."
+      }
+    end
+
+    before do
+      sign_in moderator
+      allow(RubyLLM).to receive(:context).and_return(mock_context)
+      allow(mock_context).to receive(:chat).and_return(mock_chat)
+      allow(mock_chat).to receive(:ask).and_return(double(content: mock_content.to_json))
+    end
+
+    it "uses space custom prompt when set" do
+      space.update!(qa_wizard_prompt: "Custom prompt for {{SPACE_NAME}}")
+
+      expect(mock_chat).to receive(:ask) do |prompt|
+        expect(prompt).to include("Custom prompt for #{space.name}")
+      end.and_return(double(content: mock_content.to_json))
+
+      get edit_space_qa_wizard_path(space), params: {
+        title: "Test question?",
+        source_type: "topic",
+        source_data: "test",
+        generate_content: "true"
+      }
+
+      expect(response).to have_http_status(:success)
+    end
+
+    it "uses default prompt when space has no custom prompt" do
+      space.update!(qa_wizard_prompt: nil)
+
+      expect(mock_chat).to receive(:ask) do |prompt|
+        expect(prompt).to include("{{SPACE_NAME}}").or include(space.name)
+      end.and_return(double(content: mock_content.to_json))
+
+      get edit_space_qa_wizard_path(space), params: {
+        title: "Test question?",
+        source_type: "topic",
+        source_data: "test",
+        generate_content: "true"
+      }
+
+      expect(response).to have_http_status(:success)
+    end
+  end
+
+  describe "similar questions feature" do
+    let(:mock_context) { instance_double("RubyLLM::Context") }
+    let(:mock_chat) { instance_double("RubyLLM::Chat") }
+    # Need article/chunk for topic search to find content
+    let!(:article) { create(:article, spaces: [ space ]) }
+    let!(:chunk) { create(:chunk, chunkable: article, content: "Parking permit information and policies") }
+
+    before do
+      sign_in moderator
+      allow(RubyLLM).to receive(:context).and_return(mock_context)
+      allow(mock_context).to receive(:chat).and_return(mock_chat)
+      allow(mock_chat).to receive(:ask).and_return('["Test question?"]')
+    end
+
+    context "when space has similar_questions_limit set to 0" do
+      before do
+        space.update!(similar_questions_limit: 0)
+        # Create a question that could match
+        create(:question, space: space, title: "Parking permit guide")
+      end
+
+      it "does not show similar questions section" do
+        post generate_titles_space_qa_wizard_path(space), params: {
+          source_type: "topic",
+          topic_description: "Parking permit",  # Must match chunk content for keyword search
+          count: 1
+        }
+
+        expect(response).to redirect_to(select_title_space_qa_wizard_path(space))
+        follow_redirect!
+        expect(response).to have_http_status(:success)
+        expect(response.body).not_to include("Similar Existing Questions")
+      end
+    end
+
+
+    context "when similar questions exist in the space" do
+      let!(:solved_question) do
+        q = create(:question, space: space, title: "How do I get a parking permit?")
+        create(:answer, question: q, is_correct: true)
+        q
+      end
+
+      let!(:unsolved_question) do
+        create(:question, space: space, title: "Parking permit waitlist questions")
+      end
+
+      before do
+        # Enable embeddings for vector search
+        allow(EmbeddingService).to receive(:available?).and_return(true)
+
+        # Mock vector search for similar questions (Question type)
+        mock_similar_result = Search::ChunkVectorQueryService::Result.new(
+          hits: [
+            Search::ChunkVectorQueryService::Hit.new(
+              id: solved_question.id,
+              score: 0.85,
+              type: "Question",
+              chunkable: solved_question,
+              best_chunk: nil
+            ),
+            Search::ChunkVectorQueryService::Hit.new(
+              id: unsolved_question.id,
+              score: 0.75,
+              type: "Question",
+              chunkable: unsolved_question,
+              best_chunk: nil
+            )
+          ],
+          total: 2,
+          similarity_threshold: 0.3
+        )
+
+        allow(Search::ChunkVectorQueryService).to receive(:new)
+          .with(hash_including(types: %w[Question]))
+          .and_return(instance_double("Search::ChunkVectorQueryService", call: mock_similar_result))
+
+        # Mock vector search for RAG content (no types filter = Question + Article)
+        mock_chunk = instance_double("Chunk", content: "Parking info")
+        mock_rag_result = Search::ChunkVectorQueryService::Result.new(
+          hits: [
+            Search::ChunkVectorQueryService::Hit.new(
+              id: article.id,
+              score: 0.8,
+              type: "Article",
+              chunkable: article,
+              best_chunk: mock_chunk
+            )
+          ],
+          total: 1,
+          similarity_threshold: 0.3
+        )
+
+        allow(Search::ChunkVectorQueryService).to receive(:new)
+          .with(hash_not_including(types: %w[Question]))
+          .and_return(instance_double("Search::ChunkVectorQueryService", call: mock_rag_result))
+      end
+
+      it "shows similar questions section with solved and unsolved status" do
+        post generate_titles_space_qa_wizard_path(space), params: {
+          source_type: "topic",
+          topic_description: "parking permits",
+          count: 1
+        }
+
+        follow_redirect!
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Similar Existing Questions")
+        expect(response.body).to include(solved_question.title)
+        expect(response.body).to include(unsolved_question.title)
+        expect(response.body).to include("Solved")
+        expect(response.body).to include("Needs Answer")
+      end
+
+      it "shows Review button for solved questions" do
+        post generate_titles_space_qa_wizard_path(space), params: {
+          source_type: "topic",
+          topic_description: "parking permits",
+          count: 1
+        }
+
+        follow_redirect!
+        expect(response.body).to include("Review")
+      end
+
+      it "shows Add Answer button for unsolved questions" do
+        post generate_titles_space_qa_wizard_path(space), params: {
+          source_type: "topic",
+          topic_description: "parking permits",
+          count: 1
+        }
+
+        follow_redirect!
+        expect(response.body).to include("Add Answer")
+      end
+    end
+
+    context "when using keyword fallback search" do
+      let!(:matching_question) do
+        create(:question, space: space, title: "Parking permit information")
+      end
+
+      before do
+        allow(EmbeddingService).to receive(:available?).and_return(false)
+      end
+
+      it "finds similar questions using keyword search" do
+        post generate_titles_space_qa_wizard_path(space), params: {
+          source_type: "topic",
+          topic_description: "parking permit",
+          count: 1
+        }
+
+        follow_redirect!
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Similar Existing Questions")
+        expect(response.body).to include(matching_question.title)
+      end
+    end
+
+    context "when an error occurs finding similar questions" do
+      it "gracefully handles the error and continues" do
+        # First, generate titles successfully (embedding service is disabled, uses keyword search)
+        allow(EmbeddingService).to receive(:available?).and_return(false)
+        post generate_titles_space_qa_wizard_path(space), params: {
+          source_type: "topic",
+          topic_description: "Parking permit",
+          count: 1
+        }
+        expect(response).to redirect_to(select_title_space_qa_wizard_path(space))
+
+        # Now make the ChunkVectorQueryService raise for Questions search
+        # (only raised during find_similar_questions since we enable it for select_title)
+        allow(EmbeddingService).to receive(:available?).and_return(true)
+        allow(Search::ChunkVectorQueryService).to receive(:new)
+          .with(hash_including(types: %w[Question]))
+          .and_raise(StandardError, "Search failed")
+
+        follow_redirect!
+        expect(response).to have_http_status(:success)
+        expect(response.body).not_to include("Similar Existing Questions")
+        expect(response.body).to include("Generate New Question")
+      end
     end
   end
 end

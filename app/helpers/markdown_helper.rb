@@ -22,9 +22,9 @@ module MarkdownHelper
   def markdown(text)
     return "" if text.blank?
 
-    # Pre-process: ensure blank line before fenced code blocks
-    # Redcarpet requires this for proper parsing
+    # Pre-process: Redcarpet requires blank lines before certain block elements
     processed_text = preprocess_fenced_code_blocks(text)
+    processed_text = preprocess_lists(processed_text)
 
     renderer = HTMLWithRouge.new(
       hard_wrap: false,
@@ -46,11 +46,47 @@ module MarkdownHelper
   end
 
   def preprocess_fenced_code_blocks(text)
-    # Add blank line before opening ``` if not already present
-    # This ensures Redcarpet recognizes fenced code blocks
-    # We identify opening fences by the language identifier (```ruby, ```js, etc.)
-    # Fences without language (```) require users to add blank line manually
-    text.gsub(/([^\n])\n(```\w)/, "\\1\n\n\\2")
+    # Handle indented fenced code blocks (common in LLM output inside list items)
+    # Redcarpet doesn't recognize ``` when indented, so we need to:
+    # 1. Remove leading whitespace from fence lines
+    # 2. Ensure blank line before opening fence
+    result = text.dup
+
+    # Remove indentation from fenced code blocks (handles ```lang and closing ```)
+    # This regex finds indented ``` lines and removes the leading whitespace
+    result = result.gsub(/^[ \t]+(```\w*)/, '\1')  # Opening fence with optional language
+    result = result.gsub(/^[ \t]+(```)$/, '\1')    # Closing fence
+
+    # Add blank line before opening ``` with language identifier if not already present
+    # Use \w+ (not \w?) to only match opening fences with language, not closing ```
+    result.gsub(/([^\n])\n(```\w)/, "\\1\n\n\\2")
+  end
+
+  def preprocess_lists(text)
+    # Redcarpet requires a blank line before lists to recognize them
+    # LLMs often generate lists immediately after paragraphs without blank lines
+    #
+    # Strategy: Process line by line, adding blank lines before list starts
+    lines = text.split("\n", -1) # -1 preserves trailing empty strings
+    result_lines = []
+
+    lines.each_with_index do |line, index|
+      # Check if this line starts a list
+      is_list_start = line.match?(/^\d+\. /) || line.match?(/^[-*] /)
+
+      if is_list_start && index > 0
+        prev_line = lines[index - 1]
+        prev_is_list_item = prev_line.match?(/^\d+\. /) || prev_line.match?(/^[-*] /)
+        prev_is_blank = prev_line.strip.empty?
+
+        # Add blank line if previous line is not a list item and not already blank
+        result_lines << "" if !prev_is_list_item && !prev_is_blank
+      end
+
+      result_lines << line
+    end
+
+    result_lines.join("\n")
   end
 
   private

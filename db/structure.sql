@@ -195,6 +195,42 @@ ALTER SEQUENCE brimming.active_storage_variant_records_id_seq OWNED BY brimming.
 
 
 --
+-- Name: answer_sources; Type: TABLE; Schema: brimming; Owner: -
+--
+
+CREATE TABLE brimming.answer_sources (
+    id bigint NOT NULL,
+    answer_id bigint NOT NULL,
+    source_type character varying NOT NULL,
+    source_id integer,
+    source_title character varying,
+    source_excerpt text NOT NULL,
+    citation_number integer,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: answer_sources_id_seq; Type: SEQUENCE; Schema: brimming; Owner: -
+--
+
+CREATE SEQUENCE brimming.answer_sources_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: answer_sources_id_seq; Type: SEQUENCE OWNED BY; Schema: brimming; Owner: -
+--
+
+ALTER SEQUENCE brimming.answer_sources_id_seq OWNED BY brimming.answer_sources.id;
+
+
+--
 -- Name: answers; Type: TABLE; Schema: brimming; Owner: -
 --
 
@@ -731,7 +767,9 @@ CREATE TABLE brimming.question_sources (
     source_id bigint,
     source_excerpt text,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    citation_number integer,
+    source_title character varying
 );
 
 
@@ -869,6 +907,39 @@ ALTER SEQUENCE brimming.questions_id_seq OWNED BY brimming.questions.id;
 CREATE TABLE brimming.schema_migrations (
     version character varying NOT NULL
 );
+
+
+--
+-- Name: search_settings; Type: TABLE; Schema: brimming; Owner: -
+--
+
+CREATE TABLE brimming.search_settings (
+    id bigint NOT NULL,
+    key character varying NOT NULL,
+    value text NOT NULL,
+    description character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: search_settings_id_seq; Type: SEQUENCE; Schema: brimming; Owner: -
+--
+
+CREATE SEQUENCE brimming.search_settings_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: search_settings_id_seq; Type: SEQUENCE OWNED BY; Schema: brimming; Owner: -
+--
+
+ALTER SEQUENCE brimming.search_settings_id_seq OWNED BY brimming.search_settings.id;
 
 
 --
@@ -1010,7 +1081,10 @@ CREATE TABLE brimming.spaces (
     slug character varying NOT NULL,
     description text,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    qa_wizard_prompt text,
+    rag_chunk_limit integer,
+    similar_questions_limit integer
 );
 
 
@@ -1202,6 +1276,13 @@ ALTER TABLE ONLY brimming.active_storage_variant_records ALTER COLUMN id SET DEF
 
 
 --
+-- Name: answer_sources id; Type: DEFAULT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.answer_sources ALTER COLUMN id SET DEFAULT nextval('brimming.answer_sources_id_seq'::regclass);
+
+
+--
 -- Name: answers id; Type: DEFAULT; Schema: brimming; Owner: -
 --
 
@@ -1328,6 +1409,13 @@ ALTER TABLE ONLY brimming.questions ALTER COLUMN id SET DEFAULT nextval('brimmin
 
 
 --
+-- Name: search_settings id; Type: DEFAULT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.search_settings ALTER COLUMN id SET DEFAULT nextval('brimming.search_settings_id_seq'::regclass);
+
+
+--
 -- Name: space_moderators id; Type: DEFAULT; Schema: brimming; Owner: -
 --
 
@@ -1412,6 +1500,14 @@ ALTER TABLE ONLY brimming.active_storage_blobs
 
 ALTER TABLE ONLY brimming.active_storage_variant_records
     ADD CONSTRAINT active_storage_variant_records_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: answer_sources answer_sources_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.answer_sources
+    ADD CONSTRAINT answer_sources_pkey PRIMARY KEY (id);
 
 
 --
@@ -1575,6 +1671,14 @@ ALTER TABLE ONLY brimming.schema_migrations
 
 
 --
+-- Name: search_settings search_settings_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.search_settings
+    ADD CONSTRAINT search_settings_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: space_moderators space_moderators_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
 --
 
@@ -1686,6 +1790,20 @@ CREATE UNIQUE INDEX index_active_storage_blobs_on_key ON brimming.active_storage
 --
 
 CREATE UNIQUE INDEX index_active_storage_variant_records_uniqueness ON brimming.active_storage_variant_records USING btree (blob_id, variation_digest);
+
+
+--
+-- Name: index_answer_sources_on_answer_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_answer_sources_on_answer_id ON brimming.answer_sources USING btree (answer_id);
+
+
+--
+-- Name: index_answer_sources_on_answer_id_and_citation_number; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE UNIQUE INDEX index_answer_sources_on_answer_id_and_citation_number ON brimming.answer_sources USING btree (answer_id, citation_number);
 
 
 --
@@ -2200,6 +2318,13 @@ CREATE INDEX index_questions_on_vote_score ON brimming.questions USING btree (vo
 
 
 --
+-- Name: index_search_settings_on_key; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE UNIQUE INDEX index_search_settings_on_key ON brimming.search_settings USING btree (key);
+
+
+--
 -- Name: index_space_moderators_on_space_id; Type: INDEX; Schema: brimming; Owner: -
 --
 
@@ -2454,6 +2579,14 @@ ALTER TABLE ONLY brimming.chunks
 
 ALTER TABLE ONLY brimming.comment_votes
     ADD CONSTRAINT fk_rails_0873e64a40 FOREIGN KEY (user_id) REFERENCES brimming.users(id);
+
+
+--
+-- Name: answer_sources fk_rails_0c4aa2bd1a; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.answer_sources
+    ADD CONSTRAINT fk_rails_0c4aa2bd1a FOREIGN KEY (answer_id) REFERENCES brimming.answers(id);
 
 
 --
@@ -2791,6 +2924,12 @@ ALTER TABLE ONLY brimming.ldap_group_mapping_spaces
 SET search_path TO brimming,public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20251211192246'),
+('20251211152828'),
+('20251211035633'),
+('20251211023123'),
+('20251211023053'),
+('20251210190145'),
 ('20251206210953'),
 ('20251206210838'),
 ('20251206195247'),
