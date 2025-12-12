@@ -40,6 +40,7 @@ class WebPageFetchService
   def fetch
     return Result.failure("No reader provider configured") unless @provider
     return Result.failure("Invalid URL") unless valid_url?
+    return Result.failure("Invalid reader provider endpoint") unless valid_provider_endpoint?
 
     content = fetch_from_provider
     Result.success(content: content)
@@ -60,6 +61,21 @@ class WebPageFetchService
     false
   end
 
+  def valid_provider_endpoint?
+    return false if @provider.api_endpoint.blank?
+
+    uri = URI.parse(@provider.api_endpoint)
+    uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
+  rescue URI::InvalidURIError
+    false
+  end
+
+  def validated_endpoint
+    # Returns the endpoint only after validation has passed
+    # This method should only be called after valid_provider_endpoint? returns true
+    @provider.api_endpoint.chomp("/")
+  end
+
   def fetch_from_provider
     case @provider.provider_type
     when "jina"
@@ -74,8 +90,7 @@ class WebPageFetchService
   def fetch_via_jina
     # Jina Reader API: GET https://r.jina.ai/{url}
     # Use JSON format to get clean content without metadata cruft
-    endpoint = @provider.api_endpoint.chomp("/")
-    reader_url = "#{endpoint}/#{@url}"
+    reader_url = "#{validated_endpoint}/#{@url}"
 
     uri = URI.parse(reader_url)
     http = Net::HTTP.new(uri.host, uri.port)
@@ -127,8 +142,7 @@ class WebPageFetchService
   def fetch_via_firecrawl
     # Firecrawl API: POST /v1/scrape with JSON body
     # Returns { "success": true, "data": { "markdown": "..." } }
-    endpoint = @provider.api_endpoint.chomp("/")
-    scrape_url = "#{endpoint}/v1/scrape"
+    scrape_url = "#{validated_endpoint}/v1/scrape"
 
     uri = URI.parse(scrape_url)
     http = Net::HTTP.new(uri.host, uri.port)

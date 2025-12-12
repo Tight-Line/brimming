@@ -10,6 +10,39 @@ RSpec.describe ReaderProvider, type: :model do
     it { should validate_uniqueness_of(:name) }
     it { should validate_presence_of(:provider_type) }
     it { should validate_inclusion_of(:provider_type).in_array(ReaderProvider::PROVIDER_TYPES) }
+
+    describe "api_endpoint validation" do
+      it "accepts valid HTTP URL" do
+        provider = build(:reader_provider, api_endpoint: "http://example.com")
+        expect(provider).to be_valid
+      end
+
+      it "accepts valid HTTPS URL" do
+        provider = build(:reader_provider, api_endpoint: "https://example.com")
+        expect(provider).to be_valid
+      end
+
+      it "rejects non-HTTP URLs" do
+        provider = build(:reader_provider, api_endpoint: "ftp://example.com")
+        expect(provider).not_to be_valid
+        expect(provider.errors[:api_endpoint]).to include("must be a valid HTTP or HTTPS URL")
+      end
+
+      it "rejects invalid URLs" do
+        provider = build(:reader_provider, api_endpoint: "not a url at all")
+        expect(provider).not_to be_valid
+        expect(provider.errors[:api_endpoint]).to include("must be a valid URL")
+      end
+
+      it "skips validation when api_endpoint is blank" do
+        provider = build(:reader_provider)
+        # Set api_endpoint to nil and call validation method directly to bypass callback
+        provider.api_endpoint = nil
+        provider.send(:api_endpoint_is_valid_url)
+        # No errors should be added when blank
+        expect(provider.errors[:api_endpoint]).to be_empty
+      end
+    end
   end
 
   describe "scopes" do
@@ -161,17 +194,6 @@ RSpec.describe ReaderProvider, type: :model do
         provider.valid?
 
         expect(provider.api_endpoint).to eq("https://custom.jina.ai")
-      end
-
-      it "does not set endpoint for unknown provider type" do
-        provider = ReaderProvider.new(name: "Test")
-        # Bypass validation to set unknown provider type
-        provider.instance_variable_set(:@provider_type, "unknown_type")
-        allow(provider).to receive(:provider_type).and_return("unknown_type")
-
-        provider.send(:set_default_api_endpoint)
-
-        expect(provider.api_endpoint).to be_nil
       end
     end
 

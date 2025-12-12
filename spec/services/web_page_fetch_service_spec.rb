@@ -40,6 +40,62 @@ RSpec.describe WebPageFetchService do
       end
     end
 
+    context "with an invalid provider endpoint (non-HTTP scheme)" do
+      let(:provider) do
+        p = create(:reader_provider, :enabled, api_key: "test-key")
+        p.update_column(:api_endpoint, "not-a-valid-url")
+        p
+      end
+
+      it "returns a failure result" do
+        result = service.fetch
+        expect(result).to be_failure
+        expect(result.error).to eq("Invalid reader provider endpoint")
+      end
+    end
+
+    context "with an unparseable provider endpoint" do
+      let(:provider) do
+        p = create(:reader_provider, :enabled, api_key: "test-key")
+        p.update_column(:api_endpoint, "http://[invalid")
+        p
+      end
+
+      it "returns a failure result" do
+        result = service.fetch
+        expect(result).to be_failure
+        expect(result.error).to eq("Invalid reader provider endpoint")
+      end
+    end
+
+    context "with a non-HTTP provider endpoint" do
+      let(:provider) do
+        p = create(:reader_provider, :enabled, api_key: "test-key")
+        p.update_column(:api_endpoint, "ftp://example.com")
+        p
+      end
+
+      it "returns a failure result" do
+        result = service.fetch
+        expect(result).to be_failure
+        expect(result.error).to eq("Invalid reader provider endpoint")
+      end
+    end
+
+    context "with a blank provider endpoint" do
+      let(:provider) do
+        p = create(:reader_provider, :enabled, api_key: "test-key")
+        p.update_column(:api_endpoint, nil)
+        p
+      end
+
+      it "returns a failure result" do
+        result = service.fetch
+        expect(result).to be_failure
+        expect(result.error).to eq("Invalid reader provider endpoint")
+      end
+    end
+
     context "with a valid URL and provider" do
       let(:markdown_content) { "# Hello World\n\nThis is the article content." }
       let(:json_response) { { "data" => { "content" => markdown_content, "title" => "Hello World" } }.to_json }
