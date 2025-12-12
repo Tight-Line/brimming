@@ -1,0 +1,74 @@
+<%= form_with model: [:admin, @reader_provider], class: "form" do |f| %>
+  <% if @reader_provider.errors.any? %>
+    <div class="alert alert-danger">
+      <h4><%= pluralize(@reader_provider.errors.count, "error") %> prevented this provider from being saved:</h4>
+      <ul>
+        <% @reader_provider.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <% unless @reader_provider.persisted? %>
+    <%= f.hidden_field :provider_type %>
+  <% end %>
+
+  <fieldset>
+    <legend>Provider Settings</legend>
+
+    <div class="form-group">
+      <label>Provider Type</label>
+      <div class="form-control-static"><%= @reader_provider.display_provider_type %></div>
+      <% if @reader_provider.persisted? %>
+        <small class="form-text text-muted">
+          Provider type cannot be changed after creation.
+        </small>
+      <% end %>
+    </div>
+
+    <div class="form-group">
+      <%= f.label :name, "Display Name" %>
+      <%= f.text_field :name, class: "form-control", placeholder: "e.g., Production Jina" %>
+      <small class="form-text text-muted">A friendly name to identify this configuration</small>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>API Credentials</legend>
+
+    <% if @reader_provider.requires_api_key? %>
+      <div class="form-group">
+        <%= f.label :api_key, "API Key" %>
+        <%= f.password_field :api_key, class: "form-control", autocomplete: "new-password" %>
+        <% if @reader_provider.persisted? && @reader_provider.api_key.present? %>
+          <small class="form-text text-muted">Leave blank to keep current API key</small>
+        <% else %>
+          <small class="form-text text-muted">
+            <% if @reader_provider.provider_type == "jina" %>
+              Get your API key from <a href="https://jina.ai/" target="_blank" rel="noopener">jina.ai</a>.
+              Without an API key, you'll be subject to rate limits.
+            <% end %>
+          </small>
+        <% end %>
+      </div>
+    <% end %>
+
+    <div class="form-group">
+      <%= f.label :api_endpoint, "API Endpoint" %>
+      <%= f.text_field :api_endpoint, class: "form-control" %>
+      <small class="form-text text-muted">
+        <% if @reader_provider.provider_type == "jina" %>
+          The Jina Reader API endpoint. Default: https://r.jina.ai
+        <% else %>
+          The API endpoint URL for this reader provider
+        <% end %>
+      </small>
+    </div>
+  </fieldset>
+
+  <div class="form-actions">
+    <%= f.submit class: "btn btn-primary" %>
+    <%= link_to "Cancel", admin_reader_providers_path, class: "btn btn-link" %>
+  </div>
+<% end %>

@@ -62,6 +62,35 @@
         </div>
       </div>
 
+      <% if @article.webpage_content? && @article.source_url.present? %>
+        <div class="article-source">
+          <span class="source-label">Source:</span>
+          <a href="<%= @article.source_url %>" target="_blank" rel="noopener" class="source-link">
+            <%= truncate(@article.source_url, length: 80) %>
+            <span class="external-icon">&#8599;</span>
+          </a>
+          <% if policy(@article).update? %>
+            <% reader_providers = ReaderProvider.all %>
+            <% if reader_providers.size > 1 %>
+              <%= form_with url: refresh_from_source_article_path(@article), method: :post, class: "refresh-form", data: { turbo_confirm: "Refresh content from the source URL? This will replace the current content." } do |f| %>
+                <%= f.select :reader_provider_id,
+                    options_from_collection_for_select(reader_providers, :id, :display_provider_type,
+                      @article.reader_provider_id || ReaderProvider.enabled_provider&.id),
+                    {},
+                    class: "form-control form-control-inline" %>
+                <%= f.submit "Refresh from source", class: "btn btn-small btn-secondary" %>
+              <% end %>
+            <% else %>
+              <%= button_to "Refresh from source",
+                            refresh_from_source_article_path(@article),
+                            method: :post,
+                            class: "btn btn-small btn-secondary",
+                            data: { turbo_confirm: "Refresh content from the source URL? This will replace the current content." } %>
+            <% end %>
+          <% end %>
+        </div>
+      <% end %>
+
       <div class="article-body markdown-body">
     <% if @article.text_content? %>
       <%= markdown(@article.body) %>

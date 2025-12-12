@@ -632,4 +632,188 @@ RSpec.describe "Articles" do
       end
     end
   end
+
+  describe "POST /articles/:id/refresh_from_source" do
+    let(:user) { create(:user) }
+    let!(:provider) { create(:reader_provider, :enabled, api_key: "test-key") }
+    let(:article) { create(:article, user: user, content_type: "webpage", source_url: "https://example.com/page", body: "Old content") }
+
+    context "when signed in as owner" do
+      before { sign_in user }
+
+      it "refreshes content from source URL" do
+        json_response = { "data" => { "content" => "# New Content\n\nUpdated from source." } }.to_json
+        stub_request(:get, "https://r.jina.ai/https://example.com/page")
+          .to_return(status: 200, body: json_response)
+
+        post refresh_from_source_article_path(article)
+
+        expect(response).to redirect_to(article_path(article))
+        follow_redirect!
+        expect(response.body).to include("refreshed")
+        expect(article.reload.body).to eq("# New Content\n\nUpdated from source.")
+      end
+
+      it "marks article as edited" do
+        json_response = { "data" => { "content" => "Updated content" } }.to_json
+        stub_request(:get, "https://r.jina.ai/https://example.com/page")
+          .to_return(status: 200, body: json_response)
+
+        post refresh_from_source_article_path(article)
+        expect(article.reload.edited_at).to be_present
+      end
+
+      it "shows error when fetch fails" do
+        stub_request(:get, "https://r.jina.ai/https://example.com/page")
+          .to_return(status: 500)
+
+        post refresh_from_source_article_path(article)
+
+        expect(response).to redirect_to(article_path(article))
+        expect(flash[:alert]).to include("Failed")
+      end
+
+      it "prevents refresh on non-webpage article" do
+        markdown_article = create(:article, user: user, content_type: "markdown")
+
+        post refresh_from_source_article_path(markdown_article)
+
+        expect(response).to redirect_to(article_path(markdown_article))
+        expect(flash[:alert]).to include("does not have a web page source")
+      end
+
+      it "uses selected reader provider when specified" do
+        firecrawl_provider = create(:reader_provider, :firecrawl, :enabled, api_endpoint: "http://firecrawl:3002")
+        json_response = { "success" => true, "data" => { "markdown" => "# Firecrawl Content" } }.to_json
+        stub_request(:post, "http://firecrawl:3002/v1/scrape")
+          .to_return(status: 200, body: json_response)
+
+        post refresh_from_source_article_path(article), params: { reader_provider_id: firecrawl_provider.id }
+
+        expect(response).to redirect_to(article_path(article))
+        expect(article.reload.body).to eq("# Firecrawl Content")
+        expect(article.reader_provider).to eq(firecrawl_provider)
+      end
+
+      it "uses article's existing reader provider if no provider specified" do
+        article_provider = create(:reader_provider, :enabled, api_key: "article-key", api_endpoint: "https://r.jina.ai")
+        article.update!(reader_provider: article_provider)
+        json_response = { "data" => { "content" => "# Content from article provider" } }.to_json
+        stub_request(:get, "https://r.jina.ai/https://example.com/page")
+          .with(headers: { "Authorization" => "Bearer article-key" })
+          .to_return(status: 200, body: json_response)
+
+        post refresh_from_source_article_path(article)
+
+        expect(response).to redirect_to(article_path(article))
+        expect(article.reload.body).to eq("# Content from article provider")
+      end
+    end
+
+    context "when signed in as different user" do
+      let(:other_user) { create(:user) }
+
+      before { sign_in other_user }
+
+      it "does not allow refresh" do
+        stub_request(:get, "https://r.jina.ai/https://example.com/page")
+          .to_return(status: 200, body: "New content")
+
+        post refresh_from_source_article_path(article)
+
+        expect(response).to redirect_to(root_path)
+        expect(article.reload.body).to eq("Old content")
+      end
+    end
+
+    context "when not signed in" do
+      it "redirects to sign in" do
+        post refresh_from_source_article_path(article)
+
+        expect(response).to redirect_to(new_user_session_path)
+      end
+    end
+  end
+
+  describe "webpage article creation" do
+    let(:user) { create(:user, :admin) }
+    let!(:provider) { create(:reader_provider, :enabled, api_key: "test-key") }
+
+    before { sign_in user }
+
+    it "creates article from webpage URL" do
+      json_response = { "data" => { "content" => "# Article Title\n\nArticle content here." } }.to_json
+      stub_request(:get, "https://r.jina.ai/https://example.com/article")
+        .to_return(status: 200, body: json_response)
+
+      expect {
+        post articles_path, params: {
+          article: {
+            title: "Imported Article",
+            input_mode: "webpage",
+            source_url: "https://example.com/article"
+          }
+        }
+      }.to change(Article, :count).by(1)
+
+      article = Article.last
+      expect(article.content_type).to eq("webpage")
+      expect(article.source_url).to eq("https://example.com/article")
+      expect(article.body).to include("Article content")
+    end
+
+    it "shows error when fetch fails during creation" do
+      stub_request(:get, "https://r.jina.ai/https://example.com/article")
+        .to_return(status: 404)
+
+      expect {
+        post articles_path, params: {
+          article: {
+            title: "Imported Article",
+            input_mode: "webpage",
+            source_url: "https://example.com/article"
+          }
+        }
+      }.not_to change(Article, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it "shows error when source_url is missing" do
+      expect {
+        post articles_path, params: {
+          article: {
+            title: "Imported Article",
+            input_mode: "webpage",
+            source_url: ""
+          }
+        }
+      }.not_to change(Article, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it "uses selected reader provider when specified" do
+      firecrawl_provider = create(:reader_provider, :firecrawl, api_endpoint: "http://firecrawl:3002")
+      json_response = { "success" => true, "data" => { "markdown" => "# Firecrawl Article" } }.to_json
+      stub_request(:post, "http://firecrawl:3002/v1/scrape")
+        .to_return(status: 200, body: json_response)
+
+      expect {
+        post articles_path, params: {
+          article: {
+            title: "Firecrawl Imported Article",
+            input_mode: "webpage",
+            source_url: "https://example.com/firecrawl-article",
+            reader_provider_id: firecrawl_provider.id
+          }
+        }
+      }.to change(Article, :count).by(1)
+
+      article = Article.last
+      expect(article.content_type).to eq("webpage")
+      expect(article.reader_provider).to eq(firecrawl_provider)
+      expect(article.body).to include("Firecrawl Article")
+    end
+  end
 end

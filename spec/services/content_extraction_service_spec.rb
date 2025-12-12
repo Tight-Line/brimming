@@ -40,6 +40,18 @@ RSpec.describe ContentExtractionService do
       end
     end
 
+    context "with webpage content" do
+      it "returns the body as-is (already markdown)" do
+        article = build(:article, content_type: "webpage", source_url: "https://example.com", body: "# Webpage Content\n\nFetched from URL.")
+        expect(described_class.extract(article)).to eq("# Webpage Content\n\nFetched from URL.")
+      end
+
+      it "returns empty string for nil body" do
+        article = build(:article, content_type: "webpage", source_url: "https://example.com", body: nil)
+        expect(described_class.extract(article)).to eq("")
+      end
+    end
+
     context "with pdf content" do
       it "returns empty string when no file attached" do
         article = build(:article, :pdf)
