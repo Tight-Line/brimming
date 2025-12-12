@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Article < ApplicationRecord
-  CONTENT_TYPES = %w[markdown html pdf docx xlsx txt].freeze
+  CONTENT_TYPES = %w[markdown html pdf docx xlsx txt webpage].freeze
 
   # File extension to content type mapping
   FILE_EXTENSION_MAP = {
@@ -20,6 +20,7 @@ class Article < ApplicationRecord
   # Associations
   belongs_to :user
   belongs_to :last_editor, class_name: "User", optional: true
+  belongs_to :reader_provider, optional: true
   has_many :article_spaces, dependent: :destroy
   has_many :spaces, through: :article_spaces
   has_many :comments, as: :commentable, dependent: :destroy
@@ -36,6 +37,8 @@ class Article < ApplicationRecord
                    format: { with: /\A[a-z0-9-]+\z/,
                              message: "can only contain lowercase letters, numbers, and hyphens" }
   validates :content_type, presence: true, inclusion: { in: CONTENT_TYPES }
+  validates :source_url, presence: true, if: :webpage_content?
+  validate :source_url_is_valid_url, if: -> { source_url.present? }
 
   # Callbacks
   before_validation :generate_slug, if: -> { slug.blank? && title.present? }
@@ -72,11 +75,15 @@ class Article < ApplicationRecord
   end
 
   def text_content?
-    %w[markdown html txt].include?(content_type)
+    %w[markdown html txt webpage].include?(content_type)
   end
 
   def binary_content?
     %w[pdf docx xlsx].include?(content_type)
+  end
+
+  def webpage_content?
+    content_type == "webpage"
   end
 
   # Mark as edited by a user
@@ -135,7 +142,8 @@ class Article < ApplicationRecord
       "pdf" => "PDF",
       "docx" => "Word Document",
       "xlsx" => "Excel Spreadsheet",
-      "txt" => "Plain Text"
+      "txt" => "Plain Text",
+      "webpage" => "Web Page"
     }[content_type]
   end
 
@@ -188,5 +196,14 @@ class Article < ApplicationRecord
     chunks.empty? ||
       (embedded_at.present? && (saved_change_to_title? || saved_change_to_body?)) ||
       original_file_attached_changed?
+  end
+
+  def source_url_is_valid_url
+    uri = URI.parse(source_url)
+    unless uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
+      errors.add(:source_url, "must be a valid HTTP or HTTPS URL")
+    end
+  rescue URI::InvalidURIError
+    errors.add(:source_url, "is not a valid URL")
   end
 end

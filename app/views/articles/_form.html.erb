@@ -37,7 +37,7 @@
     <%= f.label :input_mode, "Content Source" %>
     <div class="input-mode-toggle" data-article-form-target="modeToggle">
       <label class="input-mode-option">
-        <%= f.radio_button :input_mode, "text", checked: !article.original_file.attached?, data: { action: "article-form#toggleMode" } %>
+        <%= f.radio_button :input_mode, "text", checked: !article.original_file.attached? && !article.webpage_content?, data: { action: "article-form#toggleMode" } %>
         <span class="input-mode-label">
           <strong>Write</strong>
           <small>Create content using the editor</small>
@@ -48,6 +48,13 @@
         <span class="input-mode-label">
           <strong>Upload</strong>
           <small>Import from PDF, Word, Excel, or HTML</small>
+        </span>
+      </label>
+      <label class="input-mode-option">
+        <%= f.radio_button :input_mode, "webpage", checked: article.webpage_content?, data: { action: "article-form#toggleMode" }, disabled: !ReaderProvider.available? %>
+        <span class="input-mode-label">
+          <strong>Web Page</strong>
+          <small><%= ReaderProvider.available? ? "Import from URL" : "Configure reader provider in admin" %></small>
         </span>
       </label>
     </div>
@@ -90,6 +97,35 @@
     <small class="form-hint">
       Supported formats: PDF, Word (.doc, .docx), Excel (.xls, .xlsx), HTML
     </small>
+  </div>
+
+  <div class="form-group webpage-content-field" data-article-form-target="webpageField" style="display: none;">
+    <%= f.label :source_url, "Web Page URL" %>
+    <%= f.url_field :source_url, class: "form-control",
+        placeholder: "https://example.com/article" %>
+    <% if article.source_url.present? %>
+      <div class="current-source">
+        Current source: <a href="<%= article.source_url %>" target="_blank" rel="noopener"><%= truncate(article.source_url, length: 60) %></a>
+      </div>
+    <% end %>
+    <small class="form-hint">
+      Enter the URL of the web page to import. The content will be fetched and converted to markdown.
+    </small>
+
+    <% reader_providers = ReaderProvider.all %>
+    <% if reader_providers.size > 1 %>
+      <div class="reader-provider-select" style="margin-top: 1rem;">
+        <%= f.label :reader_provider_id, "Reader Provider" %>
+        <%= f.select :reader_provider_id,
+            options_from_collection_for_select(reader_providers, :id, :display_provider_type,
+              article.reader_provider_id || ReaderProvider.enabled_provider&.id),
+            {},
+            class: "form-control" %>
+        <small class="form-hint">Select which service to use for fetching the web page content.</small>
+      </div>
+    <% elsif reader_providers.any? %>
+      <%= f.hidden_field :reader_provider_id, value: reader_providers.first.id %>
+    <% end %>
   </div>
 
   <div class="form-actions">

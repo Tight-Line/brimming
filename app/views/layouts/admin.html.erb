@@ -42,6 +42,10 @@
             <span class="admin-nav-icon">&#9656;</span>
             Articles
           <% end %>
+          <%= link_to admin_reader_providers_path, class: "admin-nav-item #{'active' if request.path.start_with?('/admin/reader')}" do %>
+            <span class="admin-nav-icon">&#9656;</span>
+            Reader Providers
+          <% end %>
 
           <h4>AI & Search</h4>
           <%= link_to admin_llm_providers_path, class: "admin-nav-item #{'active' if request.path.start_with?('/admin/llm_provider')}" do %>

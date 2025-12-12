@@ -1,0 +1,189 @@
+# frozen_string_literal: true
+
+require "net/http"
+require "json"
+
+class WebPageFetchService
+  class Result
+    attr_reader :content, :error
+
+    def initialize(success:, content: nil, error: nil)
+      @success = success
+      @content = content
+      @error = error
+    end
+
+    def success?
+      @success
+    end
+
+    def failure?
+      !@success
+    end
+
+    def self.success(content:)
+      new(success: true, content: content)
+    end
+
+    def self.failure(error)
+      new(success: false, error: error)
+    end
+  end
+
+  DEFAULT_TIMEOUT = 30
+
+  def initialize(url, provider: nil)
+    @url = url
+    @provider = provider || ReaderProvider.enabled_provider
+  end
+
+  def fetch
+    return Result.failure("No reader provider configured") unless @provider
+    return Result.failure("Invalid URL") unless valid_url?
+
+    content = fetch_from_provider
+    Result.success(content: content)
+  rescue Net::OpenTimeout, Net::ReadTimeout, Timeout::Error
+    Result.failure("Request timed out while fetching the page")
+  rescue SocketError => e
+    Result.failure("Could not connect to reader service: #{e.message}")
+  rescue StandardError => e
+    Result.failure("Failed to fetch page: #{e.message}")
+  end
+
+  private
+
+  def valid_url?
+    uri = URI.parse(@url)
+    uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
+  rescue URI::InvalidURIError
+    false
+  end
+
+  def fetch_from_provider
+    case @provider.provider_type
+    when "jina"
+      fetch_via_jina
+    when "firecrawl"
+      fetch_via_firecrawl
+    else
+      raise "Unsupported provider type: #{@provider.provider_type}"
+    end
+  end
+
+  def fetch_via_jina
+    # Jina Reader API: GET https://r.jina.ai/{url}
+    # Use JSON format to get clean content without metadata cruft
+    endpoint = @provider.api_endpoint.chomp("/")
+    reader_url = "#{endpoint}/#{@url}"
+
+    uri = URI.parse(reader_url)
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = (uri.scheme == "https")
+    http.open_timeout = DEFAULT_TIMEOUT
+    http.read_timeout = DEFAULT_TIMEOUT
+
+    request = Net::HTTP::Get.new(uri.request_uri)
+    request["Accept"] = "application/json"
+    # Target common article content selectors to avoid navigation cruft
+    request["X-Target-Selector"] = "article, main, .post-content, .article-content, .entry-content, .content"
+
+    # Add API key if configured
+    if @provider.api_key.present?
+      request["Authorization"] = "Bearer #{@provider.api_key}"
+    end
+
+    response = http.request(request)
+
+    case response.code.to_i
+    when 200
+      extract_content_from_json(response.body)
+    when 401
+      raise "Authentication failed - check your API key"
+    when 403
+      raise "Access forbidden - the page may be blocked"
+    when 404
+      raise "Page not found at the specified URL"
+    when 429
+      raise "Rate limit exceeded - please try again later"
+    when 500..599
+      raise "Reader service error (#{response.code})"
+    else
+      raise "Unexpected response: #{response.code} #{response.message}"
+    end
+  end
+
+  def extract_content_from_json(body)
+    json = JSON.parse(body.dup.force_encoding("UTF-8"))
+    # Jina returns { "data": { "content": "...", "title": "...", ... } }
+    content = json.dig("data", "content")
+    raise "No content found in response" if content.blank?
+
+    content
+  rescue JSON::ParserError => e
+    raise "Failed to parse response: #{e.message}"
+  end
+
+  def fetch_via_firecrawl
+    # Firecrawl API: POST /v1/scrape with JSON body
+    # Returns { "success": true, "data": { "markdown": "..." } }
+    endpoint = @provider.api_endpoint.chomp("/")
+    scrape_url = "#{endpoint}/v1/scrape"
+
+    uri = URI.parse(scrape_url)
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = (uri.scheme == "https")
+    http.open_timeout = DEFAULT_TIMEOUT
+    http.read_timeout = DEFAULT_TIMEOUT
+
+    request = Net::HTTP::Post.new(uri.request_uri)
+    request["Content-Type"] = "application/json"
+    request["Accept"] = "application/json"
+
+    # Add API key if configured (optional for self-hosted)
+    if @provider.api_key.present?
+      request["Authorization"] = "Bearer #{@provider.api_key}"
+    end
+
+    request.body = {
+      url: @url,
+      formats: [ "markdown" ],
+      onlyMainContent: true
+    }.to_json
+
+    response = http.request(request)
+
+    case response.code.to_i
+    when 200
+      extract_content_from_firecrawl(response.body)
+    when 401
+      raise "Authentication failed - check your API key"
+    when 403
+      raise "Access forbidden - the page may be blocked"
+    when 404
+      raise "Page not found at the specified URL"
+    when 429
+      raise "Rate limit exceeded - please try again later"
+    when 500..599
+      raise "Firecrawl service error (#{response.code})"
+    else
+      raise "Unexpected response: #{response.code} #{response.message}"
+    end
+  end
+
+  def extract_content_from_firecrawl(body)
+    json = JSON.parse(body.dup.force_encoding("UTF-8"))
+    # Firecrawl returns { "success": true, "data": { "markdown": "..." } }
+    unless json["success"]
+      error = json["error"] || "Unknown error"
+      raise "Firecrawl error: #{error}"
+    end
+
+    content = json.dig("data", "markdown")
+    raise "No content found in response" if content.blank?
+
+    content
+  rescue JSON::ParserError => e
+    raise "Failed to parse response: #{e.message}"
+  end
+end

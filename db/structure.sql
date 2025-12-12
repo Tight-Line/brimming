@@ -365,7 +365,9 @@ CREATE TABLE brimming.articles (
     updated_at timestamp(6) without time zone NOT NULL,
     embedded_at timestamp(6) without time zone,
     vote_score integer DEFAULT 0 NOT NULL,
-    views_count integer DEFAULT 0 NOT NULL
+    views_count integer DEFAULT 0 NOT NULL,
+    source_url character varying,
+    reader_provider_id bigint
 );
 
 
@@ -901,6 +903,42 @@ ALTER SEQUENCE brimming.questions_id_seq OWNED BY brimming.questions.id;
 
 
 --
+-- Name: reader_providers; Type: TABLE; Schema: brimming; Owner: -
+--
+
+CREATE TABLE brimming.reader_providers (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    provider_type character varying NOT NULL,
+    api_key character varying,
+    api_endpoint character varying,
+    enabled boolean DEFAULT false NOT NULL,
+    settings jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: reader_providers_id_seq; Type: SEQUENCE; Schema: brimming; Owner: -
+--
+
+CREATE SEQUENCE brimming.reader_providers_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: reader_providers_id_seq; Type: SEQUENCE OWNED BY; Schema: brimming; Owner: -
+--
+
+ALTER SEQUENCE brimming.reader_providers_id_seq OWNED BY brimming.reader_providers.id;
+
+
+--
 -- Name: schema_migrations; Type: TABLE; Schema: brimming; Owner: -
 --
 
@@ -1409,6 +1447,13 @@ ALTER TABLE ONLY brimming.questions ALTER COLUMN id SET DEFAULT nextval('brimmin
 
 
 --
+-- Name: reader_providers id; Type: DEFAULT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.reader_providers ALTER COLUMN id SET DEFAULT nextval('brimming.reader_providers_id_seq'::regclass);
+
+
+--
 -- Name: search_settings id; Type: DEFAULT; Schema: brimming; Owner: -
 --
 
@@ -1660,6 +1705,14 @@ ALTER TABLE ONLY brimming.question_votes
 
 ALTER TABLE ONLY brimming.questions
     ADD CONSTRAINT questions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: reader_providers reader_providers_pkey; Type: CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.reader_providers
+    ADD CONSTRAINT reader_providers_pkey PRIMARY KEY (id);
 
 
 --
@@ -1926,10 +1979,24 @@ CREATE INDEX index_articles_on_last_editor_id ON brimming.articles USING btree (
 
 
 --
+-- Name: index_articles_on_reader_provider_id; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_articles_on_reader_provider_id ON brimming.articles USING btree (reader_provider_id);
+
+
+--
 -- Name: index_articles_on_slug; Type: INDEX; Schema: brimming; Owner: -
 --
 
 CREATE UNIQUE INDEX index_articles_on_slug ON brimming.articles USING btree (slug);
+
+
+--
+-- Name: index_articles_on_source_url; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_articles_on_source_url ON brimming.articles USING btree (source_url);
 
 
 --
@@ -2318,6 +2385,20 @@ CREATE INDEX index_questions_on_vote_score ON brimming.questions USING btree (vo
 
 
 --
+-- Name: index_reader_providers_on_enabled; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE INDEX index_reader_providers_on_enabled ON brimming.reader_providers USING btree (enabled);
+
+
+--
+-- Name: index_reader_providers_on_name; Type: INDEX; Schema: brimming; Owner: -
+--
+
+CREATE UNIQUE INDEX index_reader_providers_on_name ON brimming.reader_providers USING btree (name);
+
+
+--
 -- Name: index_search_settings_on_key; Type: INDEX; Schema: brimming; Owner: -
 --
 
@@ -2702,6 +2783,14 @@ ALTER TABLE ONLY brimming.user_emails
 
 
 --
+-- Name: articles fk_rails_42f2a98119; Type: FK CONSTRAINT; Schema: brimming; Owner: -
+--
+
+ALTER TABLE ONLY brimming.articles
+    ADD CONSTRAINT fk_rails_42f2a98119 FOREIGN KEY (reader_provider_id) REFERENCES brimming.reader_providers(id);
+
+
+--
 -- Name: space_opt_outs fk_rails_439b1dd8de; Type: FK CONSTRAINT; Schema: brimming; Owner: -
 --
 
@@ -2924,6 +3013,9 @@ ALTER TABLE ONLY brimming.ldap_group_mapping_spaces
 SET search_path TO brimming,public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20251212171506'),
+('20251212144845'),
+('20251212144830'),
 ('20251211192246'),
 ('20251211152828'),
 ('20251211035633'),

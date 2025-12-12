@@ -89,11 +89,12 @@ docker-compose.dev.yml (local dev)
 ├── app (Rails web server)
 ├── dev (Rails development container for shell/console)
 ├── worker (Sidekiq background jobs)
-├── postgres (with pgvector + pg_trgm)
-├── valkey
+├── postgres (with pgvector + pg_trgm + firecrawl schema)
+├── valkey (db0: Rails/Sidekiq, db1: Firecrawl)
 ├── openldap (test LDAP server)
 ├── phpldapadmin (LDAP admin UI)
-└── mailhog (email testing)
+├── mailhog (email testing)
+└── firecrawl (self-hosted web scraper, optional)
 
 docker-compose.yml (production-like)
 ├── app (Rails: Web UI + API + MCP server)
@@ -127,6 +128,41 @@ helm/brimming/ (Kubernetes)
 - **User**: Post questions, post answers, vote
 - **Moderator** (per-space): Mark correct answers, moderate content
 - **Admin**: Manage spaces, assign moderators, configure SSO, manage LDAP mappings
+
+### Reader Providers (Web Page Import)
+
+Articles can be imported from web URLs using configurable reader providers. The system fetches clean markdown from web pages for indexing and display.
+
+**Supported Providers:**
+- **Jina.ai Reader** (`jina`) - Cloud service, API key optional, good for public internet pages
+- **Firecrawl** (`firecrawl`) - Self-hosted, good for internal/firewalled pages
+
+**Configuration:**
+- Admin UI at `/admin/reader_providers`
+- Multiple providers can be configured; users select which to use when importing
+- Articles store `source_url` and `reader_provider_id` for refresh capability
+
+**Jina.ai:**
+- Works without any local infrastructure
+- Free tier available, API key optional
+- Default endpoint: `https://r.jina.ai`
+
+**Firecrawl (Self-hosted):**
+```bash
+# Start Firecrawl (uses existing Postgres and Valkey)
+docker-compose -f docker-compose.dev.yml up -d firecrawl
+
+# Default endpoint: http://firecrawl:3002
+# API key for self-hosted: fc-dev (or any value - TEST_API_KEY disables auth)
+```
+
+Firecrawl shares our Postgres (schema in `docker/postgres/firecrawl_init.sql`) and Valkey (database 1). The schema is auto-initialized on fresh Postgres volumes, or run manually:
+```bash
+docker-compose -f docker-compose.dev.yml exec -T postgres psql -U brimming \
+  -f /docker-entrypoint-initdb.d/02-firecrawl.sql
+```
+
+Note: Image is amd64-only, runs via emulation on Apple Silicon.
 
 ### Search Architecture
 
@@ -398,6 +434,7 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
   - Word Document (uploaded .docx, download only) `[x]`
   - Excel Spreadsheet (uploaded .xlsx, download only) `[x]`
   - Plain Text (text body) `[x]`
+  - Web Page (imported via Jina.ai Reader, stores source URL + fetched markdown) `[x]`
 - **Content extraction service** for indexing binary files `[x]`
 - **Search integration:**
   - Included in hybrid search results alongside Questions `[x]`
@@ -563,7 +600,10 @@ Track progress by updating status: `[ ]` pending, `[~]` in progress, `[x]` compl
 - **Admin-configurable LLM providers** (OpenAI, Anthropic, Ollama, Azure OpenAI, Bedrock, Cohere) for AI features
 - **Sidekiq Web UI** at `/admin/sidekiq` (admin-only)
 - Tags for questions (per-space, up to 5 per question)
-- **Articles** with multiple content types (Markdown, HTML, PDF, DOCX, XLSX)
+- **Articles** with multiple content types (Markdown, HTML, PDF, DOCX, XLSX, Web Page)
+- **Web page import** via configurable reader providers (Jina.ai or self-hosted Firecrawl)
+- **Reader provider selection** when importing web pages or refreshing from source
+- **Admin-configurable reader providers** at `/admin/reader_providers` for web page fetching
 - **Q&A Wizard** for moderators to generate FAQ content from articles, topics, or knowledge base
 - **"Helpful Robot"** system user for AI-generated content with human sponsorship tracking
 - **Bookmarks** for users to save Questions, Answers, Comments, and Articles for later

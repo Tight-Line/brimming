@@ -39,6 +39,11 @@ Rails.application.routes.draw do
       end
     end
     resource :search_settings, only: [ :show, :update ]
+    resources :reader_providers, except: [ :show ] do
+      member do
+        post :activate
+      end
+    end
   end
 
   # Email verification (outside settings namespace for simpler URLs)
@@ -81,6 +86,7 @@ Rails.application.routes.draw do
       post :upvote
       delete :remove_vote
       delete :hard_delete
+      post :refresh_from_source
     end
     resources :comments, only: [ :create ], shallow: true
   end

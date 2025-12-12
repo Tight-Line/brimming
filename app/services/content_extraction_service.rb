@@ -51,7 +51,8 @@ class ContentExtractionService
     "txt" => :extract_plain_text,
     "pdf" => :extract_pdf,
     "docx" => :extract_docx,
-    "xlsx" => :extract_xlsx
+    "xlsx" => :extract_xlsx,
+    "webpage" => :extract_webpage
   }.freeze
 
   def extract_content
@@ -126,6 +127,11 @@ class ContentExtractionService
   rescue StandardError => e
     Rails.logger.warn("[ContentExtractionService] Failed to extract XLSX: #{e.message}")
     ""
+  end
+
+  def extract_webpage
+    # Webpage content is already markdown stored in the body
+    @article.body.to_s
   end
 
   def truncate_content(content)

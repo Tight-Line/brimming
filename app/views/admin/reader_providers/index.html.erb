@@ -1,0 +1,77 @@
+<% content_for(:title) { "Reader Providers - Admin - Brimming" } %>
+
+<div class="admin-container">
+  <div class="page-header">
+    <h1>Reader Providers</h1>
+    <div class="dropdown">
+      <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+        Add Provider
+      </button>
+      <div class="dropdown-menu">
+        <% ReaderProvider::PROVIDER_TYPES.each do |provider_type| %>
+          <%= link_to ReaderProvider.new(provider_type: provider_type).display_provider_type,
+                      new_admin_reader_provider_path(provider_type: provider_type),
+                      class: "dropdown-item" %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert alert-info">
+    <strong>About Reader Providers:</strong>
+    Reader providers fetch AI-friendly content from web pages, converting them to clean markdown for use as articles.
+    Only one provider can be active at a time.
+  </div>
+
+  <% if @reader_providers.any? %>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Provider</th>
+          <th>Endpoint</th>
+          <th>Active</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @reader_providers.each do |provider| %>
+          <tr>
+            <td><%= provider.name %></td>
+            <td><%= provider.display_provider_type %></td>
+            <td><code><%= provider.api_endpoint %></code></td>
+            <td>
+              <% if provider.enabled? %>
+                <span class="badge badge-success">Active</span>
+              <% else %>
+                <%= button_to "Activate",
+                              activate_admin_reader_provider_path(provider),
+                              method: :post,
+                              class: "btn btn-sm btn-outline-primary",
+                              data: { turbo_confirm: "Activate #{provider.name}?" } %>
+              <% end %>
+            </td>
+            <td class="actions-cell">
+              <%= link_to "✎", edit_admin_reader_provider_path(provider), class: "action-icon action-edit", title: "Edit" %>
+              <% if provider.can_delete? %>
+                <%= button_to "✕", admin_reader_provider_path(provider),
+                              method: :delete,
+                              class: "action-icon action-delete",
+                              title: "Delete",
+                              data: { turbo_confirm: "Are you sure you want to delete this reader provider?" } %>
+              <% else %>
+                <span class="action-icon action-disabled" title="Cannot delete active provider">✕</span>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <div class="empty-state">
+      <p>No reader providers configured yet.</p>
+      <p>Reader providers enable importing web pages as articles by fetching their content in a clean, AI-friendly format.</p>
+      <p><strong>Recommended:</strong> Start with Jina.ai Reader for best results.</p>
+    </div>
+  <% end %>
+</div>

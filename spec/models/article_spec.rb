@@ -353,6 +353,10 @@ RSpec.describe Article do
       expect(build(:article, content_type: "txt").text_content?).to be true
     end
 
+    it "returns true for webpage" do
+      expect(build(:article, content_type: "webpage").text_content?).to be true
+    end
+
     it "returns false for pdf" do
       expect(build(:article, content_type: "pdf").text_content?).to be false
     end
@@ -389,6 +393,24 @@ RSpec.describe Article do
 
     it "returns false for txt" do
       expect(build(:article, content_type: "txt").binary_content?).to be false
+    end
+
+    it "returns false for webpage" do
+      expect(build(:article, content_type: "webpage").binary_content?).to be false
+    end
+  end
+
+  describe "#webpage_content?" do
+    it "returns true for webpage" do
+      expect(build(:article, content_type: "webpage").webpage_content?).to be true
+    end
+
+    it "returns false for markdown" do
+      expect(build(:article, content_type: "markdown").webpage_content?).to be false
+    end
+
+    it "returns false for html" do
+      expect(build(:article, content_type: "html").webpage_content?).to be false
     end
   end
 
@@ -446,6 +468,51 @@ RSpec.describe Article do
 
     it "returns 'Plain Text' for txt" do
       expect(build(:article, content_type: "txt").display_content_type).to eq("Plain Text")
+    end
+
+    it "returns 'Web Page' for webpage" do
+      expect(build(:article, content_type: "webpage").display_content_type).to eq("Web Page")
+    end
+  end
+
+  describe "source_url validations" do
+    it "requires source_url when content_type is webpage" do
+      article = build(:article, content_type: "webpage", source_url: nil)
+      expect(article).not_to be_valid
+      expect(article.errors[:source_url]).to include("can't be blank")
+    end
+
+    it "does not require source_url when content_type is markdown" do
+      article = build(:article, content_type: "markdown", source_url: nil)
+      expect(article).to be_valid
+    end
+
+    it "validates source_url is a valid HTTP URL" do
+      article = build(:article, content_type: "webpage", source_url: "not-a-url")
+      expect(article).not_to be_valid
+      expect(article.errors[:source_url]).to include("must be a valid HTTP or HTTPS URL")
+    end
+
+    it "validates source_url that causes URI parse error" do
+      article = build(:article, content_type: "webpage", source_url: "http://[invalid")
+      expect(article).not_to be_valid
+      expect(article.errors[:source_url]).to include("is not a valid URL")
+    end
+
+    it "validates source_url is not an FTP URL" do
+      article = build(:article, content_type: "webpage", source_url: "ftp://example.com/file")
+      expect(article).not_to be_valid
+      expect(article.errors[:source_url]).to include("must be a valid HTTP or HTTPS URL")
+    end
+
+    it "accepts valid HTTP URL" do
+      article = build(:article, content_type: "webpage", source_url: "http://example.com/article")
+      expect(article).to be_valid
+    end
+
+    it "accepts valid HTTPS URL" do
+      article = build(:article, content_type: "webpage", source_url: "https://example.com/article")
+      expect(article).to be_valid
     end
   end
 
