@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class HomeController < ApplicationController
+  layout "application"
+
   def index
     @recent_questions = recent_questions_for_user
     @spaces = Space.alphabetical

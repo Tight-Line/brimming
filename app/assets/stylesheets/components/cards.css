@@ -1,0 +1,60 @@
+/*
+ * Cards: Card components
+ */
+
+@layer components {
+  .card {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card-header {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-title {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+  }
+
+  .card-body {
+    padding: var(--spacing-lg);
+  }
+
+  .card-footer {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-top: 1px solid var(--border);
+    background-color: var(--background);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  }
+
+  /* Hoverable card variant */
+  .card-hoverable {
+    transition: all var(--transition-fast);
+  }
+
+  .card-hoverable:hover {
+    border-color: var(--primary-light);
+    box-shadow: var(--shadow);
+  }
+
+  /* Flat card (no shadow) */
+  .card-flat {
+    box-shadow: none;
+  }
+
+  /* Card with sections */
+  .card-section {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-section:last-child {
+    border-bottom: none;
+  }
+}

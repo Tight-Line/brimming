@@ -1,0 +1,84 @@
+<%# Question card for list views %>
+<%# Expects: question (Question object) %>
+
+<article class="question-card">
+  <%# Stats column (desktop) %>
+  <div class="question-stats">
+    <div class="question-stat">
+      <span class="question-stat-value"><%= question.vote_score %></span>
+      <span>votes</span>
+    </div>
+
+    <% answers_count = question.answers.count %>
+    <% has_solved = question.answers.exists?(is_correct: true) %>
+    <% if has_solved %>
+      <div class="question-stat question-stat-answered">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+        </svg>
+        <span><%= answers_count %> <%= 'answer'.pluralize(answers_count) %></span>
+      </div>
+    <% elsif answers_count > 0 %>
+      <div class="question-stat">
+        <span><%= answers_count %> <%= 'answer'.pluralize(answers_count) %></span>
+      </div>
+    <% else %>
+      <div class="question-stat question-stat-unanswered">
+        <span>0 answers</span>
+      </div>
+    <% end %>
+
+    <div class="question-stat">
+      <span><%= question.views_count %> views</span>
+    </div>
+  </div>
+
+  <%# Question content %>
+  <div class="question-content">
+    <%= link_to question.title, question_path(question), class: "question-title" %>
+
+    <p class="question-excerpt">
+      <%= truncate(strip_tags(question.body), length: 180) %>
+    </p>
+
+    <div class="question-footer">
+      <%# Tags %>
+      <% if question.tags.any? %>
+        <div class="tags">
+          <% question.tags.limit(3).each do |tag| %>
+            <%= link_to tag.name, questions_path(tag: tag.name), class: "tag" %>
+          <% end %>
+        </div>
+      <% end %>
+
+      <%# Mobile stats %>
+      <div class="question-mobile-stats">
+        <span class="question-mobile-stat"><%= question.vote_score %> votes</span>
+        <% if has_solved %>
+          <span class="question-mobile-stat-answered"><%= answers_count %> <%= 'answer'.pluralize(answers_count) %></span>
+        <% elsif answers_count > 0 %>
+          <span><%= answers_count %> <%= 'answer'.pluralize(answers_count) %></span>
+        <% else %>
+          <span class="question-mobile-stat-unanswered">0 answers</span>
+        <% end %>
+      </div>
+
+      <%# Author info %>
+      <div class="question-author">
+        <% if question.user.avatar.attached? %>
+          <div class="question-author-avatar" style="background-image: url('<%= url_for(question.user.avatar.variant(resize_to_fill: [40, 40])) %>');"></div>
+        <% else %>
+          <% avatar_colors = %w[avatar-blue avatar-purple avatar-green avatar-orange avatar-red avatar-teal avatar-pink avatar-indigo] %>
+          <div class="question-author-avatar-placeholder <%= avatar_colors[question.user_id % avatar_colors.length] %>">
+            <%= question.user.display_name.first.upcase %>
+          </div>
+        <% end %>
+        <span>
+          <span class="question-author-name"><%= question.user.display_name %></span>
+          <span class="question-author-separator">&bull;</span>
+          posted <%= time_ago_in_words(question.created_at) %> ago
+        </span>
+      </div>
+    </div>
+  </div>
+</article>

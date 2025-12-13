@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="<%= cookies[:dark_mode] == 'true' ? 'dark' : '' %>">
   <head>
     <title><%= content_for(:title) || "Brimming" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -15,30 +15,34 @@
     <link rel="icon" href="/icon.png" type="image/png">
     <link rel="apple-touch-icon" href="/icon.png">
 
+    <%# Google Fonts - Inter %>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
-  <body data-controller="modal">
-    <%= render "shared/site_header" %>
+  <body data-controller="modal dark-mode">
+    <%= render "shared/header" %>
 
-    <main class="main-content">
-      <div class="container">
+    <div class="layout">
+      <%= render "shared/sidebar" %>
+
+      <main class="main">
         <% if notice.present? %>
-          <div class="flash flash-notice"><%= notice %></div>
+          <%= render "shared/flash", type: "notice", message: notice %>
         <% end %>
         <% if alert.present? %>
-          <div class="flash flash-alert"><%= alert %></div>
+          <%= render "shared/flash", type: "alert", message: alert %>
         <% end %>
-        <%= yield %>
-      </div>
-    </main>
 
-    <footer class="site-footer">
-      <div class="container">
-        <p>Brimming &mdash; An enterprise knowledge platform by <a href="https://www.tightlinesoftware.com">Tight Line LLC</a></p>
-      </div>
-    </footer>
+        <%= yield %>
+      </main>
+
+      <%= render "shared/right_sidebar" %>
+    </div>
 
     <% unless user_signed_in? %>
       <%= render "shared/signin_modal" %>
