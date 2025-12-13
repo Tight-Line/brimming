@@ -10,15 +10,35 @@ A Stack Overflow-style Q&A platform built with Ruby on Rails.
 
 ## Features
 
-- **Questions & Answers** - Users post questions in categories, others provide answers
-- **Voting System** - Community votes on answer quality, sorted by score
-- **Moderation** - Category moderators can mark correct answers
-- **User Profiles** - Gamification with stats for questions, answers, and best answers
-- **Search** - Hybrid search with PostgreSQL full-text + pgvector semantic search
-- **Email Digests** - Configurable per-post, daily, or weekly digests
-- **SSO Support** - LDAP/ActiveDirectory and social login (Google, GitHub, etc.)
-- **API** - Full REST API for programmatic access
+### Core Q&A
+- **Questions & Answers** - Users post questions in Spaces, others provide answers
+- **Voting System** - Community votes on questions/answers, sorted by score
+- **Moderation** - Space moderators can mark answers as "Solved"
+- **Comments** - Nested comment threads (up to 3 levels) on questions and answers
+- **Tags** - Per-space tagging for questions (up to 5 per question)
+
+### Knowledge Base
+- **Articles** - Long-form authoritative content for documentation and guides
+- **Multiple Content Types** - Markdown, HTML, PDF, Word, Excel, and web page imports
+- **Web Page Import** - Fetch content from URLs via Jina.ai or self-hosted Firecrawl
+- **Content Extraction** - Automatic text extraction from uploaded files for search indexing
+
+### Search & AI
+- **Hybrid Search** - PostgreSQL full-text search with pgvector semantic fallback
+- **RAG Integration** - Content chunking with embeddings for retrieval-augmented generation
+- **Q&A Wizard** - AI-powered FAQ generation from articles and knowledge base
+- **Configurable Providers** - Support for OpenAI, Cohere, Ollama, and other embedding/LLM providers
+
+### User Experience
+- **User Profiles** - Karma system with stats for questions, answers, and best answers
+- **Bookmarks** - Save questions, answers, comments, and articles for later
+- **SSO Support** - LDAP/ActiveDirectory with group-to-space mapping
+
+### Coming Soon
+- **Email Digests** - Configurable per-post, daily, or weekly notifications
+- **REST API** - Full API for programmatic access
 - **MCP Server** - AI assistant integration via Model Context Protocol
+- **Social SSO** - Google, GitHub, LinkedIn, and more
 
 ## Tech Stack
 
@@ -95,7 +115,7 @@ We require 100% test coverage for all code.
 | `make lint-fix` | Auto-fix lint issues |
 | `make security` | Run security scans |
 
-### Helm
+### Helm (Coming Soon)
 
 | Command | Description |
 |---------|-------------|
@@ -116,7 +136,7 @@ make ci  # Run full CI pipeline (lint, security, test, helm)
 docker-compose up -d
 ```
 
-### Kubernetes (Helm)
+### Kubernetes (Helm) - Coming Soon
 
 ```bash
 helm install brimming helm/brimming \
@@ -209,7 +229,7 @@ Direct connection: `psql -h localhost -p 35432 -U brimming -d brimming`
 
 ### SSO Configuration
 
-LDAP and social SSO providers are configured through the admin panel. See the [SSO documentation](docs/sso.md) for details.
+LDAP servers and group-to-space mappings are configured through the admin panel at `/admin/ldap_servers`. Social SSO providers (coming soon) will be configurable at `/admin/sso_providers`.
 
 ## Architecture
 
