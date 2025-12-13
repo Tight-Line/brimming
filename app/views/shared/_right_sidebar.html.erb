@@ -1,0 +1,43 @@
+<aside class="right-sidebar">
+  <%# Trending Tags %>
+  <div class="right-sidebar-section">
+    <h3 class="right-sidebar-title">Trending Tags</h3>
+    <div class="trending-tags">
+      <% Tag.joins(:questions).group(:id).order('COUNT(questions.id) DESC').limit(10).each do |tag| %>
+        <%= link_to tag.name, questions_path(tag: tag.name), class: "trending-tag" %>
+      <% end %>
+    </div>
+  </div>
+
+  <%# Help Needed (Unanswered Questions) %>
+  <div class="right-sidebar-section">
+    <div class="right-sidebar-header">
+      <h3 class="right-sidebar-title">Help Needed</h3>
+      <%= link_to "View All", questions_path(filter: 'unanswered'), class: "right-sidebar-link" %>
+    </div>
+
+    <div class="help-list">
+      <% unanswered_questions = Question.not_deleted.left_outer_joins(:answers).where(answers: { id: nil }).order(created_at: :desc).limit(3) %>
+      <% unanswered_questions.each do |question| %>
+        <%= link_to question_path(question), class: "help-card" do %>
+          <h4 class="help-card-title"><%= question.title %></h4>
+          <div class="help-card-meta">
+            <% space_color = %w[green blue purple orange][question.space_id % 4] %>
+            <span class="help-card-space <%= space_color %>"><%= question.space.name %></span>
+            <span>&bull;</span>
+            <span><%= time_ago_in_words(question.created_at) %> ago</span>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <%# Footer links %>
+  <div class="sidebar-footer">
+    <%= link_to "About", "#" %>
+    <%= link_to "Privacy", "#" %>
+    <%= link_to "Terms", "#" %>
+    <%= link_to "Contact", "#" %>
+    <span class="sidebar-footer-copyright">&copy; <%= Date.current.year %> Brimming</span>
+  </div>
+</aside>

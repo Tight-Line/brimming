@@ -1,56 +1,68 @@
 <% content_for(:title) { "Brimming - Q&A Platform" } %>
 
-<div class="two-column">
-  <section>
-    <div class="card">
-      <div class="card-header">
-        <h2>Recent Questions</h2>
-      </div>
-      <% if @recent_questions.any? %>
-        <ul class="question-list">
-          <% @recent_questions.each do |question| %>
-            <li class="question-item">
-              <div class="question-title">
-                <%= link_to question.title, question_path(question) %>
-              </div>
-              <div class="question-meta">
-                <span class="space"><%= link_to question.space.name, space_path(question.space) %></span>
-                <span>by <%= render 'shared/user_badge', user: question.author %></span>
-                <span><%= question.answers_count %> answers</span>
-                <% if question.has_correct_answer? %>
-                  <span class="badge badge-success">Solved</span>
-                <% end %>
-              </div>
-            </li>
-          <% end %>
-        </ul>
-      <% else %>
-        <div class="empty-state">
-          <p>No questions yet.</p>
-        </div>
+<%# Page header %>
+<div class="page-header">
+  <div class="page-header-row">
+    <h1 class="page-title">Questions Feed</h1>
+    <% if user_signed_in? %>
+      <%= link_to new_question_path, class: "btn btn-primary" do %>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        <span>Ask Question</span>
+      <% end %>
+    <% else %>
+      <button type="button" class="btn btn-primary" data-action="modal#open">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        <span>Ask Question</span>
+      </button>
+    <% end %>
+  </div>
+
+  <div class="filter-row">
+    <div class="tabs">
+      <%= link_to root_path(sort: 'newest'), class: "tab #{'active' if params[:sort].blank? || params[:sort] == 'newest'}" do %>
+        Newest
+      <% end %>
+      <%= link_to root_path(sort: 'active'), class: "tab #{'active' if params[:sort] == 'active'}" do %>
+        Active
+      <% end %>
+      <%= link_to root_path(sort: 'unanswered'), class: "tab #{'active' if params[:sort] == 'unanswered'}" do %>
+        Unanswered
+        <% unanswered_count = Question.not_deleted.left_outer_joins(:answers).where(answers: { id: nil }).count %>
+        <% if unanswered_count > 0 %>
+          <span class="tab-badge"><%= unanswered_count > 99 ? '99+' : unanswered_count %></span>
+        <% end %>
+      <% end %>
+      <% if user_signed_in? %>
+        <%= link_to root_path(sort: 'following'), class: "tab #{'active' if params[:sort] == 'following'}" do %>
+          Following
+        <% end %>
       <% end %>
     </div>
-    <p class="mt-2"><%= link_to "View all questions &rarr;".html_safe, questions_path %></p>
-  </section>
 
-  <aside>
-    <div class="card">
-      <div class="card-header">
-        <h2>Spaces</h2>
-      </div>
-      <ul class="space-list">
-        <% @spaces.each do |space| %>
-          <li class="space-item">
-            <div>
-              <span class="space-name">
-                <% if current_user&.subscribed_to?(space) %><span class="subscribed-icon" title="Subscribed">&#9733;</span> <% end %><%= link_to space.name, space_path(space) %>
-              </span>
-            </div>
-            <span class="space-count"><%= space.questions_count %></span>
-          </li>
-        <% end %>
-      </ul>
+    <div class="btn-group">
+      <button type="button" class="btn btn-secondary btn-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+        </svg>
+        Filter
+      </button>
     </div>
-    <p class="mt-2"><%= link_to "View all spaces &rarr;".html_safe, spaces_path %></p>
-  </aside>
+  </div>
+</div>
+
+<%# Questions list %>
+<div class="content-list">
+  <% if @recent_questions.any? %>
+    <% @recent_questions.each do |question| %>
+      <%= render 'questions/question_card', question: question %>
+    <% end %>
+  <% else %>
+    <div class="p-lg text-center text-muted">
+      <p>No questions yet. Be the first to ask!</p>
+    </div>
+  <% end %>
 </div>
