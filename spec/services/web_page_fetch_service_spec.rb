@@ -303,20 +303,19 @@ RSpec.describe WebPageFetchService do
   end
 
   describe "Firecrawl provider" do
-    let(:provider) { create(:reader_provider, :enabled, provider_type: "firecrawl", api_endpoint: "http://firecrawl:3002") }
+    let(:provider) { create(:reader_provider, :enabled, :firecrawl) }
     let(:service) { described_class.new(url, provider: provider) }
+
+    before do
+      allow(Firecrawl).to receive(:api_key)
+    end
 
     context "with a valid URL and provider" do
       let(:markdown_content) { "# Hello World\n\nThis is the article content." }
-      let(:json_response) { { "success" => true, "data" => { "markdown" => markdown_content } }.to_json }
+      let(:mock_response) { double("Response", success?: true, markdown: markdown_content) }
 
       before do
-        stub_request(:post, "http://firecrawl:3002/v1/scrape")
-          .with(
-            body: { url: url, formats: [ "markdown" ], onlyMainContent: true }.to_json,
-            headers: { "Content-Type" => "application/json", "Accept" => "application/json" }
-          )
-          .to_return(status: 200, body: json_response)
+        allow(Firecrawl).to receive(:scrape).with(url, formats: [ "markdown" ], only_main_content: true).and_return(mock_response)
       end
 
       it "returns the fetched content" do
@@ -324,14 +323,18 @@ RSpec.describe WebPageFetchService do
         expect(result).to be_success
         expect(result.content).to eq(markdown_content)
       end
+
+      it "sets the API key" do
+        service.fetch
+        expect(Firecrawl).to have_received(:api_key).with(provider.api_key)
+      end
     end
 
     context "when Firecrawl returns success: false" do
-      let(:json_response) { { "success" => false, "error" => "Failed to scrape" }.to_json }
+      let(:mock_response) { double("Response", success?: false, error: "Failed to scrape") }
 
       before do
-        stub_request(:post, "http://firecrawl:3002/v1/scrape")
-          .to_return(status: 200, body: json_response)
+        allow(Firecrawl).to receive(:scrape).and_return(mock_response)
       end
 
       it "returns a failure result" do
@@ -342,11 +345,10 @@ RSpec.describe WebPageFetchService do
     end
 
     context "when Firecrawl response has no markdown" do
-      let(:json_response) { { "success" => true, "data" => {} }.to_json }
+      let(:mock_response) { double("Response", success?: true, markdown: nil) }
 
       before do
-        stub_request(:post, "http://firecrawl:3002/v1/scrape")
-          .to_return(status: 200, body: json_response)
+        allow(Firecrawl).to receive(:scrape).and_return(mock_response)
       end
 
       it "returns a failure result" do
@@ -356,113 +358,44 @@ RSpec.describe WebPageFetchService do
       end
     end
 
-    context "when Firecrawl returns a server error" do
+    context "when Firecrawl response has blank markdown" do
+      let(:mock_response) { double("Response", success?: true, markdown: "") }
+
       before do
-        stub_request(:post, "http://firecrawl:3002/v1/scrape")
-          .to_return(status: 500)
+        allow(Firecrawl).to receive(:scrape).and_return(mock_response)
       end
 
       it "returns a failure result" do
         result = service.fetch
         expect(result).to be_failure
-        expect(result.error).to include("Firecrawl service error")
+        expect(result.error).to include("No content found")
       end
     end
 
-    context "when Firecrawl returns an unexpected status" do
+    context "when Firecrawl raises an error" do
       before do
-        stub_request(:post, "http://firecrawl:3002/v1/scrape")
-          .to_return(status: [ 418, "I'm a teapot" ])
+        allow(Firecrawl).to receive(:scrape).and_raise(StandardError.new("Service unavailable"))
       end
 
       it "returns a failure result" do
         result = service.fetch
         expect(result).to be_failure
-        expect(result.error).to include("Unexpected response: 418")
+        expect(result.error).to include("Failed to fetch page")
+        expect(result.error).to include("Service unavailable")
       end
     end
 
-    context "with an API key" do
-      let(:provider) { create(:reader_provider, :enabled, provider_type: "firecrawl", api_endpoint: "http://firecrawl:3002", api_key: "test-key") }
-      let(:json_response) { { "success" => true, "data" => { "markdown" => "Content" } }.to_json }
+    context "when Firecrawl returns failure with no error message" do
+      let(:mock_response) { double("Response", success?: false, error: nil) }
 
       before do
-        stub_request(:post, "http://firecrawl:3002/v1/scrape")
-          .with(headers: { "Authorization" => "Bearer test-key" })
-          .to_return(status: 200, body: json_response)
+        allow(Firecrawl).to receive(:scrape).and_return(mock_response)
       end
 
-      it "includes Authorization header" do
-        result = service.fetch
-        expect(result).to be_success
-
-        expect(WebMock).to have_requested(:post, "http://firecrawl:3002/v1/scrape")
-          .with(headers: { "Authorization" => "Bearer test-key" })
-      end
-    end
-
-    context "when Firecrawl authentication fails" do
-      before do
-        stub_request(:post, "http://firecrawl:3002/v1/scrape")
-          .to_return(status: 401)
-      end
-
-      it "returns a failure result" do
+      it "returns a failure result with unknown error" do
         result = service.fetch
         expect(result).to be_failure
-        expect(result.error).to include("Authentication failed")
-      end
-    end
-
-    context "when Firecrawl access is forbidden" do
-      before do
-        stub_request(:post, "http://firecrawl:3002/v1/scrape")
-          .to_return(status: 403)
-      end
-
-      it "returns a failure result" do
-        result = service.fetch
-        expect(result).to be_failure
-        expect(result.error).to include("Access forbidden")
-      end
-    end
-
-    context "when Firecrawl page is not found" do
-      before do
-        stub_request(:post, "http://firecrawl:3002/v1/scrape")
-          .to_return(status: 404)
-      end
-
-      it "returns a failure result" do
-        result = service.fetch
-        expect(result).to be_failure
-        expect(result.error).to include("Page not found")
-      end
-    end
-
-    context "when Firecrawl rate limits" do
-      before do
-        stub_request(:post, "http://firecrawl:3002/v1/scrape")
-          .to_return(status: 429)
-      end
-
-      it "returns a failure result" do
-        result = service.fetch
-        expect(result).to be_failure
-        expect(result.error).to include("Rate limit exceeded")
-      end
-    end
-
-    context "when Firecrawl response is invalid JSON" do
-      before do
-        stub_request(:post, "http://firecrawl:3002/v1/scrape")
-          .to_return(status: 200, body: "not valid json {")
-      end
-
-      it "returns a failure result" do
-        result = service.fetch
-        expect(result).to be_failure
-        expect(result.error).to include("Failed to parse response")
+        expect(result.error).to include("Unknown error")
       end
     end
   end

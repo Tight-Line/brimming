@@ -4,12 +4,14 @@
 #
 # All environments use the "brimming" schema (not public) for app tables.
 # Database name is "brimming" in all environments except test.
+#
+# Solid Stack (queue, cache, cable) uses the same database as the primary.
 
 default: &default
   adapter: postgresql
   encoding: unicode
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  host: <%= ENV.fetch("DB_HOST") { "postgres" } %>
+  host: <%= ENV.fetch("DB_HOST") { "localhost" } %>
   port: <%= ENV.fetch("DB_PORT") { 5432 } %>
   username: <%= ENV.fetch("DB_USER") { "brimming" } %>
   password: <%= ENV.fetch("DB_PASS") { "brimming_dev" } %>

@@ -67,24 +67,24 @@
   <section class="dashboard-health">
     <h2>System Health</h2>
     <div class="health-grid">
-      <div class="health-card health-<%= @system_health[:sidekiq][:status] %>">
-        <h3>Sidekiq</h3>
-        <% if @system_health[:sidekiq][:status] == :error %>
-          <div class="health-status">Error: <%= @system_health[:sidekiq][:message] %></div>
+      <div class="health-card health-<%= @system_health[:queue][:status] %>">
+        <h3>Job Queue</h3>
+        <% if @system_health[:queue][:status] == :error %>
+          <div class="health-status">Error: <%= @system_health[:queue][:message] %></div>
         <% else %>
           <div class="health-status">
             <span class="status-indicator"></span>
-            <%= @system_health[:sidekiq][:processes] %> <%= "process".pluralize(@system_health[:sidekiq][:processes]) %>
+            <%= @system_health[:queue][:processes] %> <%= "process".pluralize(@system_health[:queue][:processes]) %>
           </div>
           <div class="health-details">
-            <div>Busy: <%= @system_health[:sidekiq][:busy] %></div>
-            <div>Processed: <%= number_with_delimiter(@system_health[:sidekiq][:processed]) %></div>
-            <div>Failed: <%= @system_health[:sidekiq][:failed] %></div>
-            <div>Enqueued: <%= @system_health[:sidekiq][:enqueued] %></div>
+            <div>Busy: <%= @system_health[:queue][:busy] %></div>
+            <div>Processed: <%= number_with_delimiter(@system_health[:queue][:processed]) %></div>
+            <div>Failed: <%= @system_health[:queue][:failed] %></div>
+            <div>Enqueued: <%= @system_health[:queue][:enqueued] %></div>
           </div>
-          <% if @system_health[:sidekiq][:queues].present? %>
+          <% if @system_health[:queue][:queues].present? %>
             <div class="health-queues">
-              <% @system_health[:sidekiq][:queues].each do |queue| %>
+              <% @system_health[:queue][:queues].each do |queue| %>
                 <span class="queue-badge"><%= queue[:name] %>: <%= queue[:size] %></span>
               <% end %>
             </div>

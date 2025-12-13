@@ -161,7 +161,6 @@ All development services run via Docker Compose with non-standard ports to avoid
 | Service | URL | Credentials |
 |---------|-----|-------------|
 | **Web Application** | http://localhost:33000 | See "Test Accounts" below |
-| **Mailhog** (email viewer) | http://localhost:33025 | No login required |
 | **phpLDAPadmin** | http://localhost:38080 | See "LDAP" below |
 | **PostgreSQL** | localhost:35432 | `brimming` / `brimming_dev` |
 | **Valkey (Redis)** | localhost:36379 | No auth |
@@ -195,9 +194,9 @@ To browse/edit LDAP data at http://localhost:38080:
 - **Login DN**: `cn=admin,dc=brimming,dc=local`
 - **Password**: `admin_secret`
 
-#### Email (Mailhog)
+#### Email (letter_opener)
 
-Development uses [Mailhog](https://github.com/mailhog/MailHog) to capture all outgoing emails without actually sending them. Visit http://localhost:33025 to view captured emails (no login required).
+Development uses [letter_opener](https://github.com/ryanb/letter_opener) to preview emails in the browser instead of sending them. When an email is sent, it automatically opens in a new browser tab.
 
 #### Database Console
 

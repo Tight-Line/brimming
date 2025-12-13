@@ -8,7 +8,6 @@ x-rails-env: &rails-env
   DB_USER: brimming
   DB_PASS: ${DB_PASS:-brimming_prod}
   DB_NAME: brimming
-  REDIS_URL: redis://valkey:6379/0
   SECRET_KEY_BASE: ${SECRET_KEY_BASE:-changeme_in_production}
   BRIMMING_BASE_URL: ${BRIMMING_BASE_URL:-http://localhost:3000}
   RAILS_LOG_TO_STDOUT: "true"
@@ -16,8 +15,6 @@ x-rails-env: &rails-env
 x-rails-depends: &rails-depends
   postgres:
     condition: service_healthy
-  valkey:
-    condition: service_started
 
 services:
   app:
@@ -40,7 +37,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: bundle exec sidekiq
+    command: bundle exec rails solid_queue:start
     environment:
       <<: *rails-env
     depends_on:
@@ -61,16 +58,5 @@ services:
       timeout: 5s
       retries: 5
 
-  valkey:
-    image: valkey/valkey:9.0.0
-    volumes:
-      - valkey_data:/data
-    healthcheck:
-      test: ["CMD", "valkey-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
 volumes:
   postgres_data:
-  valkey_data:

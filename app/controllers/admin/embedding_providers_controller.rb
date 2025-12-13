@@ -92,14 +92,11 @@ module Admin
       end
 
       # Clear any pending embedding jobs from the queue
-      embedding_queue = Sidekiq::Queue.new("embeddings")
-      cleared_count = 0
-      embedding_queue.each do |job|
-        if job.klass == "GenerateQuestionEmbeddingJob"
-          job.delete
-          cleared_count += 1
-        end
-      end
+      cleared_count = SolidQueue::Job
+        .where(class_name: %w[GenerateQuestionEmbeddingJob GenerateArticleEmbeddingJob])
+        .where(finished_at: nil)
+        .destroy_all
+        .count
 
       # Clear all existing chunks and reset embedded_at
       invalidated_count = Question.where.not(embedded_at: nil).update_all(embedded_at: nil)

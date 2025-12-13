@@ -6,7 +6,7 @@ class ReaderProvider < ApplicationRecord
   # Default API endpoints for providers
   DEFAULT_ENDPOINTS = {
     "jina" => "https://r.jina.ai",
-    "firecrawl" => "http://firecrawl:3002"
+    "firecrawl" => "https://api.firecrawl.dev"
   }.freeze
 
   encrypts :api_key
@@ -30,8 +30,8 @@ class ReaderProvider < ApplicationRecord
   end
 
   def requires_api_key?
-    # Firecrawl self-hosted doesn't require an API key
-    provider_type != "firecrawl"
+    # Both Jina and Firecrawl cloud require API keys
+    true
   end
 
   def can_delete?

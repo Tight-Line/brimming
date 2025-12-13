@@ -14,7 +14,7 @@ if ENV["SMTP_HOST"].present? && !Rails.env.test?
   }
 
   # TLS/SSL configuration
-  # Note: For servers without TLS support (like Mailhog), set SMTP_TLS=false
+  # Note: For servers without TLS support, set SMTP_TLS=false
   # This disables both TLS and STARTTLS to avoid connection errors
   if ENV["SMTP_TLS"] == "true"
     smtp_settings[:enable_starttls_auto] = true
@@ -23,7 +23,7 @@ if ENV["SMTP_HOST"].present? && !Rails.env.test?
     smtp_settings[:enable_starttls_auto] = false
   end
 
-  # Authentication (optional - not needed for Mailhog)
+  # Authentication (optional)
   if ENV["SMTP_USER"].present?
     smtp_settings[:user_name] = ENV["SMTP_USER"]
     smtp_settings[:password] = ENV["SMTP_PASS"]

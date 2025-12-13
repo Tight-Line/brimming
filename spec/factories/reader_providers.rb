@@ -20,8 +20,8 @@ FactoryBot.define do
 
     trait :firecrawl do
       provider_type { "firecrawl" }
-      api_endpoint { "http://firecrawl:3002" }
-      api_key { nil }
+      api_endpoint { "https://api.firecrawl.dev" }
+      api_key { "fc-test-key-#{SecureRandom.hex(8)}" }
     end
   end
 end

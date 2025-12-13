@@ -53,23 +53,26 @@ module Admin
 
     def build_system_health
       {
-        sidekiq: sidekiq_health,
+        queue: queue_health,
         embeddings: embeddings_health
       }
     end
 
-    def sidekiq_health
-      require "sidekiq/api"
-      stats = Sidekiq::Stats.new
-      processes = stats.processes_size
+    def queue_health
+      ready_count = SolidQueue::ReadyExecution.count
+      claimed_count = SolidQueue::ClaimedExecution.count
+      failed_count = SolidQueue::FailedExecution.count
+      scheduled_count = SolidQueue::ScheduledExecution.count
+      processes = SolidQueue::Process.where("last_heartbeat_at > ?", 5.minutes.ago).count
+
       {
         status: processes >= 1 ? :ok : :warning,
-        processed: stats.processed,
-        failed: stats.failed,
-        enqueued: stats.enqueued,
+        processed: SolidQueue::Job.where.not(finished_at: nil).count,
+        failed: failed_count,
+        enqueued: ready_count + scheduled_count,
         processes: processes,
-        busy: stats.workers_size,
-        queues: Sidekiq::Queue.all.map { |q| { name: q.name, size: q.size } }
+        busy: claimed_count,
+        queues: SolidQueue::Queue.all.map { |q| { name: q.name, size: SolidQueue::ReadyExecution.where(queue_name: q.name).count } }
       }
     rescue => e
       { status: :error, message: e.message }

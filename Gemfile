@@ -44,11 +44,14 @@ gem "csv"                    # Required by roo (not default in Ruby 3.4+)
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 
-# Use Valkey (Redis-compatible) for caching and Action Cable
-gem "redis", "~> 5.0"
+# Solid Stack - database-backed queue, cache, and cable
+gem "solid_queue"
+gem "solid_cache"
+gem "solid_cable"
+gem "mission_control-jobs"
 
-# Background job processing with Sidekiq
-gem "sidekiq", "~> 8.0"
+# Firecrawl.dev cloud API for web scraping
+gem "firecrawl"
 
 # pgvector support for vector similarity search
 gem "neighbor", "~> 0.5"
@@ -111,6 +114,9 @@ end
 group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem "web-console"
+
+  # Preview emails in the browser instead of sending [https://github.com/ryanb/letter_opener]
+  gem "letter_opener"
 end
 
 gem "importmap-rails", "~> 2.2"

@@ -163,63 +163,58 @@ RSpec.describe "Admin::Dashboard", type: :request do
         end
       end
 
-      context "with sidekiq stats" do
-        it "shows sidekiq health" do
+      context "with queue stats" do
+        it "shows queue health" do
           get admin_root_path
-          expect(response.body).to include("Sidekiq")
+          expect(response.body).to include("Job Queue")
         end
       end
 
-      context "with no sidekiq processes" do
+      context "with no queue processes" do
         before do
-          mock_stats = instance_double(Sidekiq::Stats,
-            processes_size: 0,
-            workers_size: 0,
-            processed: 100,
-            failed: 0,
-            enqueued: 0
-          )
-          allow(Sidekiq::Stats).to receive(:new).and_return(mock_stats)
-          allow(Sidekiq::Queue).to receive(:all).and_return([])
+          allow(SolidQueue::ReadyExecution).to receive(:count).and_return(0)
+          allow(SolidQueue::ClaimedExecution).to receive(:count).and_return(0)
+          allow(SolidQueue::FailedExecution).to receive(:count).and_return(0)
+          allow(SolidQueue::ScheduledExecution).to receive(:count).and_return(0)
+          allow(SolidQueue::Process).to receive(:where).and_return(double(count: 0))
+          allow(SolidQueue::Job).to receive(:where).and_return(double(not: double(count: 100)))
+          allow(SolidQueue::Queue).to receive(:all).and_return([])
         end
 
-        it "shows sidekiq warning status" do
+        it "shows queue warning status" do
           get admin_root_path
           expect(response.body).to include("0 processes")
         end
       end
 
-      context "with sidekiq processes running" do
+      context "with queue processes running" do
         before do
-          mock_stats = instance_double(Sidekiq::Stats,
-            processes_size: 2,
-            workers_size: 1,
-            processed: 100,
-            failed: 0,
-            enqueued: 0
-          )
-          allow(Sidekiq::Stats).to receive(:new).and_return(mock_stats)
-          allow(Sidekiq::Queue).to receive(:all).and_return([])
+          allow(SolidQueue::ReadyExecution).to receive(:count).and_return(0)
+          allow(SolidQueue::ClaimedExecution).to receive(:count).and_return(1)
+          allow(SolidQueue::FailedExecution).to receive(:count).and_return(0)
+          allow(SolidQueue::ScheduledExecution).to receive(:count).and_return(0)
+          allow(SolidQueue::Process).to receive(:where).and_return(double(count: 2))
+          allow(SolidQueue::Job).to receive(:where).and_return(double(not: double(count: 100)))
+          allow(SolidQueue::Queue).to receive(:all).and_return([])
         end
 
-        it "shows sidekiq ok status" do
+        it "shows queue ok status" do
           get admin_root_path
           expect(response.body).to include("2 processes")
         end
       end
 
-      context "with sidekiq queues" do
+      context "with queue jobs" do
         before do
-          mock_stats = instance_double(Sidekiq::Stats,
-            processes_size: 1,
-            workers_size: 0,
-            processed: 50,
-            failed: 0,
-            enqueued: 5
-          )
-          mock_queue = instance_double(Sidekiq::Queue, name: "default", size: 5)
-          allow(Sidekiq::Stats).to receive(:new).and_return(mock_stats)
-          allow(Sidekiq::Queue).to receive(:all).and_return([ mock_queue ])
+          allow(SolidQueue::ReadyExecution).to receive(:count).and_return(5)
+          allow(SolidQueue::ClaimedExecution).to receive(:count).and_return(0)
+          allow(SolidQueue::FailedExecution).to receive(:count).and_return(0)
+          allow(SolidQueue::ScheduledExecution).to receive(:count).and_return(0)
+          allow(SolidQueue::Process).to receive(:where).and_return(double(count: 1))
+          allow(SolidQueue::Job).to receive(:where).and_return(double(not: double(count: 50)))
+          mock_queue = double("Queue", name: "default")
+          allow(SolidQueue::Queue).to receive(:all).and_return([ mock_queue ])
+          allow(SolidQueue::ReadyExecution).to receive(:where).with(queue_name: "default").and_return(double(count: 5))
         end
 
         it "shows queue information" do
@@ -229,12 +224,12 @@ RSpec.describe "Admin::Dashboard", type: :request do
         end
       end
 
-      context "with sidekiq error" do
+      context "with queue error" do
         before do
-          allow(Sidekiq::Stats).to receive(:new).and_raise(StandardError.new("Connection refused"))
+          allow(SolidQueue::ReadyExecution).to receive(:count).and_raise(StandardError.new("Connection refused"))
         end
 
-        it "shows sidekiq error status" do
+        it "shows queue error status" do
           get admin_root_path
           expect(response.body).to include("Error")
         end

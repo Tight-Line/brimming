@@ -310,18 +310,17 @@ RSpec.describe "Admin::EmbeddingProviders" do
       end
 
       context "with pending embedding jobs in queue" do
-        it "clears pending GenerateQuestionEmbeddingJob jobs" do
-          mock_queue = instance_double(Sidekiq::Queue)
-          embedding_job = double("Sidekiq::Job", klass: "GenerateQuestionEmbeddingJob")
-          other_job = double("Sidekiq::Job", klass: "OtherJob")
-
-          allow(Sidekiq::Queue).to receive(:new).with("embeddings").and_return(mock_queue)
-          allow(mock_queue).to receive(:each).and_yield(embedding_job).and_yield(other_job)
-
-          expect(embedding_job).to receive(:delete)
-          expect(other_job).not_to receive(:delete)
+        it "clears pending embedding jobs" do
+          mock_relation = double("ActiveRecord::Relation")
+          allow(SolidQueue::Job).to receive(:where)
+            .with(class_name: %w[GenerateQuestionEmbeddingJob GenerateArticleEmbeddingJob])
+            .and_return(mock_relation)
+          allow(mock_relation).to receive(:where).with(finished_at: nil).and_return(mock_relation)
+          allow(mock_relation).to receive(:destroy_all).and_return(mock_relation)
+          allow(mock_relation).to receive(:count).and_return(5)
 
           post reindex_admin_embedding_provider_path(active_provider)
+          expect(flash[:notice]).to include("Cleared 5 pending jobs")
         end
       end
     end

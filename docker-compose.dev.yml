@@ -5,20 +5,12 @@ x-rails-env: &rails-env
   DB_USER: brimming
   DB_PASS: brimming_dev
   DB_NAME: brimming
-  REDIS_URL: redis://valkey:6379/0
   BRIMMING_BASE_URL: http://localhost:33000
-  SMTP_HOST: mailhog
-  SMTP_PORT: 1025
-  SMTP_TLS: "false"
   MAILER_FROM: noreply@brimming.local
 
 x-rails-depends: &rails-depends
   postgres:
     condition: service_healthy
-  valkey:
-    condition: service_started
-  mailhog:
-    condition: service_started
 
 x-rails-volumes: &rails-volumes
   - .:/src
@@ -43,32 +35,22 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-
-  dev:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    command: tail -f /dev/null
-    volumes: *rails-volumes
-    working_dir: /src
-    stdin_open: true
     tty: true
-    environment:
-      <<: *rails-env
-    depends_on:
-      <<: *rails-depends
+    stdin_open: true
 
   worker:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    command: bash -c "bundle install && bundle exec sidekiq"
+    command: bash -c "bundle install && bundle exec bin/jobs"
     volumes: *rails-volumes
     working_dir: /src
     environment:
       <<: *rails-env
     depends_on:
       <<: *rails-depends
+    tty: true
+    stdin_open: true
 
   postgres:
     image: pgvector/pgvector:pg17
@@ -79,7 +61,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
-      - ./docker/postgres/firecrawl_init.sql:/docker-entrypoint-initdb.d/02-firecrawl.sql:ro
     ports:
       - "35432:5432"
     healthcheck:
@@ -87,20 +68,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
-  valkey:
-    image: valkey/valkey:9.0.0
-    ports:
-      - "36379:6379"
-    volumes:
-      - valkey_data:/data
-
-  mailhog:
-    image: mailhog/mailhog:v1.0.1
-    platform: linux/amd64
-    ports:
-      - "30125:1025"   # SMTP
-      - "33025:8025"   # Web UI
 
   openldap:
     image: osixia/openldap:1.5.0
@@ -113,8 +80,8 @@ services:
       LDAP_READONLY_USER: "false"
       LDAP_TLS: "false"
     ports:
-      - "30389:389"     # LDAP
-      - "30636:636"     # LDAPS
+      - "30389:389" # LDAP
+      - "30636:636" # LDAPS
     volumes:
       - openldap_data:/var/lib/ldap
       - openldap_config:/etc/ldap/slapd.d
@@ -127,41 +94,12 @@ services:
       PHPLDAPADMIN_LDAP_HOSTS: openldap
       PHPLDAPADMIN_HTTPS: "false"
     ports:
-      - "38080:80"     # Web UI for LDAP management
+      - "38080:80" # Web UI for LDAP management
     depends_on:
       - openldap
-
-  # Firecrawl - self-hosted web page to markdown service
-  # Schema initialized via docker/postgres/firecrawl_init.sql
-  firecrawl:
-    image: ghcr.io/firecrawl/firecrawl:latest
-    platform: linux/amd64
-    environment:
-      PORT: 3002
-      HOST: 0.0.0.0
-      NUM_WORKERS_PER_QUEUE: 4
-      # Use existing Valkey (database 1 to avoid conflicts with Rails/Sidekiq)
-      REDIS_URL: redis://valkey:6379/1
-      REDIS_RATE_LIMIT_URL: redis://valkey:6379/1
-      # Firecrawl uses Postgres for job queuing (NUQ), not just auth
-      NUQ_DATABASE_URL: postgres://brimming:brimming_dev@postgres:5432/brimming
-      # Disable auth - self-hosted doesn't need it
-      USE_DB_AUTHENTICATION: "false"
-      # Allow any API key for self-hosted
-      TEST_API_KEY: "fc-dev"
-      # Allow scraping local/internal URLs
-      ALLOW_LOCAL_WEBHOOKS: "true"
-    ports:
-      - "33002:3002"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      valkey:
-        condition: service_started
 
 volumes:
   bundle_cache:
   postgres_data:
-  valkey_data:
   openldap_data:
   openldap_config:

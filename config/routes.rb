@@ -1,11 +1,9 @@
-require "sidekiq/web"
-
 Rails.application.routes.draw do
   devise_for :users
 
-  # Sidekiq Web UI - admin only
+  # Mission Control Jobs UI - admin only
   authenticate :user, ->(user) { user.admin? } do
-    mount Sidekiq::Web => "/admin/sidekiq"
+    mount MissionControl::Jobs::Engine, at: "/admin/jobs"
   end
 
   # LDAP authentication (custom implementation, not using OmniAuth routes)

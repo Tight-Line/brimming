@@ -4,9 +4,9 @@
 COMPOSE_DEV = docker-compose -f docker-compose.dev.yml
 COMPOSE_PROD = docker-compose -f docker-compose.yml
 # Use -T to disable pseudo-TTY (avoids shell profile loading which causes RVM warnings)
-DEV_EXEC = $(COMPOSE_DEV) exec -T dev
-DEV_EXEC_TTY = $(COMPOSE_DEV) exec dev
-DEV_RUN = $(COMPOSE_DEV) run --rm dev
+DEV_EXEC = $(COMPOSE_DEV) exec -T app
+DEV_EXEC_TTY = $(COMPOSE_DEV) exec app
+DEV_RUN = $(COMPOSE_DEV) run --rm app
 
 .PHONY: help setup build up down restart logs shell console db-create db-migrate db-rollback db-reset db-seed db-console search-setup search-reindex search-rebuild test test-models test-requests test-jobs test-all lint lint-fix security coverage clean helm-lint helm-test ci
 
@@ -24,7 +24,7 @@ help:
 	@echo "  make clean        - Remove containers, volumes, and generated files"
 	@echo ""
 	@echo "Development:"
-	@echo "  make shell        - Open bash shell in dev container"
+	@echo "  make shell        - Open bash shell in app container"
 	@echo "  make console      - Open Rails console"
 	@echo "  make server       - Start Rails server (accessible at localhost:3000)"
 	@echo ""
@@ -61,7 +61,7 @@ help:
 # ============================================================================
 
 setup: build
-	$(COMPOSE_DEV) up -d postgres valkey
+	$(COMPOSE_DEV) up -d postgres
 	@echo "Waiting for PostgreSQL to be ready..."
 	@sleep 5
 	$(DEV_RUN) bundle install

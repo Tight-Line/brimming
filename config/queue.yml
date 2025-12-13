@@ -1,0 +1,39 @@
+default: &default
+  dispatchers:
+    - polling_interval: 1
+      batch_size: 500
+  workers:
+    # Critical queue: high priority (fast polling, more threads)
+    - queues: [critical]
+      threads: 3
+      processes: 1
+      polling_interval: 0.5
+    # Default queue: normal priority
+    - queues: [default]
+      threads: 3
+      processes: 1
+      polling_interval: 1
+    # Search indexing: moderate priority
+    - queues: [search_indexing, search_bulk]
+      threads: 2
+      processes: 1
+      polling_interval: 2
+    # Embeddings: lower priority (can be slow/expensive)
+    - queues: [embeddings]
+      threads: 2
+      processes: 1
+      polling_interval: 3
+    # Mailers: moderate priority
+    - queues: [mailers]
+      threads: 2
+      processes: 1
+      polling_interval: 2
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+production:
+  <<: *default

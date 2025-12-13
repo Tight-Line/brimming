@@ -62,6 +62,9 @@ class WebPageFetchService
   end
 
   def valid_provider_endpoint?
+    # Firecrawl uses the gem, no endpoint validation needed
+    return true if @provider.provider_type == "firecrawl"
+
     return false if @provider.api_endpoint.blank?
 
     uri = URI.parse(@provider.api_endpoint)
@@ -140,64 +143,16 @@ class WebPageFetchService
   end
 
   def fetch_via_firecrawl
-    # Firecrawl API: POST /v1/scrape with JSON body
-    # Returns { "success": true, "data": { "markdown": "..." } }
-    scrape_url = "#{validated_endpoint}/v1/scrape"
+    # Use firecrawl gem for Firecrawl.dev cloud API
+    Firecrawl.api_key(@provider.api_key)
+    response = Firecrawl.scrape(@url, formats: [ "markdown" ], only_main_content: true)
 
-    uri = URI.parse(scrape_url)
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = (uri.scheme == "https")
-    http.open_timeout = DEFAULT_TIMEOUT
-    http.read_timeout = DEFAULT_TIMEOUT
-
-    request = Net::HTTP::Post.new(uri.request_uri)
-    request["Content-Type"] = "application/json"
-    request["Accept"] = "application/json"
-
-    # Add API key if configured (optional for self-hosted)
-    if @provider.api_key.present?
-      request["Authorization"] = "Bearer #{@provider.api_key}"
-    end
-
-    request.body = {
-      url: @url,
-      formats: [ "markdown" ],
-      onlyMainContent: true
-    }.to_json
-
-    response = http.request(request)
-
-    case response.code.to_i
-    when 200
-      extract_content_from_firecrawl(response.body)
-    when 401
-      raise "Authentication failed - check your API key"
-    when 403
-      raise "Access forbidden - the page may be blocked"
-    when 404
-      raise "Page not found at the specified URL"
-    when 429
-      raise "Rate limit exceeded - please try again later"
-    when 500..599
-      raise "Firecrawl service error (#{response.code})"
+    if response.success?
+      content = response.markdown
+      raise "No content found in response" if content.blank?
+      content
     else
-      raise "Unexpected response: #{response.code} #{response.message}"
+      raise "Firecrawl error: #{response.error || 'Unknown error'}"
     end
-  end
-
-  def extract_content_from_firecrawl(body)
-    json = JSON.parse(body.dup.force_encoding("UTF-8"))
-    # Firecrawl returns { "success": true, "data": { "markdown": "..." } }
-    unless json["success"]
-      error = json["error"] || "Unknown error"
-      raise "Firecrawl error: #{error}"
-    end
-
-    content = json.dig("data", "markdown")
-    raise "No content found in response" if content.blank?
-
-    content
-  rescue JSON::ParserError => e
-    raise "Failed to parse response: #{e.message}"
   end
 end
